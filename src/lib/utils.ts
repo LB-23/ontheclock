@@ -1,0 +1,99 @@
+import { startOfISOWeek, format, parseISO, differenceInCalendarDays } from 'date-fns'
+
+/** Monday of the ISO week containing `date` */
+export function getWeekStart(date: Date = new Date()): string {
+  return format(startOfISOWeek(date), 'yyyy-MM-dd')
+}
+
+/** Friendly display: "Mon 21 Apr 2026" */
+export function fmtDate(iso: string): string {
+  return format(parseISO(iso), 'EEE d MMM yyyy')
+}
+
+/** "9:45 am" */
+export function fmtTime(iso: string): string {
+  return format(parseISO(iso), 'h:mm aaa')
+}
+
+/** "Mon 21 Apr – Sun 27 Apr" */
+export function fmtWeekRange(weekStart: string): string {
+  const start = parseISO(weekStart)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+  return `${format(start, 'EEE d MMM')} – ${format(end, 'EEE d MMM')}`
+}
+
+/** Hours between two ISO timestamps, rounded to 2dp */
+export function calcHours(clockIn: string, clockOut: string): number {
+  const ms = new Date(clockOut).getTime() - new Date(clockIn).getTime()
+  return Math.round((ms / 3_600_000) * 100) / 100
+}
+
+/** Auto break: deduct 0.5h if worked > 6h */
+export function applyAutoBreak(rawHours: number): { total: number; lunchIncluded: boolean } {
+  if (rawHours > 6) return { total: rawHours, lunchIncluded: true }
+  return { total: rawHours, lunchIncluded: false }
+}
+
+/** Working days between two date strings (inclusive) */
+export function workdaysBetween(start: string, end: string): number {
+  return differenceInCalendarDays(parseISO(end), parseISO(start)) + 1
+}
+
+/** Download an array of objects as a CSV file */
+export function exportCSV(rows: Record<string, unknown>[], filename: string): void {
+  if (!rows.length) return
+  const headers = Object.keys(rows[0])
+  const csv = [
+    headers.join(','),
+    ...rows.map(r =>
+      headers.map(h => {
+        const v = r[h] ?? ''
+        const s = String(v).replace(/"/g, '""')
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
+      }).join(',')
+    ),
+  ].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** Get browser geolocation — returns null if denied */
+export function getGPS(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(null); return }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      ()  => resolve(null),
+      { timeout: 8000 }
+    )
+  })
+}
+
+/** Format hours as "7h 30m" */
+export function fmtHours(h: number): string {
+  const hrs = Math.floor(h)
+  const mins = Math.round((h - hrs) * 60)
+  if (mins === 0) return `${hrs}h`
+  return `${hrs}h ${mins}m`
+}
+
+/** Tailwind class helper — brand blue button */
+export const btnPrimary =
+  'inline-flex items-center justify-center rounded-xl bg-[#1c9fda] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1480b0] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+
+export const btnSecondary =
+  'inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50'
+
+export const btnDanger =
+  'inline-flex items-center justify-center rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50'
+
+export const inputCls =
+  'block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm placeholder-gray-400 focus:border-[#1c9fda] focus:outline-none focus:ring-2 focus:ring-[#1c9fda]/20'
+
+export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1'
