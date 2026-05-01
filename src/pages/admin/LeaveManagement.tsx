@@ -39,7 +39,7 @@ export default function LeaveManagement() {
       if (col) {
         const { data: prof } = await supabase.from('profiles').select(`${col}`).eq('id', r.employee_id).single()
         if (prof) {
-          const current = (prof as Record<string, number>)[col] ?? 0
+          const current = (prof as unknown as Record<string, number>)[col] ?? 0
           const deduct = r.leave_type === 'time_in_lieu' ? (r.total_days ?? 0) * 8 : (r.total_days ?? 0)
           await supabase.from('profiles').update({ [col]: Math.max(0, current - deduct) }).eq('id', r.employee_id)
           if (r.leave_type === 'time_in_lieu') {
