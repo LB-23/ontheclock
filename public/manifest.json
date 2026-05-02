@@ -8,6 +8,7 @@
   "background_color": "#E8E8E8",
   "theme_color": "#1c9fda",
   "icons": [
-    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/lb-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/lb-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

@@ -1,19 +1,34 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Timesheet, type TimeEntry, type Profile } from '../../lib/supabase'
 import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { format } from 'date-fns'
+
+type EntryEdit = {
+  id: string
+  edited_at: string
+  field_changed: 'clock_in' | 'clock_out' | 'both'
+  old_clock_in: string | null
+  new_clock_in: string | null
+  old_clock_out: string | null
+  new_clock_out: string | null
+  reason: string
+  edited_by: string
+}
 
 export default function TimesheetReview() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([])
   const [employees, setEmployees] = useState<Profile[]>([])
   const [selected, setSelected] = useState<Timesheet | null>(null)
   const [entries, setEntries] = useState<TimeEntry[]>([])
+  const [edits, setEdits] = useState<Record<string, EntryEdit[]>>({})
+  const [openEdits, setOpenEdits] = useState<Record<string, boolean>>({})
   const [filterEmp, setFilterEmp] = useState('')
   const [filterStatus, setFilterStatus] = useState('submitted')
   const [adminNote, setAdminNote] = useState('')
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    let q = supabase.from('timesheets').select('*, profiles(full_name, email)').order('week_start', { ascending: false })
+    let q = supabase.from('timesheets').select('*, profiles(full_name)').order('week_start', { ascending: false })
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterEmp)   q = q.eq('employee_id', filterEmp)
     const { data } = await q
@@ -31,20 +46,46 @@ export default function TimesheetReview() {
   const openTimesheet = async (ts: Timesheet) => {
     setSelected(ts)
     setAdminNote(ts.admin_notes ?? '')
-    const { data } = await supabase.from('time_entries')
+    const { data: entriesData } = await supabase.from('time_entries')
       .select('*, job_addresses(address), stages(name)')
       .eq('employee_id', ts.employee_id)
       .eq('week_start', ts.week_start)
       .order('clock_in')
-    setEntries((data as TimeEntry[]) ?? [])
+    const ents = (entriesData as TimeEntry[]) ?? []
+    setEntries(ents)
+
+    // Fetch edit history for these entries (if any)
+    if (ents.length) {
+      const ids = ents.map(e => e.id)
+      const { data: editsData } = await supabase.from('time_entry_edits')
+        .select('*').in('time_entry_id', ids).order('edited_at', { ascending: false })
+      const grouped: Record<string, EntryEdit[]> = {}
+      ;(editsData ?? []).forEach((row: Record<string, unknown>) => {
+        const k = row.time_entry_id as string
+        if (!grouped[k]) grouped[k] = []
+        grouped[k].push(row as unknown as EntryEdit)
+      })
+      setEdits(grouped)
+    } else {
+      setEdits({})
+    }
+    setOpenEdits({})
   }
 
   const updateStatus = async (status: 'approved' | 'rejected') => {
     if (!selected) return
-    const updates: Partial<Timesheet> = { status, admin_notes: adminNote || null }
-    await supabase.from('timesheets').update(updates).eq('id', selected.id)
+    await supabase.from('timesheets').update({
+      status, admin_notes: adminNote || null,
+    }).eq('id', selected.id)
 
-    // Auto-accrual on approval (TIL = Time In Lieu)
+    // Move associated entries to matching status
+    if (status === 'approved') {
+      await supabase.from('time_entries').update({ status: 'approved' })
+        .eq('employee_id', selected.employee_id).eq('week_start', selected.week_start)
+        .in('status', ['submitted', 'edited', 'completed'])
+    }
+
+    // TIL auto-accrual on approval
     if (status === 'approved' && (selected.overtime_hours ?? 0) > 0) {
       const { data: profile } = await supabase.from('profiles').select('accrued_til_hours').eq('id', selected.employee_id).single()
       await supabase.from('til_ledger').insert({
@@ -64,6 +105,8 @@ export default function TimesheetReview() {
     load()
   }
 
+  const fmtEditTime = (iso: string | null) => iso ? format(new Date(iso), 'd MMM HH:mm') : '—'
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Timesheet Review</h1>
@@ -74,24 +117,56 @@ export default function TimesheetReview() {
             <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
             <div>
               <p className="font-semibold">{(selected.profiles as Profile)?.full_name}</p>
-              <p className="text-sm text-gray-500">{fmtWeekRange(selected.week_start)}</p>
+              <p className="text-sm text-gray-500">{fmtWeekRange(selected.week_start)} · <span className="capitalize">{selected.status}</span></p>
             </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-            {entries.map(e => (
-              <div key={e.id} className="px-5 py-4 flex justify-between">
-                <div>
-                  <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
-                  <p className="text-xs text-gray-500">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
-                  <p className="text-xs text-gray-400">{(e.job_addresses as { address: string })?.address}</p>
+            {entries.length === 0 && <p className="p-6 text-center text-gray-400">No entries</p>}
+            {entries.map(e => {
+              const entryEdits = edits[e.id] ?? []
+              const hasEdits = entryEdits.length > 0
+              return (
+                <div key={e.id} className="px-5 py-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
+                      <p className="text-xs text-gray-500">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
+                      <p className="text-xs text-gray-400 truncate">{(e.job_addresses as { address: string })?.address}</p>
+                      {e.notes && <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>}
+                    </div>
+                    <div className="text-right ml-3">
+                      <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                      {e.is_overtime && <span className="text-xs text-orange-600">OT</span>}
+                      {hasEdits && (
+                        <button
+                          onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}
+                          className="block mt-1 text-xs text-blue-600 hover:underline"
+                        >
+                          ✎ {entryEdits.length} edit{entryEdits.length > 1 ? 's' : ''}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {hasEdits && openEdits[e.id] && (
+                    <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                      {entryEdits.map(ed => (
+                        <div key={ed.id} className="rounded-lg bg-blue-50 p-2 text-[11px] text-blue-900">
+                          <p className="font-semibold">{fmtEditTime(ed.edited_at)}</p>
+                          {ed.field_changed !== 'clock_out' && ed.new_clock_in && (
+                            <p>Clock-in: {fmtEditTime(ed.old_clock_in)} → {fmtEditTime(ed.new_clock_in)}</p>
+                          )}
+                          {ed.field_changed !== 'clock_in' && ed.new_clock_out && (
+                            <p>Clock-out: {fmtEditTime(ed.old_clock_out)} → {fmtEditTime(ed.new_clock_out)}</p>
+                          )}
+                          <p className="italic mt-1">"{ed.reason}"</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                  {e.is_overtime && <span className="text-xs text-orange-600">OT</span>}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
@@ -105,11 +180,17 @@ export default function TimesheetReview() {
             <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="Feedback for employee…" />
           </div>
 
-          {selected.status === 'submitted' && (
+          {(selected.status === 'submitted') && (
             <div className="flex gap-3">
               <button onClick={() => updateStatus('approved')} className={`${btnPrimary} flex-1 h-12`}>✓ Approve</button>
               <button onClick={() => updateStatus('rejected')} className={`${btnDanger} flex-1 h-12`}>✗ Reject</button>
             </div>
+          )}
+          {selected.status === 'draft' && (
+            <p className="text-xs text-center text-gray-500">Draft — employee hasn't submitted yet</p>
+          )}
+          {selected.status === 'approved' && (
+            <p className="text-xs text-center text-green-600">✓ Approved</p>
           )}
         </div>
       ) : (
@@ -117,10 +198,10 @@ export default function TimesheetReview() {
           <div className="flex gap-3 flex-wrap">
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={`${inputCls} w-auto`}>
               <option value="">All statuses</option>
+              <option value="draft">Drafts</option>
               <option value="submitted">Submitted</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
-              <option value="draft">Draft</option>
             </select>
             <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={`${inputCls} w-auto`}>
               <option value="">All employees</option>
@@ -129,6 +210,9 @@ export default function TimesheetReview() {
           </div>
 
           {loading && <p className="text-center text-gray-400">Loading…</p>}
+          {!loading && timesheets.length === 0 && (
+            <p className="text-center text-gray-400 py-10">No timesheets match this filter.</p>
+          )}
 
           <div className="space-y-3">
             {timesheets.map(ts => (

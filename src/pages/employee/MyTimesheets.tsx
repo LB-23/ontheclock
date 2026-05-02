@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
+import { format } from 'date-fns'
 import { supabase, type TimeEntry, type Timesheet } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+
+type EditDraft = {
+  entry: TimeEntry
+  newClockIn:  string  // datetime-local format: YYYY-MM-DDTHH:mm
+  newClockOut: string
+  reason:      string
+}
 
 export default function MyTimesheets() {
   const { profile } = useProfile()
@@ -9,34 +17,147 @@ export default function MyTimesheets() {
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [selected, setSelected] = useState<Timesheet | null>(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<EditDraft | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [err, setErr] = useState('')
 
-  useEffect(() => {
+  const loadTimesheets = () => {
     if (!profile) return
     supabase
       .from('timesheets')
       .select('*')
       .eq('employee_id', profile.id)
       .order('week_start', { ascending: false })
-      .then(({ data }) => { setTimesheets(data ?? []); setLoading(false) })
-  }, [profile])
+      .then(({ data }) => { setTimesheets((data as Timesheet[]) ?? []); setLoading(false) })
+  }
+
+  useEffect(loadTimesheets, [profile])
 
   const loadEntries = async (ts: Timesheet) => {
     setSelected(ts)
+    if (!profile) return
     const { data } = await supabase
       .from('time_entries')
       .select('*, job_addresses(address), stages(name)')
-      .eq('employee_id', profile!.id)
+      .eq('employee_id', profile.id)
       .eq('week_start', ts.week_start)
       .order('clock_in')
     setEntries((data as TimeEntry[]) ?? [])
   }
 
-  const submitTimesheet = async (ts: Timesheet) => {
-    await supabase
+  const reloadEntries = async () => {
+    if (!selected) return
+    await loadEntries(selected)
+    // Reload timesheet too (totals will have changed via trigger)
+    const { data: t } = await supabase
+      .from('timesheets').select('*').eq('id', selected.id).single()
+    if (t) setSelected(t as Timesheet)
+    loadTimesheets()
+  }
+
+  const isoToLocalInput = (iso: string | null) =>
+    iso ? format(new Date(iso), "yyyy-MM-dd'T'HH:mm") : ''
+
+  const localInputToIso = (local: string) =>
+    local ? new Date(local).toISOString() : ''
+
+  const openEdit = (e: TimeEntry) => {
+    setEditing({
+      entry: e,
+      newClockIn:  isoToLocalInput(e.clock_in),
+      newClockOut: isoToLocalInput(e.clock_out),
+      reason:      '',
+    })
+    setErr('')
+  }
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editing || !profile) return
+    if (!editing.reason.trim()) {
+      setErr('Reason is required for any time edit.')
+      return
+    }
+    setSaving(true)
+    setErr('')
+
+    const oldIn  = editing.entry.clock_in
+    const oldOut = editing.entry.clock_out
+    const newIn  = localInputToIso(editing.newClockIn)
+    const newOut = editing.newClockOut ? localInputToIso(editing.newClockOut) : null
+
+    const inChanged  = newIn !== oldIn
+    const outChanged = newOut !== (oldOut ?? null)
+
+    if (!inChanged && !outChanged) {
+      setErr('Nothing changed — close the dialog or adjust a time first.')
+      setSaving(false)
+      return
+    }
+
+    if (newOut && new Date(newOut) <= new Date(newIn)) {
+      setErr('Clock-out must be after clock-in.')
+      setSaving(false)
+      return
+    }
+
+    // Recalculate hours
+    let totalH: number | null = null
+    if (newOut) {
+      totalH = Math.round(((new Date(newOut).getTime() - new Date(newIn).getTime()) / 3_600_000) * 100) / 100
+    }
+
+    // 1. Insert audit row (RLS requires edited_by = auth.uid())
+    const { error: editErr } = await supabase.from('time_entry_edits').insert({
+      time_entry_id: editing.entry.id,
+      edited_by:     profile.id,
+      field_changed: inChanged && outChanged ? 'both' : (inChanged ? 'clock_in' : 'clock_out'),
+      old_clock_in:  inChanged ? oldIn  : null,
+      new_clock_in:  inChanged ? newIn  : null,
+      old_clock_out: outChanged ? oldOut : null,
+      new_clock_out: outChanged ? newOut : null,
+      reason:        editing.reason.trim(),
+    })
+    if (editErr) { setErr(editErr.message); setSaving(false); return }
+
+    // 2. Update the entry itself
+    const updates: Partial<TimeEntry> = {
+      clock_in:    newIn,
+      clock_out:   newOut,
+      total_hours: totalH,
+      status:      'edited',
+    }
+    const { error: updErr } = await supabase
+      .from('time_entries').update(updates).eq('id', editing.entry.id)
+    if (updErr) { setErr(updErr.message); setSaving(false); return }
+
+    setSaving(false)
+    setEditing(null)
+    await reloadEntries()
+  }
+
+  const submitTimesheet = async () => {
+    if (!selected) return
+    setSubmitting(true)
+    const { error } = await supabase
       .from('timesheets')
-      .upsert({ ...ts, status: 'submitted' }, { onConflict: 'id' })
-    setTimesheets(prev => prev.map(t => t.id === ts.id ? { ...t, status: 'submitted' } : t))
-    setSelected(prev => prev?.id === ts.id ? { ...prev, status: 'submitted' } : prev)
+      .update({ status: 'submitted' })
+      .eq('id', selected.id)
+    setSubmitting(false)
+    if (error) { setErr(error.message); return }
+
+    // Also flag all entries as submitted
+    await supabase
+      .from('time_entries')
+      .update({ status: 'submitted' })
+      .eq('employee_id', profile!.id)
+      .eq('week_start', selected.week_start)
+      .in('status', ['completed', 'edited'])
+
+    setSelected(prev => prev ? { ...prev, status: 'submitted' } : prev)
+    setTimesheets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'submitted' } : t))
+    await reloadEntries()
   }
 
   const statusBadge = (status: string) => {
@@ -50,6 +171,62 @@ export default function MyTimesheets() {
   }
 
   if (loading) return <div className="text-center py-16 text-gray-400">Loading…</div>
+
+  // Edit dialog
+  const editDialog = editing && (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
+      <form onSubmit={saveEdit} className="bg-white rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold">Edit Time Entry</p>
+          <button type="button" onClick={() => { setEditing(null); setErr('') }} className="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        <p className="text-xs text-gray-500">{fmtDate(editing.entry.clock_in)} · {(editing.entry.job_addresses as { address: string })?.address}</p>
+
+        <div>
+          <label className={labelCls}>Clock In</label>
+          <input
+            type="datetime-local"
+            value={editing.newClockIn}
+            onChange={e => setEditing(d => d ? { ...d, newClockIn: e.target.value } : d)}
+            className={inputCls}
+            required
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Clock Out</label>
+          <input
+            type="datetime-local"
+            value={editing.newClockOut}
+            onChange={e => setEditing(d => d ? { ...d, newClockOut: e.target.value } : d)}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Reason for Edit <span className="text-red-500">*</span></label>
+          <textarea
+            value={editing.reason}
+            onChange={e => setEditing(d => d ? { ...d, reason: e.target.value } : d)}
+            className={`${inputCls} resize-none`}
+            rows={3}
+            placeholder="Forgot to clock out at end of day…"
+            required
+          />
+          <p className="text-[11px] text-gray-400 mt-1">Required for every edit — your admin will see this.</p>
+        </div>
+
+        {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
+
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={saving} className={`${btnPrimary} flex-1 h-11`}>
+            {saving ? 'Saving…' : 'Save Edit'}
+          </button>
+          <button type="button" onClick={() => { setEditing(null); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -70,27 +247,30 @@ export default function MyTimesheets() {
               <p className="p-6 text-center text-gray-400">No entries this week</p>
             )}
             {entries.map(e => (
-              <div key={e.id} className="px-5 py-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{fmtDate(e.clock_in)}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳ Active'}
-                    </p>
-                    {(e.job_addresses as { address: string })?.address && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        📍 {(e.job_addresses as { address: string }).address}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">
-                      {e.total_hours ? fmtHours(e.total_hours) : '—'}
-                    </p>
-                    {e.is_overtime && (
-                      <span className="text-xs text-orange-600 font-medium">OT</span>
-                    )}
-                  </div>
+              <div key={e.id} className="px-5 py-4 flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{fmtDate(e.clock_in)}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳ Active'}
+                  </p>
+                  {(e.job_addresses as { address: string })?.address && (
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
+                  )}
+                  {e.notes && (
+                    <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>
+                  )}
+                  {e.status === 'edited' && (
+                    <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>
+                  )}
+                </div>
+                <div className="text-right ml-3 flex-shrink-0">
+                  <p className="text-sm font-bold text-gray-900">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                  {e.is_overtime && <span className="text-xs text-orange-600 font-medium">OT</span>}
+                  {selected.status === 'draft' && (
+                    <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-[#1c9fda] hover:underline">
+                      ✎ Edit
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -111,9 +291,25 @@ export default function MyTimesheets() {
             </div>
           </div>
 
-          {selected.status === 'draft' && (
-            <button onClick={() => submitTimesheet(selected)} className={`${btnPrimary} w-full h-12`}>
-              Submit for Approval
+          {selected.status === 'draft' && entries.length > 0 && (
+            <button
+              onClick={submitTimesheet}
+              disabled={submitting || entries.some(e => !e.clock_out)}
+              className={`${btnPrimary} w-full h-12`}
+            >
+              {submitting ? 'Submitting…' : entries.some(e => !e.clock_out) ? 'Clock out of all entries first' : 'Submit for Approval'}
+            </button>
+          )}
+          {selected.status === 'rejected' && (
+            <button
+              onClick={async () => {
+                await supabase.from('timesheets').update({ status: 'draft' }).eq('id', selected.id)
+                setSelected(prev => prev ? { ...prev, status: 'draft' } : prev)
+                loadTimesheets()
+              }}
+              className={`${btnPrimary} w-full h-12`}
+            >
+              Reopen for editing
             </button>
           )}
           {selected.admin_notes && (
@@ -125,7 +321,7 @@ export default function MyTimesheets() {
       ) : (
         <>
           {timesheets.length === 0 && (
-            <div className="text-center py-16 text-gray-400">No timesheets yet</div>
+            <div className="text-center py-16 text-gray-400">No timesheets yet — clock in once to start one.</div>
           )}
           <div className="space-y-3">
             {timesheets.map(ts => (
@@ -147,6 +343,8 @@ export default function MyTimesheets() {
           </div>
         </>
       )}
+
+      {editDialog}
     </div>
   )
 }
