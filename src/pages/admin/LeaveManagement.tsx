@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type Profile } from '../../lib/supabase'
-import { fmtDate, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 
 const leaveLabels: Record<string, string> = {
-  annual: 'Annual', sick: 'Sick', personal: 'Personal', time_in_lieu: 'TOIL', unpaid: 'Unpaid',
+  annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
 }
 
 export default function LeaveManagement() {
@@ -29,24 +29,27 @@ export default function LeaveManagement() {
   const decide = async (r: LeaveRequest, status: 'approved' | 'declined') => {
     setDeciding(r.id)
     await supabase.from('leave_requests').update({ status, admin_notes: adminNote || null }).eq('id', r.id)
-    // Deduct leave balance if approved
+
     if (status === 'approved') {
+      // Map leave_type → balance column
       const field: Record<string, string> = {
-        annual: 'annual_leave_balance', sick: 'sick_leave_balance',
-        personal: 'personal_leave_balance', time_in_lieu: 'accrued_tol_hours',
+        annual:       'annual_leave_balance',
+        personal:     'personal_leave_balance',
+        time_in_lieu: 'accrued_til_hours',
       }
       const col = field[r.leave_type]
       if (col) {
-        const { data: prof } = await supabase.from('profiles').select(`${col}`).eq('id', r.employee_id).single()
+        const { data: prof } = await supabase.from('profiles').select(col).eq('id', r.employee_id).single()
         if (prof) {
           const current = (prof as unknown as Record<string, number>)[col] ?? 0
-          const deduct = r.leave_type === 'time_in_lieu' ? (r.total_days ?? 0) * 8 : (r.total_days ?? 0)
+          // Leave is now in HOURS — deduct directly
+          const deduct = r.total_hours ?? 0
           await supabase.from('profiles').update({ [col]: Math.max(0, current - deduct) }).eq('id', r.employee_id)
           if (r.leave_type === 'time_in_lieu') {
-            await supabase.from('tol_ledger').insert({
+            await supabase.from('til_ledger').insert({
               employee_id: r.employee_id, date: new Date().toISOString().split('T')[0],
-              hours_delta: -(r.total_days ?? 0) * 8, source: 'leave_used',
-              note: `TOIL leave approved ${r.start_date}–${r.end_date}`,
+              hours_delta: -deduct, source: 'leave_used',
+              note: `TIL leave approved ${r.start_date}–${r.end_date}`,
             })
           }
         }
@@ -90,7 +93,7 @@ export default function LeaveManagement() {
               <div className="flex justify-between">
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
-                  <p className="text-sm text-gray-500">{leaveLabels[r.leave_type]} · {fmtDate(r.start_date)} – {fmtDate(r.end_date)} ({r.total_days} days)</p>
+                  <p className="text-sm text-gray-500">{leaveLabels[r.leave_type]} · {fmtDate(r.start_date)} – {fmtDate(r.end_date)} ({fmtHours(r.total_hours ?? 0)})</p>
                   {r.reason && <p className="text-xs text-gray-400 italic mt-0.5">"{r.reason}"</p>}
                 </div>
               </div>

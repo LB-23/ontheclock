@@ -22,10 +22,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1c9fda]/10 to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#E8E8E8] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">⏱</div>
+          <img src="/logo.svg" alt="Larkin Building Group" className="w-20 h-20 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-gray-900">OnTheClock</h1>
           <p className="text-sm text-gray-500 mt-1">Larkin Building Group</p>
         </div>

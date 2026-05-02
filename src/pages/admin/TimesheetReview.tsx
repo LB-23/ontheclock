@@ -44,10 +44,10 @@ export default function TimesheetReview() {
     const updates: Partial<Timesheet> = { status, admin_notes: adminNote || null }
     await supabase.from('timesheets').update(updates).eq('id', selected.id)
 
-    // Auto-accrual on approval
+    // Auto-accrual on approval (TIL = Time In Lieu)
     if (status === 'approved' && (selected.overtime_hours ?? 0) > 0) {
-      const { data: profile } = await supabase.from('profiles').select('accrued_tol_hours').eq('id', selected.employee_id).single()
-      await supabase.from('tol_ledger').insert({
+      const { data: profile } = await supabase.from('profiles').select('accrued_til_hours').eq('id', selected.employee_id).single()
+      await supabase.from('til_ledger').insert({
         employee_id:  selected.employee_id,
         date:         new Date().toISOString().split('T')[0],
         hours_delta:  selected.overtime_hours,
@@ -56,7 +56,7 @@ export default function TimesheetReview() {
         note:         `Auto-accrued from approved timesheet ${selected.week_start}`,
       })
       await supabase.from('profiles').update({
-        accrued_tol_hours: (profile?.accrued_tol_hours ?? 0) + (selected.overtime_hours ?? 0),
+        accrued_til_hours: (profile?.accrued_til_hours ?? 0) + (selected.overtime_hours ?? 0),
       }).eq('id', selected.employee_id)
     }
 

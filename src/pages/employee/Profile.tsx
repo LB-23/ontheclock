@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, inputCls, labelCls } from '../../lib/utils'
+import { btnPrimary, inputCls, labelCls, fmtHours } from '../../lib/utils'
 
 export default function EmployeeProfile() {
   const { profile, refresh } = useProfile()
@@ -63,10 +63,9 @@ export default function EmployeeProfile() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Leave Balances</p>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-gray-600">Annual Leave</span><span className="font-semibold">{profile.annual_leave_balance} days</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Sick Leave</span><span className="font-semibold">{profile.sick_leave_balance} days</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Personal Leave</span><span className="font-semibold">{profile.personal_leave_balance} days</span></div>
-          <div className="flex justify-between"><span className="text-gray-600">Time in Lieu</span><span className="font-semibold text-orange-600">{profile.accrued_tol_hours} hrs</span></div>
+          <div className="flex justify-between"><span className="text-gray-600">Annual Leave</span><span className="font-semibold">{fmtHours(profile.annual_leave_balance)}</span></div>
+          <div className="flex justify-between"><span className="text-gray-600">Personal/Sick Leave</span><span className="font-semibold">{fmtHours(profile.personal_leave_balance)}</span></div>
+          <div className="flex justify-between"><span className="text-gray-600">Time In Lieu</span><span className="font-semibold text-orange-600">{fmtHours(profile.accrued_til_hours)}</span></div>
         </div>
       </div>
     </div>

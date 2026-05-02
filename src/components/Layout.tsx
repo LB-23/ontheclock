@@ -38,8 +38,9 @@ export default function Layout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col md:flex-row">
       {/* Sidebar — visible on md+ */}
       <aside className="hidden md:flex md:w-56 md:flex-col md:fixed md:inset-y-0 bg-white border-r border-gray-100 shadow-sm">
-        <div className="flex h-16 items-center px-6 border-b border-gray-100">
-          <span className="text-lg font-bold text-[#1c9fda]">⏱ OnTheClock</span>
+        <div className="flex h-16 items-center gap-2 px-6 border-b border-gray-100">
+          <img src="/logo.svg" alt="LB" className="w-7 h-7" />
+          <span className="text-lg font-bold text-[#1c9fda]">OnTheClock</span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {nav.map(item => (
@@ -74,7 +75,10 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main className="flex-1 md:ml-56 pb-20 md:pb-0">
         {/* Mobile top bar */}
         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-white px-4 border-b border-gray-100 shadow-sm safe-top">
-          <span className="text-base font-bold text-[#1c9fda]">⏱ OnTheClock</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.svg" alt="LB" className="w-6 h-6" />
+            <span className="text-base font-bold text-[#1c9fda]">OnTheClock</span>
+          </div>
           <button onClick={handleSignOut} className="text-xs text-gray-500">Sign out</button>
         </header>
         <div className="p-4 md:p-8 max-w-5xl mx-auto">

@@ -10,9 +10,9 @@ export type AppRole = 'admin' | 'employee'
 export type WeeklyHours = 38 | 40 | 42
 export type EntryStatus = 'active' | 'completed' | 'submitted' | 'approved' | 'edited'
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
-export type LeaveType = 'annual' | 'sick' | 'personal' | 'time_in_lieu' | 'unpaid'
+export type LeaveType = 'annual' | 'personal' | 'time_in_lieu' | 'unpaid'
 export type LeaveStatus = 'pending' | 'approved' | 'declined'
-export type TolSource = 'auto_overtime' | 'leave_used' | 'manual_adjust'
+export type TilSource = 'auto_overtime' | 'leave_used' | 'manual_adjust'
 
 export interface Profile {
   id: string
@@ -21,9 +21,8 @@ export interface Profile {
   job_role: string
   app_role: AppRole
   weekly_hours_category: WeeklyHours
-  accrued_tol_hours: number
+  accrued_til_hours: number
   annual_leave_balance: number
-  sick_leave_balance: number
   personal_leave_balance: number
   is_active: boolean
   created_at: string
@@ -87,7 +86,7 @@ export interface LeaveRequest {
   leave_type: LeaveType
   start_date: string
   end_date: string
-  total_days: number | null
+  total_hours: number | null
   reason: string | null
   status: LeaveStatus
   admin_notes: string | null
@@ -96,13 +95,21 @@ export interface LeaveRequest {
   profiles?: Profile
 }
 
-export interface TolLedger {
+export interface TilLedger {
   id: string
   employee_id: string
   date: string
   hours_delta: number
-  source: TolSource
+  source: TilSource
   timesheet_id: string | null
   note: string | null
+  created_at: string
+}
+
+export interface PublicHoliday {
+  id: string
+  date: string
+  name: string
+  state: string
   created_at: string
 }

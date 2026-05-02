@@ -4,13 +4,18 @@
 
 :root {
   --brand: #1c9fda;
+  --bg:    #E8E8E8;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
 
+html, body {
+  background-color: #E8E8E8;
+}
+
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  @apply text-gray-900 antialiased;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 /* Safe area for PWA on notched phones */

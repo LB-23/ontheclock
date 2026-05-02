@@ -5,7 +5,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import PunchClock from './pages/employee/PunchClock'
 import MyTimesheets from './pages/employee/MyTimesheets'
-import LeaveAndTOIL from './pages/employee/LeaveAndTOIL'
+import LeaveAndTIL from './pages/employee/LeaveAndTIL'
 import EmployeeProfile from './pages/employee/Profile'
 import Dashboard from './pages/admin/Dashboard'
 import Employees from './pages/admin/Employees'
@@ -50,7 +50,7 @@ function AppRoutes() {
             <Route path="/" element={<Navigate to="/clock" replace />} />
             <Route path="/clock" element={<PunchClock />} />
             <Route path="/my-timesheets" element={<MyTimesheets />} />
-            <Route path="/leave" element={<LeaveAndTOIL />} />
+            <Route path="/leave" element={<LeaveAndTIL />} />
             <Route path="/profile" element={<EmployeeProfile />} />
           </>
         )}

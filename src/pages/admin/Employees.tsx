@@ -2,10 +2,23 @@ import { useEffect, useState } from 'react'
 import { supabase, type Profile, type WeeklyHours, type AppRole } from '../../lib/supabase'
 import { btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 
-const BLANK: Partial<Profile> & { email: string; password: string } = {
+type FormState = {
+  full_name: string
+  email: string
+  password: string
+  mobile_number: string
+  job_role: string
+  app_role: AppRole
+  weekly_hours_category: WeeklyHours
+  accrued_til_hours: number
+  annual_leave_balance: number
+  personal_leave_balance: number
+}
+
+const BLANK: FormState = {
   full_name: '', email: '', password: '', mobile_number: '',
   job_role: '', app_role: 'employee', weekly_hours_category: 38,
-  accrued_tol_hours: 0, annual_leave_balance: 0, sick_leave_balance: 0, personal_leave_balance: 0,
+  accrued_til_hours: 0, annual_leave_balance: 0, personal_leave_balance: 0,
 }
 
 export default function Employees() {
@@ -13,7 +26,7 @@ export default function Employees() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Profile | null>(null)
-  const [form, setForm] = useState(BLANK)
+  const [form, setForm] = useState<FormState>(BLANK)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -26,7 +39,18 @@ export default function Employees() {
   const openAdd = () => { setEditing(null); setForm(BLANK); setError(''); setShowForm(true) }
   const openEdit = (p: Profile) => {
     setEditing(p)
-    setForm({ ...p, email: p.email ?? '', password: '' })
+    setForm({
+      full_name: p.full_name ?? '',
+      email: p.email ?? '',
+      password: '',
+      mobile_number: p.mobile_number ?? '',
+      job_role: p.job_role ?? '',
+      app_role: p.app_role ?? 'employee',
+      weekly_hours_category: p.weekly_hours_category ?? 38,
+      accrued_til_hours: p.accrued_til_hours ?? 0,
+      annual_leave_balance: p.annual_leave_balance ?? 0,
+      personal_leave_balance: p.personal_leave_balance ?? 0,
+    })
     setError('')
     setShowForm(true)
   }
@@ -35,47 +59,49 @@ export default function Employees() {
     e.preventDefault()
     setError('')
     setSaving(true)
+
     if (!editing) {
-      // Create new user via Supabase Admin — requires service role key on server.
-      // For now: create via invite email, then update profile.
-      const { data, error: authErr } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: { data: { full_name: form.full_name, mobile_number: form.mobile_number, job_role: form.job_role } },
+      // Use admin_create_employee RPC — does NOT log out the current admin
+      const { error: rpcErr } = await supabase.rpc('admin_create_employee', {
+        emp_email:             form.email,
+        emp_password:          form.password,
+        emp_full_name:         form.full_name,
+        emp_mobile:            form.mobile_number,
+        emp_job_role:          form.job_role,
+        emp_app_role:          form.app_role,
+        emp_weekly_hours:      form.weekly_hours_category,
+        emp_annual_balance:    form.annual_leave_balance,
+        emp_personal_balance:  form.personal_leave_balance,
+        emp_til_hours:         form.accrued_til_hours,
       })
-      if (authErr) { setError(authErr.message); setSaving(false); return }
-      if (data.user) {
-        await supabase.from('profiles').update({
-          full_name: form.full_name,
-          mobile_number: form.mobile_number,
-          job_role: form.job_role,
-          app_role: form.app_role,
-          weekly_hours_category: form.weekly_hours_category,
-          accrued_tol_hours: form.accrued_tol_hours,
-          annual_leave_balance: form.annual_leave_balance,
-          sick_leave_balance: form.sick_leave_balance,
-          personal_leave_balance: form.personal_leave_balance,
-        }).eq('id', data.user.id)
+      if (rpcErr) {
+        setError(rpcErr.message)
+        setSaving(false)
+        return
       }
     } else {
-      await supabase.from('profiles').update({
-        full_name: form.full_name,
-        mobile_number: form.mobile_number,
-        job_role: form.job_role,
-        app_role: form.app_role,
+      const { error: updErr } = await supabase.from('profiles').update({
+        full_name:             form.full_name,
+        mobile_number:         form.mobile_number,
+        job_role:              form.job_role,
+        app_role:              form.app_role,
         weekly_hours_category: form.weekly_hours_category,
-        accrued_tol_hours: form.accrued_tol_hours,
-        annual_leave_balance: form.annual_leave_balance,
-        sick_leave_balance: form.sick_leave_balance,
+        accrued_til_hours:     form.accrued_til_hours,
+        annual_leave_balance:  form.annual_leave_balance,
         personal_leave_balance: form.personal_leave_balance,
       }).eq('id', editing.id)
+      if (updErr) {
+        setError(updErr.message)
+        setSaving(false)
+        return
+      }
     }
     setSaving(false)
     setShowForm(false)
     load()
   }
 
-  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(f => ({ ...f, [k]: v }))
 
   return (
     <div className="space-y-6">
@@ -88,20 +114,20 @@ export default function Employees() {
         <form onSubmit={save} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
           <p className="font-semibold">{editing ? 'Edit Employee' : 'New Employee'}</p>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={labelCls}>Full Name</label><input value={form.full_name ?? ''} onChange={e => set('full_name', e.target.value)} className={inputCls} required /></div>
-            <div><label className={labelCls}>Job Role</label><input value={form.job_role ?? ''} onChange={e => set('job_role', e.target.value)} className={inputCls} placeholder="Foreman" /></div>
+            <div><label className={labelCls}>Full Name</label><input value={form.full_name} onChange={e => set('full_name', e.target.value)} className={inputCls} required /></div>
+            <div><label className={labelCls}>Job Role</label><input value={form.job_role} onChange={e => set('job_role', e.target.value)} className={inputCls} placeholder="Foreman" /></div>
           </div>
           {!editing && (
             <div className="grid grid-cols-2 gap-3">
               <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} required /></div>
-              <div><label className={labelCls}>Password</label><input type="password" value={form.password ?? ''} onChange={e => set('password', e.target.value)} className={inputCls} required /></div>
+              <div><label className={labelCls}>Password</label><input type="password" value={form.password} onChange={e => set('password', e.target.value)} className={inputCls} required minLength={6} /></div>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={labelCls}>Mobile</label><input type="tel" value={form.mobile_number ?? ''} onChange={e => set('mobile_number', e.target.value)} className={inputCls} /></div>
+            <div><label className={labelCls}>Mobile</label><input type="tel" value={form.mobile_number} onChange={e => set('mobile_number', e.target.value)} className={inputCls} /></div>
             <div>
               <label className={labelCls}>Role</label>
-              <select value={form.app_role ?? 'employee'} onChange={e => set('app_role', e.target.value as AppRole)} className={inputCls}>
+              <select value={form.app_role} onChange={e => set('app_role', e.target.value as AppRole)} className={inputCls}>
                 <option value="employee">Employee</option>
                 <option value="admin">Admin</option>
               </select>
@@ -109,17 +135,16 @@ export default function Employees() {
           </div>
           <div>
             <label className={labelCls}>Weekly Hours</label>
-            <select value={form.weekly_hours_category ?? 38} onChange={e => set('weekly_hours_category', Number(e.target.value) as WeeklyHours)} className={inputCls}>
+            <select value={form.weekly_hours_category} onChange={e => set('weekly_hours_category', Number(e.target.value) as WeeklyHours)} className={inputCls}>
               <option value={38}>38 hours</option>
               <option value={40}>40 hours</option>
               <option value={42}>42 hours</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className={labelCls}>Annual Leave (days)</label><input type="number" step="0.5" value={form.annual_leave_balance ?? 0} onChange={e => set('annual_leave_balance', parseFloat(e.target.value))} className={inputCls} /></div>
-            <div><label className={labelCls}>Sick Leave (days)</label><input type="number" step="0.5" value={form.sick_leave_balance ?? 0} onChange={e => set('sick_leave_balance', parseFloat(e.target.value))} className={inputCls} /></div>
-            <div><label className={labelCls}>Personal Leave (days)</label><input type="number" step="0.5" value={form.personal_leave_balance ?? 0} onChange={e => set('personal_leave_balance', parseFloat(e.target.value))} className={inputCls} /></div>
-            <div><label className={labelCls}>TOIL (hours)</label><input type="number" step="0.5" value={form.accrued_tol_hours ?? 0} onChange={e => set('accrued_tol_hours', parseFloat(e.target.value))} className={inputCls} /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className={labelCls}>Annual Leave (hours)</label><input type="number" step="0.5" value={form.annual_leave_balance} onChange={e => set('annual_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+            <div><label className={labelCls}>Personal Leave (hours)</label><input type="number" step="0.5" value={form.personal_leave_balance} onChange={e => set('personal_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+            <div><label className={labelCls}>TIL (hours)</label><input type="number" step="0.5" value={form.accrued_til_hours} onChange={e => set('accrued_til_hours', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
           </div>
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3">

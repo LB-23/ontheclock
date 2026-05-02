@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, workdaysBetween, btnPrimary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtHours, btnPrimary, inputCls, labelCls } from '../../lib/utils'
 
 const leaveLabels: Record<LeaveType, string> = {
-  annual:      'Annual Leave',
-  sick:        'Sick Leave',
-  personal:    'Personal Leave',
-  time_in_lieu:'Time in Lieu',
-  unpaid:      'Unpaid Leave',
+  annual:       'Annual Leave',
+  personal:     'Personal/Sick Leave',
+  time_in_lieu: 'Time In Lieu',
+  unpaid:       'Unpaid Leave',
 }
 
-export default function LeaveAndTOIL() {
+export default function LeaveAndTIL() {
   const { profile } = useProfile()
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ leave_type: 'annual' as LeaveType, start_date: '', end_date: '', reason: '' })
+  const [form, setForm] = useState({ leave_type: 'annual' as LeaveType, start_date: '', end_date: '', total_hours: 0, reason: '' })
 
   useEffect(() => {
     if (!profile) return
@@ -28,22 +27,36 @@ export default function LeaveAndTOIL() {
       .then(({ data }) => setRequests((data as LeaveRequest[]) ?? []))
   }, [profile])
 
+  // Suggest hours based on date range and weekly_hours
+  useEffect(() => {
+    if (!form.start_date || !form.end_date || !profile) return
+    const days = Math.max(1,
+      Math.round((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000) + 1
+    )
+    // 5-day work week assumption: hours/day = weekly / 5
+    const dailyHrs = profile.weekly_hours_category / 5
+    setForm(f => ({ ...f, total_hours: Math.round(days * dailyHrs * 10) / 10 }))
+  }, [form.start_date, form.end_date, profile])
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!profile || !form.start_date || !form.end_date) return
     setLoading(true)
-    const days = workdaysBetween(form.start_date, form.end_date)
     const { data } = await supabase.from('leave_requests').insert({
       employee_id: profile.id,
       leave_type:  form.leave_type,
       start_date:  form.start_date,
       end_date:    form.end_date,
-      total_days:  days,
+      total_hours: form.total_hours,
       reason:      form.reason || null,
       status:      'pending',
     }).select().single()
     setLoading(false)
-    if (data) { setRequests(prev => [data as LeaveRequest, ...prev]); setShowForm(false) }
+    if (data) {
+      setRequests(prev => [data as LeaveRequest, ...prev])
+      setShowForm(false)
+      setForm({ leave_type: 'annual', start_date: '', end_date: '', total_hours: 0, reason: '' })
+    }
   }
 
   const statusBadge = (s: string) => {
@@ -57,16 +70,15 @@ export default function LeaveAndTOIL() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Leave & TOIL</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Leave & TIL</h1>
 
-      {/* Balances */}
+      {/* Balances — all in hours */}
       {profile && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Annual Leave',  value: `${profile.annual_leave_balance} days`,   color: 'bg-green-50 text-green-700' },
-            { label: 'Sick Leave',    value: `${profile.sick_leave_balance} days`,      color: 'bg-blue-50 text-blue-700' },
-            { label: 'Personal',      value: `${profile.personal_leave_balance} days`,  color: 'bg-purple-50 text-purple-700' },
-            { label: 'TOIL',          value: `${profile.accrued_tol_hours} hrs`,        color: 'bg-orange-50 text-orange-700' },
+            { label: 'Annual Leave',         value: fmtHours(profile.annual_leave_balance),   color: 'bg-green-50 text-green-700' },
+            { label: 'Personal/Sick Leave',  value: fmtHours(profile.personal_leave_balance), color: 'bg-blue-50 text-blue-700' },
+            { label: 'Time In Lieu',         value: fmtHours(profile.accrued_til_hours),      color: 'bg-orange-50 text-orange-700' },
           ].map(b => (
             <div key={b.label} className={`rounded-2xl p-4 ${b.color}`}>
               <p className="text-xs font-semibold opacity-70">{b.label}</p>
@@ -105,6 +117,11 @@ export default function LeaveAndTOIL() {
             </div>
           </div>
           <div>
+            <label className={labelCls}>Total Hours</label>
+            <input type="number" step="0.5" min="0" value={form.total_hours} onChange={e => setForm(f => ({ ...f, total_hours: parseFloat(e.target.value) || 0 }))} className={inputCls} required />
+            <p className="text-[11px] text-gray-400 mt-1">Auto-calculated from dates · adjust if part day</p>
+          </div>
+          <div>
             <label className={labelCls}>Reason (optional)</label>
             <textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} className={`${inputCls} resize-none`} rows={2} />
           </div>
@@ -124,7 +141,7 @@ export default function LeaveAndTOIL() {
                 <p className="text-sm font-semibold">{leaveLabels[r.leave_type]}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {fmtDate(r.start_date)} — {fmtDate(r.end_date)}
-                  {r.total_days ? ` (${r.total_days} days)` : ''}
+                  {r.total_hours ? ` (${fmtHours(r.total_hours)})` : ''}
                 </p>
                 {r.reason && <p className="text-xs text-gray-400 mt-0.5 italic">"{r.reason}"</p>}
                 {r.admin_notes && (
