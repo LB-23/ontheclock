@@ -102,8 +102,8 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#1c9fda]">{fmtHours(elapsed)}</p>
-                    <p className="text-xs text-gray-400">elapsed</p>
+                    <p className="text-xl font-clock text-sky tracking-wider tabular-nums">{fmtHours(elapsed)}</p>
+                    <p className="text-xs text-muted">elapsed</p>
                   </div>
                 </div>
               )

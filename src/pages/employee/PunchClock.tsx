@@ -128,31 +128,31 @@ export default function PunchClock() {
       </h1>
 
       {/* Clock display */}
-      <div className={`rounded-2xl p-6 text-center shadow-sm border ${
+      <div className={`rounded-2xl p-6 text-center shadow-md border ${
         isClockedIn
-          ? 'bg-[#1c9fda] text-white border-[#1c9fda]'
-          : 'bg-white border-gray-100'
+          ? 'bg-action text-white border-actionDeep'
+          : 'bg-surface border-page'
       }`}>
         {isClockedIn ? (
           <>
-            <p className="text-sm font-medium opacity-80 mb-1">Clocked in at</p>
-            <p className="text-3xl font-bold mb-1">
+            <p className="text-sm font-medium opacity-90 mb-1">Clocked in at</p>
+            <p className="text-3xl font-clock mb-1 tracking-wider">
               {format(new Date(activeEntry.clock_in), 'h:mm aaa')}
             </p>
-            <p className="text-5xl font-mono font-bold my-3">{elapsed}</p>
-            <p className="text-sm opacity-80">
+            <p className="text-7xl font-clock my-3 tracking-wider tabular-nums">{elapsed}</p>
+            <p className="text-sm opacity-90">
               📍 {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
             </p>
             {(activeEntry.stages as Stage)?.name && (
-              <p className="text-sm opacity-80">🔧 {(activeEntry.stages as Stage).name}</p>
+              <p className="text-sm opacity-90">🔧 {(activeEntry.stages as Stage).name}</p>
             )}
           </>
         ) : (
           <>
-            <p className="text-4xl font-mono font-bold text-gray-900">
+            <p className="text-6xl font-clock text-ink tracking-wider tabular-nums">
               {format(new Date(), 'h:mm aaa')}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted mt-2">
               {format(new Date(), 'EEEE, d MMMM yyyy')}
             </p>
           </>

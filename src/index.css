@@ -3,19 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --brand: #1c9fda;
-  --bg:    #E8E8E8;
+  --ink:        #000000;
+  --link:       #0000EE;
+  --action:     #3B82F6;
+  --action-deep:#116DFF;
+  --sky:        #1C9FDA;
+  --sky-deep:   #3078BE;
+  --muted:      #666666;
+  --page:       #E8E8E8;
+  --surface:    #FAFAFA;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
 
 html, body {
-  background-color: #E8E8E8;
+  background-color: var(--page);
 }
 
 body {
-  @apply text-gray-900 antialiased;
+  color: var(--ink);
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Clock-face typography — Barlow Condensed Medium */
+.font-clock {
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 /* Safe area for PWA on notched phones */

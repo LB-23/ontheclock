@@ -83,17 +83,17 @@ export function fmtHours(h: number): string {
   return `${hrs}h ${mins}m`
 }
 
-/** Tailwind class helper — brand blue button */
+/** Tailwind class helpers — LB brand palette */
 export const btnPrimary =
-  'inline-flex items-center justify-center rounded-xl bg-[#1c9fda] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#1480b0] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center rounded-xl bg-action px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-actionDeep active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
 
 export const btnSecondary =
-  'inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50'
+  'inline-flex items-center justify-center rounded-xl border border-page bg-surface px-5 py-3 text-sm font-semibold text-ink shadow-sm hover:bg-page active:scale-95 transition-all disabled:opacity-50'
 
 export const btnDanger =
   'inline-flex items-center justify-center rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50'
 
 export const inputCls =
-  'block w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm placeholder-gray-400 focus:border-[#1c9fda] focus:outline-none focus:ring-2 focus:ring-[#1c9fda]/20'
+  'block w-full rounded-xl border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
 
-export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1'
+export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
