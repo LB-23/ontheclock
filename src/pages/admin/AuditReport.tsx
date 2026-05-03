@@ -150,17 +150,17 @@ export default function AuditReport() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-surface border border-page shadow-sm p-4">
-          <p className="text-3xl font-bold text-ink">{total}</p>
-          <p className="text-xs text-muted mt-1">Entries in range</p>
+        <div className="rounded-2xl bg-sky/10 border border-sky/20 p-4">
+          <p className="text-4xl font-clock font-bold text-skyDeep tabular-nums">{total}</p>
+          <p className="text-[11px] text-skyDeep/80 mt-1 font-semibold uppercase tracking-wide">Entries in range</p>
         </div>
-        <div className="rounded-2xl bg-red-50 border border-red-100 p-4">
-          <p className="text-3xl font-bold text-red-700">{flaggedRed}</p>
-          <p className="text-xs text-red-700 mt-1">Off-site (&gt; {threshold}m)</p>
+        <div className="rounded-2xl bg-red-50 border border-red-200 p-4">
+          <p className="text-4xl font-clock font-bold text-red-700 tabular-nums">{flaggedRed}</p>
+          <p className="text-[11px] text-red-700 mt-1 font-semibold uppercase tracking-wide">Off-site (&gt; {threshold}m)</p>
         </div>
-        <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
-          <p className="text-3xl font-bold text-amber-700">{flaggedAmber}</p>
-          <p className="text-xs text-amber-700 mt-1">Missing GPS</p>
+        <div className="rounded-2xl bg-action/10 border border-action/20 p-4">
+          <p className="text-4xl font-clock font-bold text-actionDeep tabular-nums">{flaggedAmber}</p>
+          <p className="text-[11px] text-actionDeep/80 mt-1 font-semibold uppercase tracking-wide">Missing GPS</p>
         </div>
       </div>
 

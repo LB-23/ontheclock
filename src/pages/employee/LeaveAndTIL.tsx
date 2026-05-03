@@ -76,13 +76,13 @@ export default function LeaveAndTIL() {
       {profile && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Annual Leave',         value: fmtHours(profile.annual_leave_balance),   color: 'bg-green-50 text-green-700' },
-            { label: 'Personal/Sick Leave',  value: fmtHours(profile.personal_leave_balance), color: 'bg-blue-50 text-blue-700' },
-            { label: 'Time In Lieu',         value: fmtHours(profile.accrued_til_hours),      color: 'bg-orange-50 text-orange-700' },
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   color: 'bg-sky/10    text-skyDeep    border border-sky/20' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), color: 'bg-action/10 text-actionDeep border border-action/20' },
+            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      color: 'bg-page      text-ink       border border-skyDeep/30' },
           ].map(b => (
             <div key={b.label} className={`rounded-2xl p-4 ${b.color}`}>
-              <p className="text-xs font-semibold opacity-70">{b.label}</p>
-              <p className="text-xl font-bold mt-1">{b.value}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{b.label}</p>
+              <p className="text-2xl font-bold mt-1 font-clock">{b.value}</p>
             </div>
           ))}
         </div>
