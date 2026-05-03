@@ -109,7 +109,7 @@ export default function TimesheetReview() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Timesheet Review</h1>
+      <h1 className="text-2xl font-bold text-ink">Timesheet Review</h1>
 
       {selected ? (
         <div className="space-y-4">
@@ -117,12 +117,12 @@ export default function TimesheetReview() {
             <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
             <div>
               <p className="font-semibold">{(selected.profiles as Profile)?.full_name}</p>
-              <p className="text-sm text-gray-500">{fmtWeekRange(selected.week_start)} · <span className="capitalize">{selected.status}</span></p>
+              <p className="text-sm text-muted">{fmtWeekRange(selected.week_start)} · <span className="capitalize">{selected.status}</span></p>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-            {entries.length === 0 && <p className="p-6 text-center text-gray-400">No entries</p>}
+          <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
+            {entries.length === 0 && <p className="p-6 text-center text-muted">No entries</p>}
             {entries.map(e => {
               const entryEdits = edits[e.id] ?? []
               const hasEdits = entryEdits.length > 0
@@ -131,8 +131,8 @@ export default function TimesheetReview() {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
-                      <p className="text-xs text-gray-500">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
-                      <p className="text-xs text-gray-400 truncate">{(e.job_addresses as { address: string })?.address}</p>
+                      <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
+                      <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
                       {e.notes && <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>}
                     </div>
                     <div className="text-right ml-3">
@@ -149,7 +149,7 @@ export default function TimesheetReview() {
                     </div>
                   </div>
                   {hasEdits && openEdits[e.id] && (
-                    <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    <div className="mt-3 space-y-2 border-t border-page pt-3">
                       {entryEdits.map(ed => (
                         <div key={ed.id} className="rounded-lg bg-blue-50 p-2 text-[11px] text-blue-900">
                           <p className="font-semibold">{fmtEditTime(ed.edited_at)}</p>
@@ -169,9 +169,9 @@ export default function TimesheetReview() {
             })}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Regular</span><span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Overtime</span><span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
+          <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
+            <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Overtime</span><span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
             <div className="flex justify-between font-bold border-t pt-3"><span>Total</span><span>{fmtHours(selected.total_hours ?? 0)}</span></div>
           </div>
 
@@ -187,7 +187,7 @@ export default function TimesheetReview() {
             </div>
           )}
           {selected.status === 'draft' && (
-            <p className="text-xs text-center text-gray-500">Draft — employee hasn't submitted yet</p>
+            <p className="text-xs text-center text-muted">Draft — employee hasn't submitted yet</p>
           )}
           {selected.status === 'approved' && (
             <p className="text-xs text-center text-green-600">✓ Approved</p>
@@ -209,23 +209,23 @@ export default function TimesheetReview() {
             </select>
           </div>
 
-          {loading && <p className="text-center text-gray-400">Loading…</p>}
+          {loading && <p className="text-center text-muted">Loading…</p>}
           {!loading && timesheets.length === 0 && (
-            <p className="text-center text-gray-400 py-10">No timesheets match this filter.</p>
+            <p className="text-center text-muted py-10">No timesheets match this filter.</p>
           )}
 
           <div className="space-y-3">
             {timesheets.map(ts => (
               <button key={ts.id} onClick={() => openTimesheet(ts)}
-                className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex justify-between items-center hover:border-[#1c9fda]/40 transition-colors">
+                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors">
                 <div>
                   <p className="text-sm font-semibold">{(ts.profiles as Profile)?.full_name}</p>
-                  <p className="text-xs text-gray-500">{fmtWeekRange(ts.week_start)}</p>
+                  <p className="text-xs text-muted">{fmtWeekRange(ts.week_start)}</p>
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1 ${
                     ts.status === 'submitted' ? 'bg-amber-100 text-amber-700'
                     : ts.status === 'approved' ? 'bg-green-100 text-green-700'
                     : ts.status === 'rejected' ? 'bg-red-100 text-red-600'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-page text-muted'
                   }`}>{ts.status}</span>
                 </div>
                 <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>

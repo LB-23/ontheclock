@@ -70,7 +70,7 @@ export default function LeaveAndTIL() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Leave & TIL</h1>
+      <h1 className="text-2xl font-bold text-ink">Leave & TIL</h1>
 
       {/* Balances — all in hours */}
       {profile && (
@@ -93,7 +93,7 @@ export default function LeaveAndTIL() {
       </button>
 
       {showForm && (
-        <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <form onSubmit={submit} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
           <div>
             <label className={labelCls}>Leave Type</label>
             <select
@@ -119,7 +119,7 @@ export default function LeaveAndTIL() {
           <div>
             <label className={labelCls}>Total Hours</label>
             <input type="number" step="0.5" min="0" value={form.total_hours} onChange={e => setForm(f => ({ ...f, total_hours: parseFloat(e.target.value) || 0 }))} className={inputCls} required />
-            <p className="text-[11px] text-gray-400 mt-1">Auto-calculated from dates · adjust if part day</p>
+            <p className="text-[11px] text-muted mt-1">Auto-calculated from dates · adjust if part day</p>
           </div>
           <div>
             <label className={labelCls}>Reason (optional)</label>
@@ -133,17 +133,17 @@ export default function LeaveAndTIL() {
 
       {/* History */}
       <div className="space-y-3">
-        {requests.length === 0 && <p className="text-center text-gray-400 py-8">No leave requests yet</p>}
+        {requests.length === 0 && <p className="text-center text-muted py-8">No leave requests yet</p>}
         {requests.map(r => (
-          <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+          <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm px-5 py-4">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-sm font-semibold">{leaveLabels[r.leave_type]}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-muted mt-0.5">
                   {fmtDate(r.start_date)} — {fmtDate(r.end_date)}
                   {r.total_hours ? ` (${fmtHours(r.total_hours)})` : ''}
                 </p>
-                {r.reason && <p className="text-xs text-gray-400 mt-0.5 italic">"{r.reason}"</p>}
+                {r.reason && <p className="text-xs text-muted mt-0.5 italic">"{r.reason}"</p>}
                 {r.admin_notes && (
                   <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>
                 )}

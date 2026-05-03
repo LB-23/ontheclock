@@ -107,15 +107,16 @@ export default function PunchClock() {
     control: (base: object) => ({
       ...base,
       borderRadius: '0.75rem',
-      borderColor: '#e5e7eb',
+      borderColor: '#E8E8E8',          // page
+      backgroundColor: '#FAFAFA',       // surface
       padding: '2px 4px',
       boxShadow: 'none',
-      '&:hover': { borderColor: '#1c9fda' },
+      '&:hover': { borderColor: '#1C9FDA' }, // sky
     }),
     option: (base: object, state: { isSelected: boolean; isFocused: boolean }) => ({
       ...base,
-      backgroundColor: state.isSelected ? '#1c9fda' : state.isFocused ? '#e8f6fd' : 'white',
-      color: state.isSelected ? 'white' : '#111827',
+      backgroundColor: state.isSelected ? '#3B82F6' : state.isFocused ? '#E8E8E8' : '#FAFAFA',
+      color: state.isSelected ? '#FFFFFF' : '#000000',
     }),
   }
 
@@ -123,7 +124,7 @@ export default function PunchClock() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-2xl font-bold text-ink">
         G'day{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}! 👋
       </h1>
 
@@ -167,9 +168,9 @@ export default function PunchClock() {
 
       {/* Clock-in form */}
       {!isClockedIn && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">
               Job Site *
             </label>
             <Select
@@ -182,7 +183,7 @@ export default function PunchClock() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">
               Stage / Task
             </label>
             <Select
@@ -215,7 +216,7 @@ export default function PunchClock() {
         </button>
       )}
 
-      <p className="text-xs text-center text-gray-400">
+      <p className="text-xs text-center text-muted">
         30-min paid lunch auto-included for shifts over 6 hours
       </p>
     </div>

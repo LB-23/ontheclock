@@ -26,11 +26,11 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <img src="/lb-full.svg" alt="Larkin Building Group" className="w-56 mx-auto mb-3" />
-          <h1 className="text-2xl font-bold text-gray-900">OnTheClock</h1>
-          <p className="text-sm text-gray-500 mt-1">Larkin Building Group</p>
+          <h1 className="text-2xl font-bold text-ink">OnTheClock</h1>
+          <p className="text-sm text-muted mt-1">Larkin Building Group</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-surface rounded-2xl shadow-sm border border-page p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={labelCls}>Email</label>

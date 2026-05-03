@@ -1,50 +1,33 @@
 import { type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import {
+  Clock, ClipboardList, Palmtree, UserCircle,
+  LayoutDashboard, Users, ChartBar, MapPinCheck,
+  MapPin, Wrench,
+  type LucideIcon,
+} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
 
-interface NavItem { to: string; label: string; icon: string }
+interface NavItem { to: string; label: string; Icon: LucideIcon }
 
 const employeeNav: NavItem[] = [
-  { to: '/clock',         label: 'Clock',      icon: 'clock' },
-  { to: '/my-timesheets', label: 'Timesheets', icon: 'timesheet' },
-  { to: '/leave',         label: 'Leave',      icon: 'leave' },
-  { to: '/profile',       label: 'Profile',    icon: 'profile' },
+  { to: '/clock',         label: 'Clock',      Icon: Clock },
+  { to: '/my-timesheets', label: 'Timesheets', Icon: ClipboardList },
+  { to: '/leave',         label: 'Leave',      Icon: Palmtree },
+  { to: '/profile',       label: 'Profile',    Icon: UserCircle },
 ]
 
 const adminNav: NavItem[] = [
-  { to: '/dashboard',    label: 'Dashboard',  icon: 'dashboard' },
-  { to: '/employees',    label: 'Team',       icon: 'team' },
-  { to: '/timesheets',   label: 'Timesheets', icon: 'timesheet' },
-  { to: '/leave',        label: 'Leave',      icon: 'leave' },
-  { to: '/reports',      label: 'Reports',    icon: 'reports' },
-  { to: '/audit',        label: 'Audit',      icon: 'audit' },
-  { to: '/job-addresses',label: 'Sites',      icon: 'sites' },
-  { to: '/stages',       label: 'Stages',     icon: 'stages' },
+  { to: '/dashboard',    label: 'Dashboard',  Icon: LayoutDashboard },
+  { to: '/employees',    label: 'Team',       Icon: Users },
+  { to: '/timesheets',   label: 'Timesheets', Icon: ClipboardList },
+  { to: '/leave',        label: 'Leave',      Icon: Palmtree },
+  { to: '/reports',      label: 'Reports',    Icon: ChartBar },
+  { to: '/audit',        label: 'Audit',      Icon: MapPinCheck },
+  { to: '/job-addresses',label: 'Sites',      Icon: MapPin },
+  { to: '/stages',       label: 'Stages',     Icon: Wrench },
 ]
-
-/** Brand iconographic — uses tinted PNGs with currentColor mask trick.
- *  PNGs are black-on-transparent, so we mask them with currentColor so the
- *  active state's `text-sky` (or any text-* class) tints the glyph. */
-function NavIcon({ name, className = 'w-5 h-5' }: { name: string; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block flex-shrink-0 ${className}`}
-      style={{
-        backgroundColor: 'currentColor',
-        WebkitMaskImage: `url(/icons/${name}.png)`,
-        maskImage: `url(/icons/${name}.png)`,
-        WebkitMaskRepeat: 'no-repeat',
-        maskRepeat: 'no-repeat',
-        WebkitMaskPosition: 'center',
-        maskPosition: 'center',
-        WebkitMaskSize: 'contain',
-        maskSize: 'contain',
-      }}
-    />
-  )
-}
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth()
@@ -79,7 +62,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 }`
               }
             >
-              <NavIcon name={item.icon} className="w-5 h-5" />
+              <item.Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
               {item.label}
             </NavLink>
           ))}
@@ -97,7 +80,6 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 md:ml-56 pb-20 md:pb-0">
-        {/* Mobile top bar */}
         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page shadow-sm safe-top">
           <div className="flex items-center gap-2">
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
@@ -122,7 +104,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               }`
             }
           >
-            <NavIcon name={item.icon} className="w-6 h-6 mb-0.5" />
+            <item.Icon className="w-6 h-6 mb-0.5" strokeWidth={1.5} />
             {item.label}
           </NavLink>
         ))}

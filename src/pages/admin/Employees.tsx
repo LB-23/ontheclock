@@ -106,12 +106,12 @@ export default function Employees() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Team</h1>
+        <h1 className="text-2xl font-bold text-ink">Team</h1>
         <button onClick={openAdd} className={btnPrimary}>+ Add Employee</button>
       </div>
 
       {showForm && (
-        <form onSubmit={save} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <form onSubmit={save} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
           <p className="font-semibold">{editing ? 'Edit Employee' : 'New Employee'}</p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelCls}>Full Name</label><input value={form.full_name} onChange={e => set('full_name', e.target.value)} className={inputCls} required /></div>
@@ -154,17 +154,17 @@ export default function Employees() {
         </form>
       )}
 
-      {loading && <p className="text-center text-gray-400">Loading…</p>}
+      {loading && <p className="text-center text-muted">Loading…</p>}
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
         {employees.map(emp => (
           <div key={emp.id} className="px-5 py-4 flex justify-between items-center">
             <div>
-              <p className="text-sm font-semibold text-gray-900">{emp.full_name || '—'}</p>
-              <p className="text-xs text-gray-500">{emp.job_role} · {emp.app_role} · {emp.weekly_hours_category}h/wk</p>
-              <p className="text-xs text-gray-400">{emp.email}</p>
+              <p className="text-sm font-semibold text-ink">{emp.full_name || '—'}</p>
+              <p className="text-xs text-muted">{emp.job_role} · {emp.app_role} · {emp.weekly_hours_category}h/wk</p>
+              <p className="text-xs text-muted">{emp.email}</p>
             </div>
-            <button onClick={() => openEdit(emp)} className="text-xs text-[#1c9fda] hover:underline">Edit</button>
+            <button onClick={() => openEdit(emp)} className="text-xs text-sky hover:underline">Edit</button>
           </div>
         ))}
       </div>

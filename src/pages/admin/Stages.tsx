@@ -30,8 +30,8 @@ export default function Stages() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Stages / Tasks</h1>
-      <form onSubmit={add} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex gap-3">
+      <h1 className="text-2xl font-bold text-ink">Stages / Tasks</h1>
+      <form onSubmit={add} className="bg-surface rounded-2xl border border-page shadow-sm p-5 flex gap-3">
         <div className="flex-1">
           <label className={labelCls}>New Stage Name</label>
           <input value={newName} onChange={e => setNewName(e.target.value)} className={inputCls} placeholder="e.g. Tiling" required />
@@ -40,11 +40,11 @@ export default function Stages() {
           {adding ? '…' : '+ Add'}
         </button>
       </form>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
         {stages.map(s => (
           <div key={s.id} className={`px-5 py-3 flex justify-between items-center ${!s.is_active ? 'opacity-40' : ''}`}>
             <p className="text-sm font-medium">{s.name}</p>
-            <button onClick={() => toggle(s)} className={`text-xs hover:underline ${s.is_active ? 'text-red-500' : 'text-[#1c9fda]'}`}>
+            <button onClick={() => toggle(s)} className={`text-xs hover:underline ${s.is_active ? 'text-red-500' : 'text-sky'}`}>
               {s.is_active ? 'Deactivate' : 'Restore'}
             </button>
           </div>

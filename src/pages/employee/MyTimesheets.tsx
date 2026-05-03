@@ -162,7 +162,7 @@ export default function MyTimesheets() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      draft:     'bg-gray-100 text-gray-600',
+      draft:     'bg-page text-muted',
       submitted: 'bg-amber-100 text-amber-700',
       approved:  'bg-green-100 text-green-700',
       rejected:  'bg-red-100 text-red-600',
@@ -170,17 +170,17 @@ export default function MyTimesheets() {
     return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${map[status] ?? map.draft}`
   }
 
-  if (loading) return <div className="text-center py-16 text-gray-400">Loading…</div>
+  if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
 
   // Edit dialog
   const editDialog = editing && (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
-      <form onSubmit={saveEdit} className="bg-white rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <form onSubmit={saveEdit} className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <p className="font-semibold">Edit Time Entry</p>
-          <button type="button" onClick={() => { setEditing(null); setErr('') }} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button type="button" onClick={() => { setEditing(null); setErr('') }} className="text-muted hover:text-muted">✕</button>
         </div>
-        <p className="text-xs text-gray-500">{fmtDate(editing.entry.clock_in)} · {(editing.entry.job_addresses as { address: string })?.address}</p>
+        <p className="text-xs text-muted">{fmtDate(editing.entry.clock_in)} · {(editing.entry.job_addresses as { address: string })?.address}</p>
 
         <div>
           <label className={labelCls}>Clock In</label>
@@ -211,7 +211,7 @@ export default function MyTimesheets() {
             placeholder="Forgot to clock out at end of day…"
             required
           />
-          <p className="text-[11px] text-gray-400 mt-1">Required for every edit — your admin will see this.</p>
+          <p className="text-[11px] text-muted mt-1">Required for every edit — your admin will see this.</p>
         </div>
 
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
@@ -230,7 +230,7 @@ export default function MyTimesheets() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Timesheets</h1>
+      <h1 className="text-2xl font-bold text-ink">My Timesheets</h1>
 
       {selected ? (
         <div className="space-y-4">
@@ -242,19 +242,19 @@ export default function MyTimesheets() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+          <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
             {entries.length === 0 && (
-              <p className="p-6 text-center text-gray-400">No entries this week</p>
+              <p className="p-6 text-center text-muted">No entries this week</p>
             )}
             {entries.map(e => (
               <div key={e.id} className="px-5 py-4 flex justify-between items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{fmtDate(e.clock_in)}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-sm font-medium text-ink">{fmtDate(e.clock_in)}</p>
+                  <p className="text-xs text-muted mt-0.5">
                     {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳ Active'}
                   </p>
                   {(e.job_addresses as { address: string })?.address && (
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
+                    <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
                   )}
                   {e.notes && (
                     <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>
@@ -264,10 +264,10 @@ export default function MyTimesheets() {
                   )}
                 </div>
                 <div className="text-right ml-3 flex-shrink-0">
-                  <p className="text-sm font-bold text-gray-900">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                  <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
                   {e.is_overtime && <span className="text-xs text-orange-600 font-medium">OT</span>}
                   {selected.status === 'draft' && (
-                    <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-[#1c9fda] hover:underline">
+                    <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
                       ✎ Edit
                     </button>
                   )}
@@ -276,13 +276,13 @@ export default function MyTimesheets() {
             ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-500">Regular hours</span>
+              <span className="text-muted">Regular hours</span>
               <span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between text-sm mb-4">
-              <span className="text-gray-500">Overtime hours</span>
+              <span className="text-muted">Overtime hours</span>
               <span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
@@ -321,22 +321,22 @@ export default function MyTimesheets() {
       ) : (
         <>
           {timesheets.length === 0 && (
-            <div className="text-center py-16 text-gray-400">No timesheets yet — clock in once to start one.</div>
+            <div className="text-center py-16 text-muted">No timesheets yet — clock in once to start one.</div>
           )}
           <div className="space-y-3">
             {timesheets.map(ts => (
               <button
                 key={ts.id}
                 onClick={() => loadEntries(ts)}
-                className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 flex justify-between items-center hover:border-[#1c9fda]/40 transition-colors"
+                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors"
               >
                 <div>
                   <p className="text-sm font-semibold">{fmtWeekRange(ts.week_start)}</p>
                   <span className={statusBadge(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900">{fmtHours(ts.total_hours ?? 0)}</p>
-                  <p className="text-xs text-gray-400">→</p>
+                  <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>
+                  <p className="text-xs text-muted">→</p>
                 </div>
               </button>
             ))}

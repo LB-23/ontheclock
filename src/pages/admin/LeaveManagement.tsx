@@ -74,12 +74,12 @@ export default function LeaveManagement() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
+      <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
 
       <div className="flex gap-2">
         {(['pending', 'calendar'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${tab === t ? 'bg-[#1c9fda] text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+            className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${tab === t ? 'bg-sky text-white' : 'bg-surface border border-page text-muted'}`}>
             {t === 'pending' ? `Pending (${requests.length})` : 'Calendar'}
           </button>
         ))}
@@ -87,14 +87,14 @@ export default function LeaveManagement() {
 
       {tab === 'pending' && (
         <div className="space-y-4">
-          {requests.length === 0 && <p className="text-center text-gray-400 py-10">No pending requests</p>}
+          {requests.length === 0 && <p className="text-center text-muted py-10">No pending requests</p>}
           {requests.map(r => (
-            <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+            <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
               <div className="flex justify-between">
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
-                  <p className="text-sm text-gray-500">{leaveLabels[r.leave_type]} · {fmtDate(r.start_date)} – {fmtDate(r.end_date)} ({fmtHours(r.total_hours ?? 0)})</p>
-                  {r.reason && <p className="text-xs text-gray-400 italic mt-0.5">"{r.reason}"</p>}
+                  <p className="text-sm text-muted">{leaveLabels[r.leave_type]} · {fmtDate(r.start_date)} – {fmtDate(r.end_date)} ({fmtHours(r.total_hours ?? 0)})</p>
+                  {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                 </div>
               </div>
               <div>
@@ -111,7 +111,7 @@ export default function LeaveManagement() {
       )}
 
       {tab === 'calendar' && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth() - 1))} className={btnSecondary}>‹</button>
             <p className="font-semibold">{format(calMonth, 'MMMM yyyy')}</p>
@@ -119,7 +119,7 @@ export default function LeaveManagement() {
           </div>
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
             {['M','T','W','T','F','S','S'].map((d, i) => (
-              <div key={i} className="text-xs font-semibold text-gray-400">{d}</div>
+              <div key={i} className="text-xs font-semibold text-muted">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
@@ -127,10 +127,10 @@ export default function LeaveManagement() {
             {days.map(day => {
               const leaves = leavesOnDay(day)
               return (
-                <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-gray-50">
-                  <p className="text-xs text-gray-600 font-medium">{format(day, 'd')}</p>
+                <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
+                  <p className="text-xs text-muted font-medium">{format(day, 'd')}</p>
                   {leaves.map(l => (
-                    <div key={l.id} className="text-[10px] leading-tight bg-[#1c9fda]/20 text-[#1c9fda] rounded px-0.5 mt-0.5 truncate">
+                    <div key={l.id} className="text-[10px] leading-tight bg-sky/20 text-sky rounded px-0.5 mt-0.5 truncate">
                       {(l.profiles as Profile)?.full_name?.split(' ')[0]}
                     </div>
                   ))}

@@ -36,11 +36,11 @@ export default function JobAddresses() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Job Sites</h1>
+      <h1 className="text-2xl font-bold text-ink">Job Sites</h1>
 
       {/* Add new */}
-      <form onSubmit={add} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <p className="text-sm font-semibold text-gray-700">Add New Job Site</p>
+      <form onSubmit={add} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
+        <p className="text-sm font-semibold text-ink">Add New Job Site</p>
         <div>
           <label className={labelCls}>Address</label>
           <input
@@ -66,17 +66,17 @@ export default function JobAddresses() {
         placeholder="Search addresses…"
       />
 
-      {loading && <p className="text-center text-gray-400">Loading…</p>}
+      {loading && <p className="text-center text-muted">Loading…</p>}
 
       {/* Active */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-5 py-3 border-b border-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Active ({active.length})</h2>
+      <div className="bg-surface rounded-2xl border border-page shadow-sm">
+        <div className="px-5 py-3 border-b border-page">
+          <h2 className="text-sm font-semibold text-ink">Active ({active.length})</h2>
         </div>
-        <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+        <div className="divide-y divide-page max-h-96 overflow-y-auto">
           {active.map(a => (
             <div key={a.id} className="px-5 py-3 flex justify-between items-center">
-              <p className="text-sm text-gray-900">{a.address}</p>
+              <p className="text-sm text-ink">{a.address}</p>
               <button onClick={() => toggle(a)} className="text-xs text-red-500 hover:underline shrink-0 ml-4">
                 Deactivate
               </button>
@@ -87,15 +87,15 @@ export default function JobAddresses() {
 
       {/* Inactive */}
       {inactive.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div className="px-5 py-3 border-b border-gray-50">
-            <h2 className="text-sm font-semibold text-gray-400">Inactive ({inactive.length})</h2>
+        <div className="bg-surface rounded-2xl border border-page shadow-sm">
+          <div className="px-5 py-3 border-b border-page">
+            <h2 className="text-sm font-semibold text-muted">Inactive ({inactive.length})</h2>
           </div>
-          <div className="divide-y divide-gray-50 max-h-48 overflow-y-auto">
+          <div className="divide-y divide-page max-h-48 overflow-y-auto">
             {inactive.map(a => (
               <div key={a.id} className="px-5 py-3 flex justify-between items-center opacity-50">
-                <p className="text-sm text-gray-500 line-through">{a.address}</p>
-                <button onClick={() => toggle(a)} className="text-xs text-[#1c9fda] hover:underline shrink-0 ml-4">
+                <p className="text-sm text-muted line-through">{a.address}</p>
+                <button onClick={() => toggle(a)} className="text-xs text-sky hover:underline shrink-0 ml-4">
                   Restore
                 </button>
               </div>

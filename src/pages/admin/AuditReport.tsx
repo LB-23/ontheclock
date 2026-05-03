@@ -30,7 +30,7 @@ const flagLabel: Record<AuditFlag, { text: string; cls: string }> = {
   clock_out_far:     { text: 'Clock-out far from site',  cls: 'bg-red-100 text-red-700' },
   no_clock_in_gps:   { text: 'No clock-in GPS',          cls: 'bg-amber-100 text-amber-700' },
   no_clock_out_gps:  { text: 'No clock-out GPS',         cls: 'bg-amber-100 text-amber-700' },
-  site_not_geocoded: { text: 'Site not geocoded',        cls: 'bg-gray-100 text-gray-600' },
+  site_not_geocoded: { text: 'Site not geocoded',        cls: 'bg-page text-muted' },
 }
 
 export default function AuditReport() {
@@ -108,13 +108,13 @@ export default function AuditReport() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Location Audit</h1>
-          <p className="text-sm text-gray-500 mt-1">Flags clock-in/out events that happened away from the recorded job site.</p>
+          <h1 className="text-2xl font-bold text-ink">Location Audit</h1>
+          <p className="text-sm text-muted mt-1">Flags clock-in/out events that happened away from the recorded job site.</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 grid gap-3 md:grid-cols-5">
+      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 grid gap-3 md:grid-cols-5">
         <div>
           <label className={labelCls}>From</label>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={inputCls} />
@@ -150,9 +150,9 @@ export default function AuditReport() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-          <p className="text-3xl font-bold text-gray-900">{total}</p>
-          <p className="text-xs text-gray-500 mt-1">Entries in range</p>
+        <div className="rounded-2xl bg-surface border border-page shadow-sm p-4">
+          <p className="text-3xl font-bold text-ink">{total}</p>
+          <p className="text-xs text-muted mt-1">Entries in range</p>
         </div>
         <div className="rounded-2xl bg-red-50 border border-red-100 p-4">
           <p className="text-3xl font-bold text-red-700">{flaggedRed}</p>
@@ -172,16 +172,16 @@ export default function AuditReport() {
 
       {/* Results table */}
       {loading ? (
-        <p className="text-center text-gray-400 py-10">Loading…</p>
+        <p className="text-center text-muted py-10">Loading…</p>
       ) : rows.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-400">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-10 text-center text-muted">
           🎉 No flagged entries in this range. Everyone clocked on/off where they should.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <thead className="bg-page">
+              <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted">
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Employee</th>
                 <th className="px-4 py-3">Job Site</th>
@@ -191,16 +191,16 @@ export default function AuditReport() {
                 <th className="px-4 py-3">Map</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-page">
               {rows.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{format(new Date(r.clock_in), 'd MMM HH:mm')}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{r.employee_name}</td>
-                  <td className="px-4 py-3 text-gray-700 max-w-xs truncate">{r.job_address ?? '—'}</td>
-                  <td className={`px-4 py-3 text-right font-mono ${r.clock_in_distance_m && r.clock_in_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                <tr key={r.id} className="hover:bg-page">
+                  <td className="px-4 py-3 text-ink whitespace-nowrap">{format(new Date(r.clock_in), 'd MMM HH:mm')}</td>
+                  <td className="px-4 py-3 font-medium text-ink">{r.employee_name}</td>
+                  <td className="px-4 py-3 text-ink max-w-xs truncate">{r.job_address ?? '—'}</td>
+                  <td className={`px-4 py-3 text-right font-mono ${r.clock_in_distance_m && r.clock_in_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-ink'}`}>
                     {r.clock_in_distance_m !== null ? `${r.clock_in_distance_m}m` : '—'}
                   </td>
-                  <td className={`px-4 py-3 text-right font-mono ${r.clock_out_distance_m && r.clock_out_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-gray-700'}`}>
+                  <td className={`px-4 py-3 text-right font-mono ${r.clock_out_distance_m && r.clock_out_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-ink'}`}>
                     {r.clock_out_distance_m !== null ? `${r.clock_out_distance_m}m` : '—'}
                   </td>
                   <td className="px-4 py-3">
@@ -212,19 +212,19 @@ export default function AuditReport() {
                     {r.clock_in_lat && r.job_lat && (
                       <a target="_blank" rel="noopener noreferrer"
                          href={`https://www.google.com/maps/dir/${r.clock_in_lat},${r.clock_in_lng}/${r.job_lat},${r.job_lng}`}
-                         className="text-[#1c9fda] hover:underline">In ↔ Site</a>
+                         className="text-sky hover:underline">In ↔ Site</a>
                     )}
                     {r.clock_out_lat && r.job_lat && (
                       <a target="_blank" rel="noopener noreferrer"
                          href={`https://www.google.com/maps/dir/${r.clock_out_lat},${r.clock_out_lng}/${r.job_lat},${r.job_lng}`}
-                         className="text-[#1c9fda] hover:underline">Out ↔ Site</a>
+                         className="text-sky hover:underline">Out ↔ Site</a>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="px-4 py-3 text-xs text-gray-400">{rows.length} {rows.length === 1 ? 'entry' : 'entries'}</p>
+          <p className="px-4 py-3 text-xs text-muted">{rows.length} {rows.length === 1 ? 'entry' : 'entries'}</p>
         </div>
       )}
     </div>

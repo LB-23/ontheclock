@@ -69,30 +69,30 @@ export default function Reports() {
     setLoading(false)
   }
 
-  const inputCls = 'block rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#1c9fda] focus:outline-none'
+  const inputCls = 'block rounded-xl border border-page bg-surface px-3 py-2 text-sm focus:border-sky focus:outline-none'
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+      <h1 className="text-2xl font-bold text-ink">Reports</h1>
 
       <div className="flex gap-2 flex-wrap">
         {([['employee','By Employee'],['job','By Job Site'],['weekly','Weekly All-Staff']] as const).map(([t, label]) => (
           <button key={t} onClick={() => { setTab(t); setRows([]) }}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${tab === t ? 'bg-[#1c9fda] text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${tab === t ? 'bg-sky text-white' : 'bg-surface border border-page text-muted'}`}>
             {label}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
         {(tab === 'employee' || tab === 'job') && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">From</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">From</label>
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">To</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">To</label>
               <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} />
             </div>
           </div>
@@ -111,18 +111,18 @@ export default function Reports() {
         )}
         {tab === 'weekly' && (
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Week Starting (Monday)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Week Starting (Monday)</label>
             <input type="date" value={filterWeek} onChange={e => setFilterWeek(e.target.value)} className={inputCls} />
           </div>
         )}
         <div className="flex gap-3">
           <button onClick={runReport} disabled={loading}
-            className="inline-flex items-center justify-center rounded-xl bg-[#1c9fda] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1480b0] disabled:opacity-50">
+            className="inline-flex items-center justify-center rounded-xl bg-sky px-5 py-2.5 text-sm font-semibold text-white hover:bg-skyDeep disabled:opacity-50">
             {loading ? 'Loading…' : 'Run Report'}
           </button>
           {rows.length > 0 && (
             <button onClick={() => exportCSV(rows, `ontheclock-${tab}-report.csv`)}
-              className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+              className="inline-flex items-center justify-center rounded-xl border border-page bg-surface px-5 py-2.5 text-sm font-semibold text-ink hover:bg-page">
               ↓ Export CSV
             </button>
           )}
@@ -130,26 +130,26 @@ export default function Reports() {
       </div>
 
       {rows.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-page">
               <tr>
                 {Object.keys(rows[0]).map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted uppercase tracking-wide whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-page">
               {rows.map((r, i) => (
-                <tr key={i} className="hover:bg-gray-50">
+                <tr key={i} className="hover:bg-page">
                   {Object.values(r).map((v, j) => (
-                    <td key={j} className="px-4 py-3 text-gray-700 whitespace-nowrap">{String(v ?? '—')}</td>
+                    <td key={j} className="px-4 py-3 text-ink whitespace-nowrap">{String(v ?? '—')}</td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="px-4 py-3 text-xs text-gray-400">{rows.length} rows</p>
+          <p className="px-4 py-3 text-xs text-muted">{rows.length} rows</p>
         </div>
       )}
     </div>
