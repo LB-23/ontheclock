@@ -14,6 +14,7 @@ import Stages from './pages/admin/Stages'
 import TimesheetReview from './pages/admin/TimesheetReview'
 import LeaveManagement from './pages/admin/LeaveManagement'
 import Reports from './pages/admin/Reports'
+import AuditReport from './pages/admin/AuditReport'
 
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth()
@@ -44,6 +45,7 @@ function AppRoutes() {
             <Route path="/timesheets" element={<TimesheetReview />} />
             <Route path="/leave" element={<LeaveManagement />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/audit" element={<AuditReport />} />
           </>
         ) : (
           <>

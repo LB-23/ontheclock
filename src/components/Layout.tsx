@@ -18,6 +18,7 @@ const adminNav: NavItem[] = [
   { to: '/timesheets',   label: 'Timesheets',  icon: '📋' },
   { to: '/leave',        label: 'Leave',       icon: '🌴' },
   { to: '/reports',      label: 'Reports',     icon: '📈' },
+  { to: '/audit',        label: 'Audit',       icon: '🛰️' },
   { to: '/job-addresses',label: 'Sites',       icon: '📍' },
   { to: '/stages',       label: 'Stages',      icon: '🔧' },
 ]
