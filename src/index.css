@@ -22,8 +22,9 @@ html, body {
 
 body {
   color: var(--ink);
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01" on, "cv11" on;
 }
 
 /* Clock-face typography — Barlow Condensed Medium, ALL CAPS */

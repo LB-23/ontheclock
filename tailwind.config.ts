@@ -43,7 +43,9 @@ export default {
         },
       },
       fontFamily: {
-        clock: ['"Barlow Condensed"', 'system-ui', 'sans-serif'],
+        sans:    ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+        grotesk: ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+        clock:   ['"Barlow Condensed"', 'system-ui', 'sans-serif'],
       },
     },
   },
