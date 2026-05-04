@@ -31,9 +31,9 @@ export default function Dashboard() {
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
 
   const stats = [
-    { label: 'On Site Now',          value: activeEntries.length,    color: 'bg-sky/10 text-skyDeep border border-sky/20',          to: '#on-site-now' },
-    { label: 'Timesheets to Review', value: pendingTimesheets.length, color: 'bg-action/10 text-actionDeep border border-action/20', to: '/timesheets' },
-    { label: 'Leave Requests',       value: pendingLeave.length,      color: 'bg-page text-ink border border-skyDeep/30',            to: '/leave' },
+    { label: 'On Site Now',          value: activeEntries.length,    bg: '#CEEC66', to: '#on-site-now' },
+    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#9EE1E9', to: '/timesheets' },
+    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#E7D0ED', to: '/leave' },
   ]
 
   const goTo = (to: string) => {
@@ -51,13 +51,14 @@ export default function Dashboard() {
         <p className="text-sm text-muted">{format(new Date(), 'EEEE d MMMM yyyy')}</p>
       </div>
 
-      {/* Click-through stat tiles */}
+      {/* Click-through stat tiles — brand-coloured backgrounds with dark accent text */}
       <div className="grid grid-cols-3 gap-3">
         {stats.map(s => (
           <button
             key={s.label}
             onClick={() => goTo(s.to)}
-            className={`text-left rounded-2xl p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky ${s.color}`}
+            style={{ backgroundColor: s.bg }}
+            className="text-left rounded-2xl p-4 text-ink transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30"
           >
             <p className="text-4xl font-clock font-bold tabular-nums">{s.value}</p>
             <p className="text-[11px] font-semibold uppercase tracking-wide mt-1 opacity-80">{s.label} →</p>
@@ -68,7 +69,7 @@ export default function Dashboard() {
       {/* Who's on site */}
       <div id="on-site-now" className="bg-surface rounded-2xl border border-page shadow-sm scroll-mt-20">
         <div className="px-5 py-4 border-b border-page flex items-center justify-between">
-          <h2 className="font-semibold text-ink">🟢 On Site Now</h2>
+          <h2 className="font-semibold text-ink">On Site Now</h2>
           <button onClick={() => nav('/audit')} className="text-xs text-sky hover:underline">
             Location audit →
           </button>

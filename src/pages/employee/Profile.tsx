@@ -39,7 +39,7 @@ export default function EmployeeProfile() {
           <p className="text-sm text-muted">{profile.job_role || '—'}</p>
         </div>
         <div>
-          <label className={labelCls}>Weekly Hours Target</label>
+          <label className={labelCls}>Required Hours P/W</label>
           <p className="text-sm text-muted">{profile.weekly_hours_category} hours</p>
         </div>
       </div>

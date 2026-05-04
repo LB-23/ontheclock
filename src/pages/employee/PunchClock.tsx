@@ -3,7 +3,7 @@ import Select from 'react-select'
 import { format } from 'date-fns'
 import { supabase, type JobAddress, type Stage, type TimeEntry } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { getGPS, getWeekStart, calcHours, applyAutoBreak, btnPrimary, btnDanger } from '../../lib/utils'
+import { getGPS, getWeekStart, calcHours, applyAutoBreak, btnPrimary } from '../../lib/utils'
 
 export default function PunchClock() {
   const { profile } = useProfile()
@@ -124,16 +124,15 @@ export default function PunchClock() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-ink">
-        G'day{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}! 👋
-      </h1>
-
       {/* Clock display */}
-      <div className={`rounded-2xl p-6 text-center shadow-md border ${
-        isClockedIn
-          ? 'bg-action text-white border-actionDeep'
-          : 'bg-surface border-page'
-      }`}>
+      <div
+        className={`rounded-2xl p-6 text-center shadow-md border ${
+          isClockedIn
+            ? 'text-white border-transparent'
+            : 'bg-surface border-page'
+        }`}
+        style={isClockedIn ? { backgroundColor: '#737373' } : undefined}
+      >
         {isClockedIn ? (
           <>
             <p className="text-sm font-medium opacity-90 mb-1">Clocked in at</p>
@@ -142,10 +141,10 @@ export default function PunchClock() {
             </p>
             <p className="text-7xl font-clock my-3 tracking-wider tabular-nums">{elapsed}</p>
             <p className="text-sm opacity-90">
-              📍 {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
+              {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
             </p>
             {(activeEntry.stages as Stage)?.name && (
-              <p className="text-sm opacity-90">🔧 {(activeEntry.stages as Stage).name}</p>
+              <p className="text-sm opacity-90">{(activeEntry.stages as Stage).name}</p>
             )}
           </>
         ) : (
@@ -210,9 +209,10 @@ export default function PunchClock() {
         <button
           onClick={handleClockOut}
           disabled={loading}
-          className={`${btnDanger} w-full h-14 text-base`}
+          className="inline-flex items-center justify-center w-full h-14 text-base rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+          style={{ backgroundColor: '#FF3131' }}
         >
-          {loading ? 'Clocking out…' : '🔴 Clock Out'}
+          {loading ? 'Clocking out…' : 'Clock Out'}
         </button>
       )}
 

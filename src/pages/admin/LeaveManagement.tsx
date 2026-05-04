@@ -10,18 +10,24 @@ const leaveLabels: Record<string, string> = {
 export default function LeaveManagement() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [approved, setApproved] = useState<LeaveRequest[]>([])
+  const [employees, setEmployees] = useState<Profile[]>([])
   const [calMonth, setCalMonth] = useState(new Date())
-  const [tab, setTab] = useState<'pending' | 'calendar'>('pending')
+  const [tab, setTab] = useState<'pending' | 'balances' | 'calendar'>('pending')
   const [adminNote, setAdminNote] = useState('')
   const [deciding, setDeciding] = useState<string | null>(null)
 
   const load = async () => {
-    const [{ data: pending }, { data: appr }] = await Promise.all([
+    const [{ data: pending }, { data: appr }, { data: emps }] = await Promise.all([
       supabase.from('leave_requests').select('*, profiles(full_name)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles(full_name)').eq('status', 'approved').order('start_date'),
+      supabase.from('profiles')
+        .select('id, full_name, app_role, annual_leave_balance, personal_leave_balance, accrued_til_hours, weekly_hours_category')
+        .eq('app_role', 'employee')
+        .order('full_name'),
     ])
     setRequests((pending as LeaveRequest[]) ?? [])
     setApproved((appr as LeaveRequest[]) ?? [])
+    setEmployees((emps as Profile[]) ?? [])
   }
 
   useEffect(() => { load() }, [])
@@ -77,10 +83,12 @@ export default function LeaveManagement() {
       <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
 
       <div className="flex gap-2">
-        {(['pending', 'calendar'] as const).map(t => (
+        {(['pending', 'balances', 'calendar'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${tab === t ? 'bg-sky text-white' : 'bg-surface border border-page text-muted'}`}>
-            {t === 'pending' ? `Pending (${requests.length})` : 'Calendar'}
+            {t === 'pending'   ? `Pending (${requests.length})`
+             : t === 'balances' ? `Team Balances (${employees.length})`
+             : 'Calendar'}
           </button>
         ))}
       </div>
@@ -107,6 +115,41 @@ export default function LeaveManagement() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'balances' && (
+        <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
+          {employees.length === 0 && <p className="p-6 text-center text-muted">No employees yet</p>}
+          {employees.length > 0 && (
+            <table className="w-full text-sm">
+              <thead className="bg-page">
+                <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted">
+                  <th className="px-4 py-3">Employee</th>
+                  <th className="px-4 py-3 text-right">Annual</th>
+                  <th className="px-4 py-3 text-right">Personal/Sick</th>
+                  <th className="px-4 py-3 text-right">TIL</th>
+                  <th className="px-4 py-3 text-right">Total Hrs</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-page">
+                {employees.map(emp => {
+                  const a = Number(emp.annual_leave_balance ?? 0)
+                  const p = Number(emp.personal_leave_balance ?? 0)
+                  const t = Number(emp.accrued_til_hours ?? 0)
+                  return (
+                    <tr key={emp.id} className="hover:bg-page transition-colors">
+                      <td className="px-4 py-3 font-medium text-ink">{emp.full_name}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(a)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(p)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(t)}</td>
+                      <td className="px-4 py-3 text-right font-semibold font-clock tabular-nums text-skyDeep">{fmtHours(a + p + t)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 

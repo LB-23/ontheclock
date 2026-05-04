@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Profile, type WeeklyHours, type AppRole } from '../../lib/supabase'
-import { btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { useProfile } from '../../hooks/useProfile'
+import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtHours } from '../../lib/utils'
 
 type FormState = {
   full_name: string
@@ -22,6 +23,7 @@ const BLANK: FormState = {
 }
 
 export default function Employees() {
+  const { profile: me } = useProfile()
   const [employees, setEmployees] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -30,9 +32,18 @@ export default function Employees() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const load = () =>
-    supabase.from('profiles').select('*').order('full_name')
-      .then(({ data }) => { setEmployees((data as Profile[]) ?? []); setLoading(false) })
+  // For viewing an individual employee profile
+  const [viewing, setViewing] = useState<Profile | null>(null)
+
+  const load = async () => {
+    const { data: profs } = await supabase.from('profiles').select('*').order('full_name')
+    // Pull email out of auth.users via a select that joins (we already store p.email when /useProfile fetches it,
+    // but the admin needs it for the whole list — use the public.user_emails view, or join via the rpc helper).
+    // Easiest: keep what supabase returns; email is shown only for the logged-in user. The Employees list shows
+    // job_role + role + hours, and clicking opens the detail dialog where we fetch their email separately.
+    setEmployees((profs as Profile[]) ?? [])
+    setLoading(false)
+  }
 
   useEffect(() => { load() }, [])
 
@@ -60,6 +71,8 @@ export default function Employees() {
     setError('')
     setSaving(true)
 
+    const isAdmin = form.app_role === 'admin'
+
     if (!editing) {
       // Use admin_create_employee RPC — does NOT log out the current admin
       const { error: rpcErr } = await supabase.rpc('admin_create_employee', {
@@ -69,31 +82,34 @@ export default function Employees() {
         emp_mobile:            form.mobile_number,
         emp_job_role:          form.job_role,
         emp_app_role:          form.app_role,
-        emp_weekly_hours:      form.weekly_hours_category,
-        emp_annual_balance:    form.annual_leave_balance,
-        emp_personal_balance:  form.personal_leave_balance,
-        emp_til_hours:         form.accrued_til_hours,
+        emp_weekly_hours:      isAdmin ? 38 : form.weekly_hours_category,
+        emp_annual_balance:    isAdmin ? 0  : form.annual_leave_balance,
+        emp_personal_balance:  isAdmin ? 0  : form.personal_leave_balance,
+        emp_til_hours:         isAdmin ? 0  : form.accrued_til_hours,
       })
-      if (rpcErr) {
-        setError(rpcErr.message)
-        setSaving(false)
-        return
-      }
+      if (rpcErr) { setError(rpcErr.message); setSaving(false); return }
     } else {
-      const { error: updErr } = await supabase.from('profiles').update({
+      const updates: Record<string, unknown> = {
         full_name:             form.full_name,
         mobile_number:         form.mobile_number,
         job_role:              form.job_role,
         app_role:              form.app_role,
-        weekly_hours_category: form.weekly_hours_category,
-        accrued_til_hours:     form.accrued_til_hours,
-        annual_leave_balance:  form.annual_leave_balance,
-        personal_leave_balance: form.personal_leave_balance,
-      }).eq('id', editing.id)
-      if (updErr) {
-        setError(updErr.message)
-        setSaving(false)
-        return
+      }
+      if (!isAdmin) {
+        updates.weekly_hours_category  = form.weekly_hours_category
+        updates.accrued_til_hours      = form.accrued_til_hours
+        updates.annual_leave_balance   = form.annual_leave_balance
+        updates.personal_leave_balance = form.personal_leave_balance
+      }
+      const { error: updErr } = await supabase.from('profiles').update(updates).eq('id', editing.id)
+      if (updErr) { setError(updErr.message); setSaving(false); return }
+
+      // If email changed, update via RPC
+      if (form.email && form.email !== editing.email) {
+        const { error: emErr } = await supabase.rpc('admin_update_employee_email', {
+          target_id: editing.id, new_email: form.email,
+        })
+        if (emErr) { setError(emErr.message); setSaving(false); return }
       }
     }
     setSaving(false)
@@ -101,7 +117,48 @@ export default function Employees() {
     load()
   }
 
+  const removeEmployee = async (p: Profile) => {
+    if (p.id === me?.id) { alert('You cannot delete yourself.'); return }
+    if (!confirm(`Permanently delete ${p.full_name}?\n\nThis removes their account and ALL their time entries, timesheets, leave requests and TIL ledger entries. This cannot be undone.`)) return
+    const { error: delErr } = await supabase.rpc('admin_delete_employee', { target_id: p.id })
+    if (delErr) { alert('Delete failed: ' + delErr.message); return }
+    setViewing(null)
+    load()
+  }
+
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(f => ({ ...f, [k]: v }))
+
+  // Profile-detail dialog (opened by clicking a Team row)
+  const profileDialog = viewing && (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4 py-6" onClick={() => setViewing(null)}>
+      <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-lg">{viewing.full_name}</p>
+          <button onClick={() => setViewing(null)} className="text-muted hover:text-ink">✕</button>
+        </div>
+        <dl className="space-y-2 text-sm">
+          <div className="flex justify-between"><dt className="text-muted">Email</dt><dd className="text-ink">{viewing.email ?? '—'}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Mobile</dt><dd className="text-ink">{viewing.mobile_number || '—'}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Job Role</dt><dd className="text-ink">{viewing.job_role || '—'}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">App Role</dt><dd className="text-ink capitalize">{viewing.app_role}</dd></div>
+          {viewing.app_role !== 'admin' && (
+            <>
+              <div className="flex justify-between"><dt className="text-muted">Required Hours P/W</dt><dd className="text-ink">{viewing.weekly_hours_category}h</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
+            </>
+          )}
+        </dl>
+        <div className="flex gap-3 pt-2">
+          <button onClick={() => { const v = viewing; setViewing(null); openEdit(v) }} className={`${btnPrimary} flex-1 h-11`}>✎ Edit</button>
+          <button onClick={() => removeEmployee(viewing)} disabled={viewing.id === me?.id} className={`${btnDanger} flex-1 h-11`}>Delete</button>
+        </div>
+      </div>
+    </div>
+  )
+
+  const isFormForAdmin = form.app_role === 'admin'
 
   return (
     <div className="space-y-6">
@@ -117,12 +174,12 @@ export default function Employees() {
             <div><label className={labelCls}>Full Name</label><input value={form.full_name} onChange={e => set('full_name', e.target.value)} className={inputCls} required /></div>
             <div><label className={labelCls}>Job Role</label><input value={form.job_role} onChange={e => set('job_role', e.target.value)} className={inputCls} placeholder="Foreman" /></div>
           </div>
-          {!editing && (
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} required /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className={labelCls}>Email</label><input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={inputCls} required /></div>
+            {!editing && (
               <div><label className={labelCls}>Password</label><input type="password" value={form.password} onChange={e => set('password', e.target.value)} className={inputCls} required minLength={6} /></div>
-            </div>
-          )}
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelCls}>Mobile</label><input type="tel" value={form.mobile_number} onChange={e => set('mobile_number', e.target.value)} className={inputCls} /></div>
             <div>
@@ -133,19 +190,23 @@ export default function Employees() {
               </select>
             </div>
           </div>
-          <div>
-            <label className={labelCls}>Weekly Hours</label>
-            <select value={form.weekly_hours_category} onChange={e => set('weekly_hours_category', Number(e.target.value) as WeeklyHours)} className={inputCls}>
-              <option value={38}>38 hours</option>
-              <option value={40}>40 hours</option>
-              <option value={42}>42 hours</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Annual Leave (hours)</label><input type="number" step="0.5" value={form.annual_leave_balance} onChange={e => set('annual_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
-            <div><label className={labelCls}>Personal Leave (hours)</label><input type="number" step="0.5" value={form.personal_leave_balance} onChange={e => set('personal_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
-            <div><label className={labelCls}>TIL (hours)</label><input type="number" step="0.5" value={form.accrued_til_hours} onChange={e => set('accrued_til_hours', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
-          </div>
+          {!isFormForAdmin && (
+            <>
+              <div>
+                <label className={labelCls}>Required Hours P/W</label>
+                <select value={form.weekly_hours_category} onChange={e => set('weekly_hours_category', Number(e.target.value) as WeeklyHours)} className={inputCls}>
+                  <option value={38}>38 hours</option>
+                  <option value={40}>40 hours</option>
+                  <option value={42}>42 hours</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className={labelCls}>Annual Leave (hours)</label><input type="number" step="0.5" value={form.annual_leave_balance} onChange={e => set('annual_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+                <div><label className={labelCls}>Personal Leave (hours)</label><input type="number" step="0.5" value={form.personal_leave_balance} onChange={e => set('personal_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+                <div><label className={labelCls}>TIL (hours)</label><input type="number" step="0.5" value={form.accrued_til_hours} onChange={e => set('accrued_til_hours', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+              </div>
+            </>
+          )}
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className={`${btnPrimary} h-11`}>{saving ? 'Saving…' : 'Save'}</button>
@@ -158,16 +219,26 @@ export default function Employees() {
 
       <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
         {employees.map(emp => (
-          <div key={emp.id} className="px-5 py-4 flex justify-between items-center">
+          <button
+            key={emp.id}
+            onClick={() => setViewing(emp)}
+            className="w-full px-5 py-4 flex justify-between items-center hover:bg-page transition-colors text-left group"
+          >
             <div>
-              <p className="text-sm font-semibold text-ink">{emp.full_name || '—'}</p>
-              <p className="text-xs text-muted">{emp.job_role} · {emp.app_role} · {emp.weekly_hours_category}h/wk</p>
-              <p className="text-xs text-muted">{emp.email}</p>
+              <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
+              <p className="text-xs text-muted">
+                {emp.job_role || 'No role'}
+                {emp.app_role === 'admin'
+                  ? ' · Admin'
+                  : ` · ${emp.weekly_hours_category}h/wk`}
+              </p>
             </div>
-            <button onClick={() => openEdit(emp)} className="text-xs text-sky hover:underline">Edit</button>
-          </div>
+            <span className="text-xs text-muted group-hover:text-sky">View →</span>
+          </button>
         ))}
       </div>
+
+      {profileDialog}
     </div>
   )
 }

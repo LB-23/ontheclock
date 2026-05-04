@@ -1,33 +1,48 @@
 import { type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import {
-  Clock, ClipboardList, Palmtree, UserCircle,
-  LayoutDashboard, Users, ChartBar, MapPinCheck,
-  MapPin, Wrench,
-  type LucideIcon,
-} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
 
-interface NavItem { to: string; label: string; Icon: LucideIcon }
+interface NavItem { to: string; label: string; icon: string }
 
 const employeeNav: NavItem[] = [
-  { to: '/clock',         label: 'Clock',      Icon: Clock },
-  { to: '/my-timesheets', label: 'Timesheets', Icon: ClipboardList },
-  { to: '/leave',         label: 'Leave',      Icon: Palmtree },
-  { to: '/profile',       label: 'Profile',    Icon: UserCircle },
+  { to: '/clock',         label: 'Clock',      icon: 'clock' },
+  { to: '/my-timesheets', label: 'Timesheets', icon: 'timesheet' },
+  { to: '/leave',         label: 'Leave',      icon: 'leave' },
+  { to: '/profile',       label: 'Profile',    icon: 'profile' },
 ]
 
 const adminNav: NavItem[] = [
-  { to: '/dashboard',    label: 'Dashboard',  Icon: LayoutDashboard },
-  { to: '/employees',    label: 'Team',       Icon: Users },
-  { to: '/timesheets',   label: 'Timesheets', Icon: ClipboardList },
-  { to: '/leave',        label: 'Leave',      Icon: Palmtree },
-  { to: '/reports',      label: 'Reports',    Icon: ChartBar },
-  { to: '/audit',        label: 'Audit',      Icon: MapPinCheck },
-  { to: '/job-addresses',label: 'Sites',      Icon: MapPin },
-  { to: '/stages',       label: 'Stages',     Icon: Wrench },
+  { to: '/dashboard',    label: 'Dashboard',  icon: 'dashboard' },
+  { to: '/employees',    label: 'Team',       icon: 'team' },
+  { to: '/timesheets',   label: 'Timesheets', icon: 'timesheet' },
+  { to: '/leave',        label: 'Leave',      icon: 'leave' },
+  { to: '/reports',      label: 'Reports',    icon: 'reports' },
+  { to: '/audit',        label: 'Audit',      icon: 'audit' },
+  { to: '/job-addresses',label: 'Sites',      icon: 'sites' },
+  { to: '/stages',       label: 'Stages',     icon: 'stages' },
 ]
+
+/** Renders the brand SVG icons with CSS mask so they inherit currentColor for tinting. */
+function NavIcon({ name, className = 'w-5 h-5' }: { name: string; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block flex-shrink-0 ${className}`}
+      style={{
+        backgroundColor: 'currentColor',
+        WebkitMaskImage: `url(/icons/${name}.svg)`,
+        maskImage: `url(/icons/${name}.svg)`,
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center',
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
+      }}
+    />
+  )
+}
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth()
@@ -62,7 +77,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 }`
               }
             >
-              <item.Icon className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+              <NavIcon name={item.icon} className="w-5 h-5" />
               {item.label}
             </NavLink>
           ))}
@@ -104,7 +119,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               }`
             }
           >
-            <item.Icon className="w-6 h-6 mb-0.5" strokeWidth={1.5} />
+            <NavIcon name={item.icon} className="w-6 h-6 mb-0.5" />
             {item.label}
           </NavLink>
         ))}

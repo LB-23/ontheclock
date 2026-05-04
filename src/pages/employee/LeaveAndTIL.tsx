@@ -118,7 +118,7 @@ export default function LeaveAndTIL() {
           </div>
           <div>
             <label className={labelCls}>Total Hours</label>
-            <input type="number" step="0.5" min="0" value={form.total_hours} onChange={e => setForm(f => ({ ...f, total_hours: parseFloat(e.target.value) || 0 }))} className={inputCls} required />
+            <input type="number" step="any" min="0" value={form.total_hours} onChange={e => setForm(f => ({ ...f, total_hours: parseFloat(e.target.value) || 0 }))} className={inputCls} required />
             <p className="text-[11px] text-muted mt-1">Auto-calculated from dates · adjust if part day</p>
           </div>
           <div>
