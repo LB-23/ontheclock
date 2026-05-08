@@ -133,7 +133,7 @@ export default function TimesheetReview() {
                       <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
                       <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
                       <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
-                      {e.notes && <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>}
+                      {e.notes && <p className="text-[11px] text-ink mt-1">{e.notes}</p>}
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>

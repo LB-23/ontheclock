@@ -255,7 +255,7 @@ export default function MyTimesheets() {
                     <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
                   )}
                   {e.notes && (
-                    <p className="text-[11px] text-amber-600 mt-1 italic">{e.notes}</p>
+                    <p className="text-[11px] text-ink mt-1">{e.notes}</p>
                   )}
                   {e.status === 'edited' && (
                     <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>

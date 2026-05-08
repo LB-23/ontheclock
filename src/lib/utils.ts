@@ -1,11 +1,12 @@
-import { startOfISOWeek, format, parseISO, differenceInCalendarDays } from 'date-fns'
+import { startOfWeek, format, parseISO, differenceInCalendarDays } from 'date-fns'
 
-/** Monday of the ISO week containing `date` */
+/** Friday of the LBG work-week containing `date` (week runs Fri → Thu) */
 export function getWeekStart(date: Date = new Date()): string {
-  return format(startOfISOWeek(date), 'yyyy-MM-dd')
+  // weekStartsOn 5 = Friday  (0=Sun, 1=Mon, …, 5=Fri, 6=Sat)
+  return format(startOfWeek(date, { weekStartsOn: 5 }), 'yyyy-MM-dd')
 }
 
-/** Friendly display: "Mon 21 Apr 2026" */
+/** Friendly display: "Fri 21 Apr 2026" */
 export function fmtDate(iso: string): string {
   return format(parseISO(iso), 'EEE d MMM yyyy')
 }
@@ -15,7 +16,7 @@ export function fmtTime(iso: string): string {
   return format(parseISO(iso), 'h:mm aaa')
 }
 
-/** "Mon 21 Apr – Sun 27 Apr" */
+/** "Fri 25 Apr – Thu 1 May" — week runs Friday to Thursday */
 export function fmtWeekRange(weekStart: string): string {
   const start = parseISO(weekStart)
   const end = new Date(start)

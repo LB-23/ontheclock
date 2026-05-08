@@ -1,6 +1,6 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v3'
-const SHELL = ['/', '/index.html', '/lb-icon-black.svg', '/lb-icon-black.png']
+const CACHE = 'ontheclock-v4'
+const SHELL = ['/', '/index.html', '/lb-icon-black.svg', '/lb-icon-black.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
   // Activate the new SW immediately on install

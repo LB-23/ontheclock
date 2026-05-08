@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Profile } from '../../lib/supabase'
 import { exportCSV, fmtHours, getWeekStart } from '../../lib/utils'
-import { format, startOfISOWeek } from 'date-fns'
+import { format } from 'date-fns'
 
 type ReportTab = 'employee' | 'job' | 'weekly'
 
@@ -112,7 +112,7 @@ export default function Reports() {
         )}
         {tab === 'weekly' && (
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Week Starting (Monday)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Week Starting (Friday)</label>
             <input type="date" value={filterWeek} onChange={e => setFilterWeek(e.target.value)} className={inputCls} />
           </div>
         )}
