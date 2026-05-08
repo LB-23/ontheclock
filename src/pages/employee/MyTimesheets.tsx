@@ -160,14 +160,12 @@ export default function MyTimesheets() {
     await reloadEntries()
   }
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      draft:     'bg-page text-muted',
-      submitted: 'bg-amber-100 text-amber-700',
-      approved:  'bg-green-100 text-green-700',
-      rejected:  'bg-red-100 text-red-600',
-    }
-    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${map[status] ?? map.draft}`
+  const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
+  const statusStyle = (s: string): React.CSSProperties => {
+    if (s === 'submitted' || s === 'pending') return { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
+    if (s === 'approved')                     return { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
+    if (s === 'rejected')                     return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
+    return { backgroundColor: '#E8E8E8', color: '#666666' }   // draft (default)
   }
 
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
@@ -238,7 +236,7 @@ export default function MyTimesheets() {
             <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
             <div>
               <p className="font-semibold">{fmtWeekRange(selected.week_start)}</p>
-              <span className={statusBadge(selected.status)}>{selected.status}</span>
+              <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
             </div>
           </div>
 
@@ -332,7 +330,7 @@ export default function MyTimesheets() {
               >
                 <div>
                   <p className="text-sm font-semibold">{fmtWeekRange(ts.week_start)}</p>
-                  <span className={statusBadge(ts.status)}>{ts.status}</span>
+                  <span className={badgeCls} style={statusStyle(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>

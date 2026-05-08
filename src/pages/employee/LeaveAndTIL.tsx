@@ -59,14 +59,13 @@ export default function LeaveAndTIL() {
     }
   }
 
-  const statusBadge = (s: string) => {
-    const map: Record<string, string> = {
-      pending:  'bg-amber-100 text-amber-700',
-      approved: 'bg-green-100 text-green-700',
-      declined: 'bg-red-100 text-red-600',
-    }
-    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${map[s] ?? ''}`
+  const statusStyle = (s: string): React.CSSProperties => {
+    if (s === 'pending')  return { backgroundColor: 'rgba(249,151,2,0.20)',  color: '#F99702' }
+    if (s === 'approved') return { backgroundColor: 'rgba(174,224,1,0.20)',  color: '#AEE001' }
+    if (s === 'declined') return { backgroundColor: 'rgba(255,40,40,0.10)',  color: '#FF2828' }
+    return {}
   }
+  const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
 
   return (
     <div className="space-y-6">
@@ -76,11 +75,11 @@ export default function LeaveAndTIL() {
       {profile && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   color: 'bg-sky/10    text-skyDeep    border border-sky/20' },
-            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), color: 'bg-action/10 text-actionDeep border border-action/20' },
-            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      color: 'bg-page      text-ink       border border-skyDeep/30' },
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#BFE633' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#6DD2DC' },
+            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#EDCBF6' },
           ].map(b => (
-            <div key={b.label} className={`rounded-2xl p-4 ${b.color}`}>
+            <div key={b.label} style={{ backgroundColor: b.bg }} className="rounded-2xl p-4 text-ink">
               <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{b.label}</p>
               <p className="text-2xl font-bold mt-1 font-clock">{b.value}</p>
             </div>
@@ -148,7 +147,7 @@ export default function LeaveAndTIL() {
                   <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>
                 )}
               </div>
-              <span className={statusBadge(r.status)}>{r.status}</span>
+              <span className={badgeCls} style={statusStyle(r.status)}>{r.status}</span>
             </div>
           </div>
         ))}

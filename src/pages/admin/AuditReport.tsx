@@ -24,13 +24,13 @@ type AuditRow = {
   audit_flag: AuditFlag
 }
 
-const flagLabel: Record<AuditFlag, { text: string; cls: string }> = {
-  ok:                { text: 'OK',                       cls: 'bg-green-100 text-green-700' },
-  clock_in_far:      { text: 'Clock-in far from site',   cls: 'bg-red-100 text-red-700' },
-  clock_out_far:     { text: 'Clock-out far from site',  cls: 'bg-red-100 text-red-700' },
-  no_clock_in_gps:   { text: 'No clock-in GPS',          cls: 'bg-amber-100 text-amber-700' },
-  no_clock_out_gps:  { text: 'No clock-out GPS',         cls: 'bg-amber-100 text-amber-700' },
-  site_not_geocoded: { text: 'Site not geocoded',        cls: 'bg-page text-muted' },
+const flagLabel: Record<AuditFlag, { text: string; style: React.CSSProperties }> = {
+  ok:                { text: 'OK',                       style: { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' } },
+  clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' } },
+  clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' } },
+  no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' } },
+  no_clock_out_gps:  { text: 'No clock-out GPS',         style: { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' } },
+  site_not_geocoded: { text: 'Site not geocoded',        style: { backgroundColor: '#E8E8E8',              color: '#666666' } },
 }
 
 export default function AuditReport() {
@@ -150,17 +150,17 @@ export default function AuditReport() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl bg-sky/10 border border-sky/20 p-4">
-          <p className="text-4xl font-clock font-bold text-skyDeep tabular-nums">{total}</p>
-          <p className="text-[11px] text-skyDeep/80 mt-1 font-semibold uppercase tracking-wide">Entries in range</p>
+        <div style={{ backgroundColor: 'rgba(255,153,216,0.30)' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{total}</p>
+          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Entries in range</p>
         </div>
-        <div className="rounded-2xl bg-red-50 border border-red-200 p-4">
-          <p className="text-4xl font-clock font-bold text-red-700 tabular-nums">{flaggedRed}</p>
-          <p className="text-[11px] text-red-700 mt-1 font-semibold uppercase tracking-wide">Off-site (&gt; {threshold}m)</p>
+        <div style={{ backgroundColor: 'rgba(255,102,196,0.30)' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{flaggedRed}</p>
+          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Off-site</p>
         </div>
-        <div className="rounded-2xl bg-action/10 border border-action/20 p-4">
-          <p className="text-4xl font-clock font-bold text-actionDeep tabular-nums">{flaggedAmber}</p>
-          <p className="text-[11px] text-actionDeep/80 mt-1 font-semibold uppercase tracking-wide">Missing GPS</p>
+        <div style={{ backgroundColor: 'rgba(255,31,169,0.30)' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{flaggedAmber}</p>
+          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Missing GPS</p>
         </div>
       </div>
 
@@ -185,8 +185,8 @@ export default function AuditReport() {
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Employee</th>
                 <th className="px-4 py-3">Job Site</th>
-                <th className="px-4 py-3 text-right">Clock-In Δ</th>
-                <th className="px-4 py-3 text-right">Clock-Out Δ</th>
+                <th className="px-4 py-3 text-right">Clock-In</th>
+                <th className="px-4 py-3 text-right">Clock-Out</th>
                 <th className="px-4 py-3">Flag</th>
                 <th className="px-4 py-3">Map</th>
               </tr>
@@ -204,7 +204,8 @@ export default function AuditReport() {
                     {r.clock_out_distance_m !== null ? `${r.clock_out_distance_m}m` : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${flagLabel[r.audit_flag].cls}`}>
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                          style={flagLabel[r.audit_flag].style}>
                       {flagLabel[r.audit_flag].text}
                     </span>
                   </td>

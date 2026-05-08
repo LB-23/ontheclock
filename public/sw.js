@@ -1,15 +1,53 @@
-const CACHE = 'ontheclock-v1'
-const SHELL = ['/', '/index.html']
+// Bump CACHE version when shipping new builds — forces refresh of cached shell
+const CACHE = 'ontheclock-v3'
+const SHELL = ['/', '/index.html', '/lb-icon-black.svg', '/lb-icon-black.png']
 
-self.addEventListener('install', e =>
+self.addEventListener('install', e => {
+  // Activate the new SW immediately on install
+  self.skipWaiting()
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)))
-)
+})
+
+self.addEventListener('activate', e => {
+  // Take control of open pages and purge old caches
+  e.waitUntil(
+    Promise.all([
+      clients.claim(),
+      caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ),
+    ])
+  )
+})
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  )
+  const url = new URL(e.request.url)
+
+  // Network-first for HTML navigations so users always get the latest app shell
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const copy = res.clone()
+          caches.open(CACHE).then(c => c.put(e.request, copy))
+          return res
+        })
+        .catch(() => caches.match(e.request).then(cached => cached || caches.match('/index.html')))
+    )
+    return
+  }
+
+  // Cache-first for everything else (assets, fonts, icons)
+  if (url.origin === self.location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const copy = res.clone()
+        caches.open(CACHE).then(c => c.put(e.request, copy))
+        return res
+      }))
+    )
+  }
 })
 
 self.addEventListener('push', e => {
@@ -17,8 +55,8 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title ?? 'OnTheClock', {
       body: data.body ?? '',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/lb-icon-black.png',
+      badge: '/lb-icon-black.png',
     })
   )
 })

@@ -3,7 +3,7 @@ import Select from 'react-select'
 import { format } from 'date-fns'
 import { supabase, type JobAddress, type Stage, type TimeEntry } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { getGPS, getWeekStart, calcHours, applyAutoBreak, btnPrimary } from '../../lib/utils'
+import { getGPS, getWeekStart, calcHours, applyAutoBreak, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 
 export default function PunchClock() {
   const { profile } = useProfile()
@@ -15,6 +15,9 @@ export default function PunchClock() {
   const [elapsed, setElapsed] = useState('')
   const [loading, setLoading] = useState(false)
   const [gpsWarning, setGpsWarning] = useState(false)
+  const [showOutDialog, setShowOutDialog] = useState(false)
+  const [outNotes, setOutNotes] = useState('')
+  const [outErr, setOutErr] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Load job addresses + stages
@@ -75,8 +78,19 @@ export default function PunchClock() {
     if (!error && data) setActiveEntry(data as TimeEntry)
   }
 
-  const handleClockOut = async () => {
+  const openClockOut = () => {
+    setOutNotes('')
+    setOutErr('')
+    setShowOutDialog(true)
+  }
+
+  const handleClockOut = async (e: React.FormEvent) => {
+    e.preventDefault()
     if (!activeEntry || !profile) return
+    if (!outNotes.trim()) {
+      setOutErr('Please add notes describing the work you did this shift.')
+      return
+    }
     setLoading(true)
     const gps = await getGPS()
     const clockOut = new Date().toISOString()
@@ -91,13 +105,16 @@ export default function PunchClock() {
       total_hours:   total,
       is_overtime:   isOvertime,
       status:        'completed',
+      notes:         outNotes.trim(),
     }).eq('id', activeEntry.id)
 
     setLoading(false)
+    setShowOutDialog(false)
     setActiveEntry(null)
     setSelectedJob(null)
     setSelectedStage(null)
     setGpsWarning(false)
+    setOutNotes('')
   }
 
   const jobOptions = jobAddresses.map(j => ({ value: j.id, label: j.address }))
@@ -207,18 +224,61 @@ export default function PunchClock() {
       {/* Clock-out button */}
       {isClockedIn && (
         <button
-          onClick={handleClockOut}
+          onClick={openClockOut}
           disabled={loading}
           className="inline-flex items-center justify-center w-full h-14 text-base rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
           style={{ backgroundColor: '#FF3131' }}
         >
-          {loading ? 'Clocking out…' : 'Clock Out'}
+          Clock Out
         </button>
       )}
 
       <p className="text-xs text-center text-muted">
         30-min paid lunch auto-included for shifts over 6 hours
       </p>
+
+      {/* Clock-out notes dialog (notes are required) */}
+      {showOutDialog && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 px-4 py-6">
+          <form onSubmit={handleClockOut}
+                className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
+            <div>
+              <p className="font-semibold text-ink">Add notes for this shift</p>
+              <p className="text-xs text-muted mt-0.5">Required — describe the work you completed today.</p>
+            </div>
+
+            <div>
+              <label className={labelCls}>Shift notes <span className="text-red-500">*</span></label>
+              <textarea
+                value={outNotes}
+                onChange={e => setOutNotes(e.target.value)}
+                className={`${inputCls} resize-none`}
+                rows={4}
+                autoFocus
+                required
+                minLength={3}
+                placeholder="e.g. Framed first floor walls, sealed wet area, cleaned site"
+              />
+            </div>
+
+            {outErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{outErr}</p>}
+
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={loading || !outNotes.trim()}
+                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                style={{ backgroundColor: '#FF3131' }}
+              >
+                {loading ? 'Clocking out…' : 'Confirm Clock Out'}
+              </button>
+              <button type="button" onClick={() => setShowOutDialog(false)} disabled={loading} className={`${btnSecondary} flex-1 h-12`}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

@@ -39,6 +39,7 @@ export default function Reports() {
         Hours:     e.total_hours ?? '',
         Overtime:  e.is_overtime ? 'Yes' : 'No',
         Status:    e.status ?? '',
+        Notes:     (e.notes as string) ?? '',
       })))
     } else if (tab === 'job') {
       let q = supabase.from('time_entries').select('*, profiles(full_name), job_addresses(address)')
