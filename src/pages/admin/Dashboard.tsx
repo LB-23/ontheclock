@@ -31,9 +31,9 @@ export default function Dashboard() {
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
 
   const stats = [
-    { label: 'On Site Now',          value: activeEntries.length,    bg: '#CEEC66', to: '#on-site-now' },
-    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#9EE1E9', to: '/timesheets' },
-    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#E7D0ED', to: '/leave' },
+    { label: 'On Site Now',          value: activeEntries.length,    bg: '#054e98', to: '#on-site-now' },
+    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#04356a', to: '/timesheets' },
+    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#001d3f', to: '/leave' },
   ]
 
   const goTo = (to: string) => {
@@ -57,8 +57,8 @@ export default function Dashboard() {
           <button
             key={s.label}
             onClick={() => goTo(s.to)}
-            style={{ backgroundColor: s.bg }}
-            className="text-left rounded-2xl p-4 text-ink transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30"
+            style={{ backgroundColor: s.bg, color: '#E8E8E8' }}
+            className="text-left rounded-2xl p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30"
           >
             <p className="text-4xl font-clock font-bold tabular-nums">{s.value}</p>
             <p className="text-[11px] font-semibold uppercase tracking-wide mt-1 opacity-80">{s.label} →</p>

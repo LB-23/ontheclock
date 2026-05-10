@@ -1,6 +1,6 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v4'
-const SHELL = ['/', '/index.html', '/lb-icon-black.svg', '/lb-icon-black.png', '/apple-touch-icon.png']
+const CACHE = 'ontheclock-v5'
+const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
   // Activate the new SW immediately on install
@@ -55,8 +55,8 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title ?? 'OnTheClock', {
       body: data.body ?? '',
-      icon: '/lb-icon-black.png',
-      badge: '/lb-icon-black.png',
+      icon: '/lb-outlined.png',
+      badge: '/lb-outlined.png',
     })
   )
 })

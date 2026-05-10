@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { supabase, type TimeEntry, type Timesheet } from '../../lib/supabase'
+import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 
 type EditDraft = {
   entry: TimeEntry
   newClockIn:  string  // datetime-local format: YYYY-MM-DDTHH:mm
   newClockOut: string
+  newJobId:    string  // job_address_id
   reason:      string
 }
 
@@ -19,8 +20,15 @@ export default function MyTimesheets() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<EditDraft | null>(null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [jobAddresses, setJobAddresses] = useState<JobAddress[]>([])
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    supabase.from('job_addresses').select('*').eq('is_active', true).order('address')
+      .then(({ data }) => setJobAddresses(data ?? []))
+  }, [])
 
   const loadTimesheets = () => {
     if (!profile) return
@@ -67,34 +75,52 @@ export default function MyTimesheets() {
       entry: e,
       newClockIn:  isoToLocalInput(e.clock_in),
       newClockOut: isoToLocalInput(e.clock_out),
+      newJobId:    e.job_address_id ?? '',
       reason:      '',
     })
     setErr('')
   }
 
+  const deleteEntry = async () => {
+    if (!editing) return
+    if (!confirm('Delete this time entry? This cannot be undone.')) return
+    setDeleting(true)
+    // Audit cascade-deletes via FK ON DELETE CASCADE on time_entry_edits
+    const { error } = await supabase.from('time_entries').delete().eq('id', editing.entry.id)
+    setDeleting(false)
+    if (error) { setErr(error.message); return }
+    setEditing(null)
+    await reloadEntries()
+  }
+
   const saveEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editing || !profile) return
-    if (!editing.reason.trim()) {
-      setErr('Reason is required for any time edit.')
-      return
-    }
-    setSaving(true)
-    setErr('')
 
     const oldIn  = editing.entry.clock_in
     const oldOut = editing.entry.clock_out
+    const oldJob = editing.entry.job_address_id ?? ''
     const newIn  = localInputToIso(editing.newClockIn)
     const newOut = editing.newClockOut ? localInputToIso(editing.newClockOut) : null
+    const newJob = editing.newJobId
 
     const inChanged  = newIn !== oldIn
     const outChanged = newOut !== (oldOut ?? null)
+    const jobChanged = newJob !== oldJob
 
-    if (!inChanged && !outChanged) {
-      setErr('Nothing changed — close the dialog or adjust a time first.')
-      setSaving(false)
+    if (!inChanged && !outChanged && !jobChanged) {
+      setErr('Nothing changed — close the dialog or adjust a field first.')
       return
     }
+
+    // Reason is only required when clock_in or clock_out is edited
+    if ((inChanged || outChanged) && !editing.reason.trim()) {
+      setErr('Reason is required when changing clock-in or clock-out times.')
+      return
+    }
+
+    setSaving(true)
+    setErr('')
 
     if (newOut && new Date(newOut) <= new Date(newIn)) {
       setErr('Clock-out must be after clock-in.')
@@ -109,24 +135,27 @@ export default function MyTimesheets() {
     }
 
     // 1. Insert audit row (RLS requires edited_by = auth.uid())
-    const { error: editErr } = await supabase.from('time_entry_edits').insert({
-      time_entry_id: editing.entry.id,
-      edited_by:     profile.id,
-      field_changed: inChanged && outChanged ? 'both' : (inChanged ? 'clock_in' : 'clock_out'),
-      old_clock_in:  inChanged ? oldIn  : null,
-      new_clock_in:  inChanged ? newIn  : null,
-      old_clock_out: outChanged ? oldOut : null,
-      new_clock_out: outChanged ? newOut : null,
-      reason:        editing.reason.trim(),
-    })
-    if (editErr) { setErr(editErr.message); setSaving(false); return }
+    if (inChanged || outChanged) {
+      const { error: editErr } = await supabase.from('time_entry_edits').insert({
+        time_entry_id: editing.entry.id,
+        edited_by:     profile.id,
+        field_changed: inChanged && outChanged ? 'both' : (inChanged ? 'clock_in' : 'clock_out'),
+        old_clock_in:  inChanged ? oldIn  : null,
+        new_clock_in:  inChanged ? newIn  : null,
+        old_clock_out: outChanged ? oldOut : null,
+        new_clock_out: outChanged ? newOut : null,
+        reason:        editing.reason.trim(),
+      })
+      if (editErr) { setErr(editErr.message); setSaving(false); return }
+    }
 
     // 2. Update the entry itself
     const updates: Partial<TimeEntry> = {
-      clock_in:    newIn,
-      clock_out:   newOut,
-      total_hours: totalH,
-      status:      'edited',
+      clock_in:       newIn,
+      clock_out:      newOut,
+      total_hours:    totalH,
+      job_address_id: newJob || null,
+      status:         'edited',
     }
     const { error: updErr } = await supabase
       .from('time_entries').update(updates).eq('id', editing.entry.id)
@@ -181,6 +210,19 @@ export default function MyTimesheets() {
         <p className="text-xs text-muted">{fmtDate(editing.entry.clock_in)} · {(editing.entry.job_addresses as { address: string })?.address}</p>
 
         <div>
+          <label className={labelCls}>Job Site</label>
+          <select
+            value={editing.newJobId}
+            onChange={e => setEditing(d => d ? { ...d, newJobId: e.target.value } : d)}
+            className={inputCls}
+          >
+            <option value="">— None —</option>
+            {jobAddresses.map(j => (
+              <option key={j.id} value={j.id}>{j.address}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className={labelCls}>Clock In</label>
           <input
             type="datetime-local"
@@ -207,21 +249,23 @@ export default function MyTimesheets() {
             className={`${inputCls} resize-none`}
             rows={3}
             placeholder="Forgot to clock out at end of day…"
-            required
           />
-          <p className="text-[11px] text-muted mt-1">Required for every edit — your admin will see this.</p>
+          <p className="text-[11px] text-muted mt-1">Required when changing clock-in/out times.</p>
         </div>
 
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
 
         <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={saving} className={`${btnPrimary} flex-1 h-11`}>
+          <button type="submit" disabled={saving || deleting} className={`${btnPrimary} flex-1 h-11`}>
             {saving ? 'Saving…' : 'Save Edit'}
           </button>
           <button type="button" onClick={() => { setEditing(null); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>
             Cancel
           </button>
         </div>
+        <button type="button" onClick={deleteEntry} disabled={saving || deleting} className={`${btnDanger} w-full h-11 mt-2`}>
+          {deleting ? 'Deleting…' : 'Delete this entry'}
+        </button>
       </form>
     </div>
   )
@@ -255,7 +299,12 @@ export default function MyTimesheets() {
                     <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
                   )}
                   {e.notes && (
-                    <p className="text-[11px] text-ink mt-1">{e.notes}</p>
+                    <p
+                      className={`text-[11px] mt-1 ${e.notes.includes('Auto-closed') ? 'italic' : ''}`}
+                      style={{ color: e.notes.includes('Auto-closed') ? '#FF2828' : '#000000' }}
+                    >
+                      {e.notes}
+                    </p>
                   )}
                   {e.status === 'edited' && (
                     <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>

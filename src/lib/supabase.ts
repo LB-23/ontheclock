@@ -11,7 +11,7 @@ export type WeeklyHours = 38 | 40 | 42
 export type EntryStatus = 'active' | 'completed' | 'submitted' | 'approved' | 'edited'
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
 export type LeaveType = 'annual' | 'personal' | 'time_in_lieu' | 'unpaid'
-export type LeaveStatus = 'pending' | 'approved' | 'declined'
+export type LeaveStatus = 'pending' | 'approved' | 'declined' | 'withdrawn'
 export type TilSource = 'auto_overtime' | 'leave_used' | 'manual_adjust'
 
 export interface Profile {
@@ -86,10 +86,14 @@ export interface LeaveRequest {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  start_time: string | null   // 'HH:mm:ss' on start_date
+  end_time:   string | null   // 'HH:mm:ss' on end_date
   total_hours: number | null
   reason: string | null
   status: LeaveStatus
   admin_notes: string | null
+  withdrawal_reason: string | null
+  withdrawn_at: string | null
   decided_by: string | null
   created_at: string
   profiles?: Profile
