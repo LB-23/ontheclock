@@ -239,18 +239,20 @@ export default function LeaveAndTIL() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">Leave & TIL</h1>
 
-      {/* Balances — custom column widths so longest label fits on one line */}
+      {/* Balances — equal-size tiles, labels on one line */}
       {profile && (
-        <div className="grid grid-cols-12 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { col: 'col-span-3', label: 'Annual',         value: fmtHours(profile.annual_leave_balance),   bg: '#054e98' },
-            { col: 'col-span-6', label: 'Personal/Sick',  value: fmtHours(profile.personal_leave_balance), bg: '#04356a' },
-            { col: 'col-span-3', label: 'TIL',            value: fmtHours(profile.accrued_til_hours),      bg: '#001d3f' },
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#054e98' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#04356a' },
+            { label: 'TIL',                 value: fmtHours(profile.accrued_til_hours),      bg: '#001d3f' },
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#E8E8E8' }}
-                 className={`${b.col} rounded-2xl p-4`}>
-              <p className="text-[11px] font-semibold uppercase tracking-wide opacity-90 whitespace-nowrap">{b.label}</p>
-              <p className="text-2xl font-bold mt-1 font-clock">{b.value}</p>
+                 className="rounded-2xl p-3 sm:p-4 overflow-hidden">
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap opacity-90">
+                {b.label}
+              </p>
+              <p className="text-xl sm:text-2xl font-bold mt-1 font-clock">{b.value}</p>
             </div>
           ))}
         </div>
