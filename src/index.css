@@ -27,10 +27,19 @@ body {
   font-feature-settings: "ss01" on, "cv11" on;
 }
 
-/* Clock-face typography — Barlow Condensed Medium, ALL CAPS */
+/* Clock-face typography — Avenir Next Condensed Medium on Apple devices,
+ * falls back to Fjalla One (a visually-similar Google web font) on Windows
+ * and Android where Avenir Next is not installed system-wide. ALL CAPS. */
 .font-clock {
-  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  font-family:
+    'Avenir Next Condensed',
+    'AvenirNextCondensed-Medium',
+    'Fjalla One',
+    'Helvetica Neue Condensed',
+    'Arial Narrow',
+    sans-serif;
   font-weight: 500;
+  font-stretch: condensed;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

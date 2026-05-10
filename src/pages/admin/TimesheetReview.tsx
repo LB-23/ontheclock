@@ -133,14 +133,17 @@ export default function TimesheetReview() {
                       <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
                       <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
                       <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
-                      {e.notes && (
-                        <p
-                          className={`text-[11px] mt-1 ${e.notes.includes('Auto-closed') ? 'italic' : ''}`}
-                          style={{ color: e.notes.includes('Auto-closed') ? '#FF2828' : '#000000' }}
-                        >
-                          {e.notes}
-                        </p>
-                      )}
+                      {e.notes && (() => {
+                        const isRed = e.notes.includes('Auto-closed') || e.notes.includes('Added manually')
+                        return (
+                          <p
+                            className={`text-[11px] mt-1 ${isRed ? 'italic' : ''}`}
+                            style={{ color: isRed ? '#FF2828' : '#000000' }}
+                          >
+                            {e.notes}
+                          </p>
+                        )
+                      })()}
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
@@ -199,6 +202,23 @@ export default function TimesheetReview() {
           {selected.status === 'approved' && (
             <p className="text-xs text-center text-green-600">✓ Approved</p>
           )}
+
+          {/* Admin can permanently delete a timesheet at any status */}
+          <button
+            onClick={async () => {
+              if (!confirm(`Permanently delete this timesheet for ${(selected.profiles as Profile)?.full_name}?\n\nThis also deletes every time entry inside the week (${fmtWeekRange(selected.week_start)}) and any audit/edit history. This cannot be undone.`)) return
+              // Delete entries first (audit edits cascade via FK)
+              await supabase.from('time_entries').delete()
+                .eq('employee_id', selected.employee_id)
+                .eq('week_start', selected.week_start)
+              await supabase.from('timesheets').delete().eq('id', selected.id)
+              setSelected(null)
+              load()
+            }}
+            className={`${btnDanger} w-full h-11 mt-2`}
+          >
+            Delete this timesheet
+          </button>
         </div>
       ) : (
         <>

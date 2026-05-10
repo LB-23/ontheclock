@@ -25,6 +25,16 @@ export default function MyTimesheets() {
   const [jobAddresses, setJobAddresses] = useState<JobAddress[]>([])
   const [err, setErr] = useState('')
 
+  // Manual entry form
+  const [showManualForm, setShowManualForm] = useState(false)
+  const [manualSaving, setManualSaving] = useState(false)
+  const [manual, setManual] = useState({
+    date: '',
+    clock_in: '07:00',
+    clock_out: '15:00',
+    job_address_id: '',
+  })
+
   useEffect(() => {
     supabase.from('job_addresses').select('*').eq('is_active', true).order('address')
       .then(({ data }) => setJobAddresses(data ?? []))
@@ -79,6 +89,37 @@ export default function MyTimesheets() {
       reason:      '',
     })
     setErr('')
+  }
+
+  const submitManualEntry = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!profile || !selected) return
+    if (!manual.date || !manual.clock_in || !manual.clock_out) { setErr('Date and times are required.'); return }
+    setManualSaving(true); setErr('')
+
+    const startIso = new Date(`${manual.date}T${manual.clock_in}:00`).toISOString()
+    const endIso   = new Date(`${manual.date}T${manual.clock_out}:00`).toISOString()
+    if (new Date(endIso) <= new Date(startIso)) {
+      setErr('Clock-out must be after clock-in.')
+      setManualSaving(false); return
+    }
+    const hrs = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 3_600_000 * 100) / 100
+
+    const { error: insErr } = await supabase.from('time_entries').insert({
+      employee_id:    profile.id,
+      clock_in:       startIso,
+      clock_out:      endIso,
+      job_address_id: manual.job_address_id || null,
+      total_hours:    hrs,
+      status:         'completed',
+      week_start:     selected.week_start,
+      notes:          'Added manually',
+    })
+    setManualSaving(false)
+    if (insErr) { setErr(insErr.message); return }
+    setShowManualForm(false)
+    setManual({ date: '', clock_in: '07:00', clock_out: '15:00', job_address_id: '' })
+    await reloadEntries()
   }
 
   const deleteEntry = async () => {
@@ -270,6 +311,60 @@ export default function MyTimesheets() {
     </div>
   )
 
+  // Manual-entry dialog
+  const manualDialog = showManualForm && selected && (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
+      <form onSubmit={submitManualEntry} className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold">Add Manual Time Entry</p>
+          <button type="button" onClick={() => { setShowManualForm(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
+        </div>
+        <p className="text-[11px] italic" style={{ color: '#FF2828' }}>
+          This entry will be flagged "Added manually" on your timesheet for admin visibility.
+        </p>
+        <div>
+          <label className={labelCls}>Date</label>
+          <input type="date" value={manual.date}
+                 min={selected.week_start}
+                 onChange={e => setManual(m => ({ ...m, date: e.target.value }))}
+                 className={inputCls} required />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Start Time</label>
+            <input type="time" value={manual.clock_in}
+                   onChange={e => setManual(m => ({ ...m, clock_in: e.target.value }))}
+                   className={inputCls} required />
+          </div>
+          <div>
+            <label className={labelCls}>End Time</label>
+            <input type="time" value={manual.clock_out}
+                   onChange={e => setManual(m => ({ ...m, clock_out: e.target.value }))}
+                   className={inputCls} required />
+          </div>
+        </div>
+        <div>
+          <label className={labelCls}>Job Site</label>
+          <select value={manual.job_address_id}
+                  onChange={e => setManual(m => ({ ...m, job_address_id: e.target.value }))}
+                  className={inputCls}>
+            <option value="">— None —</option>
+            {jobAddresses.map(j => <option key={j.id} value={j.id}>{j.address}</option>)}
+          </select>
+        </div>
+        {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={manualSaving} className={`${btnPrimary} flex-1 h-11`}>
+            {manualSaving ? 'Adding…' : 'Add Entry'}
+          </button>
+          <button type="button" onClick={() => { setShowManualForm(false); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">My Timesheets</h1>
@@ -283,6 +378,15 @@ export default function MyTimesheets() {
               <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
             </div>
           </div>
+
+          {selected.status === 'draft' && (
+            <button
+              onClick={() => { setShowManualForm(true); setErr('') }}
+              className={`${btnSecondary} w-full h-11`}
+            >
+              + Add Manual Entry (no clock-in/out)
+            </button>
+          )}
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
             {entries.length === 0 && (
@@ -298,14 +402,19 @@ export default function MyTimesheets() {
                   {(e.job_addresses as { address: string })?.address && (
                     <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
                   )}
-                  {e.notes && (
-                    <p
-                      className={`text-[11px] mt-1 ${e.notes.includes('Auto-closed') ? 'italic' : ''}`}
-                      style={{ color: e.notes.includes('Auto-closed') ? '#FF2828' : '#000000' }}
-                    >
-                      {e.notes}
-                    </p>
-                  )}
+                  {e.notes && (() => {
+                    const isAuto    = e.notes.includes('Auto-closed')
+                    const isManual  = e.notes.includes('Added manually')
+                    const isRedItalic = isAuto || isManual
+                    return (
+                      <p
+                        className={`text-[11px] mt-1 ${isRedItalic ? 'italic' : ''}`}
+                        style={{ color: isRedItalic ? '#FF2828' : '#000000' }}
+                      >
+                        {e.notes}
+                      </p>
+                    )
+                  })()}
                   {e.status === 'edited' && (
                     <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>
                   )}
@@ -392,6 +501,7 @@ export default function MyTimesheets() {
       )}
 
       {editDialog}
+      {manualDialog}
     </div>
   )
 }

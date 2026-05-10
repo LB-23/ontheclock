@@ -243,9 +243,9 @@ export default function LeaveAndTIL() {
       {profile && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#054e98' },
-            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#04356a' },
-            { label: 'TIL',                 value: fmtHours(profile.accrued_til_hours),      bg: '#001d3f' },
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#15739d' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#0e4d69' },
+            { label: 'Time in Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0a3142' },
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#E8E8E8' }}
                  className="rounded-2xl p-3 sm:p-4 overflow-hidden">

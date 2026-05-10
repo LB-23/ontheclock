@@ -31,9 +31,9 @@ export default function Dashboard() {
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
 
   const stats = [
-    { label: 'On Site Now',          value: activeEntries.length,    bg: '#054e98', to: '#on-site-now' },
-    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#04356a', to: '/timesheets' },
-    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#001d3f', to: '/leave' },
+    { label: 'On Site Now',          value: activeEntries.length,    bg: '#15739d', to: '#on-site-now' },
+    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#0e4d69', to: '/timesheets' },
+    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#0a3142', to: '/leave' },
   ]
 
   const goTo = (to: string) => {
@@ -104,7 +104,6 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-clock text-sky tracking-wider tabular-nums">{fmtHours(elapsed)}</p>
-                    <p className="text-xs text-muted">elapsed</p>
                   </div>
                 </div>
               )

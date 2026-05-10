@@ -1,13 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
 export default function EmployeeProfile() {
   const { profile, refresh } = useProfile()
   const [mobile, setMobile] = useState(profile?.mobile_number ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Push state
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default')
+  const [subscribed, setSubscribed] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushErr, setPushErr] = useState('')
+  const [muted, setMuted] = useState(profile ? !profile.notifications_enabled : false)
+
+  useEffect(() => {
+    if (!pushSupported()) { setPermission('unsupported'); return }
+    setPermission(Notification.permission)
+    getCurrentSubscription().then(s => setSubscribed(!!s))
+  }, [])
+
+  useEffect(() => {
+    if (profile) {
+      setMobile(profile.mobile_number ?? '')
+      setMuted(!profile.notifications_enabled)
+    }
+  }, [profile])
 
   if (!profile) return null
 
@@ -19,6 +40,28 @@ export default function EmployeeProfile() {
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleEnablePush = async () => {
+    setPushBusy(true); setPushErr('')
+    const res = await enablePushForCurrentUser()
+    if (!res.ok) setPushErr(res.error ?? 'Could not enable')
+    else { setPermission('granted'); setSubscribed(true) }
+    setPushBusy(false)
+  }
+
+  const handleDisablePush = async () => {
+    setPushBusy(true); setPushErr('')
+    await disablePushForCurrentUser()
+    setSubscribed(false)
+    setPushBusy(false)
+  }
+
+  const toggleMute = async () => {
+    const newMuted = !muted
+    setMuted(newMuted)
+    await supabase.from('profiles').update({ notifications_enabled: !newMuted }).eq('id', profile.id)
+    await refresh()
   }
 
   return (
@@ -60,12 +103,54 @@ export default function EmployeeProfile() {
         </button>
       </form>
 
+      {/* Notifications */}
+      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Push Reminders</p>
+        </div>
+        <p className="text-sm text-muted">
+          Get reminded to clock in and out at the times your admin sets:
+          <br />
+          <span className="text-ink">
+            In: <strong>{profile.clock_in_reminder ? profile.clock_in_reminder.slice(0, 5) : '— not set —'}</strong>
+            {'   '}·{'   '}
+            Out: <strong>{profile.clock_out_reminder ? profile.clock_out_reminder.slice(0, 5) : '— not set —'}</strong>
+          </span>
+        </p>
+
+        {permission === 'unsupported' ? (
+          <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+            Push notifications aren't supported on this device/browser. On iPhone, add the app to your home screen via Safari → Share → Add to Home Screen.
+          </p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between rounded-xl bg-page px-4 py-3">
+              <span className="text-sm font-medium text-ink">Mute all reminders</span>
+              <button type="button" onClick={toggleMute}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${muted ? 'bg-red-500' : 'bg-page border border-skyDeep/40'}`}>
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+            {!subscribed ? (
+              <button type="button" onClick={handleEnablePush} disabled={pushBusy} className={`${btnPrimary} w-full h-11`}>
+                {pushBusy ? 'Enabling…' : 'Enable push reminders on this device'}
+              </button>
+            ) : (
+              <button type="button" onClick={handleDisablePush} disabled={pushBusy} className={`${btnSecondary} w-full h-11`}>
+                {pushBusy ? 'Disabling…' : '✓ Push enabled — disable on this device'}
+              </button>
+            )}
+            {pushErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{pushErr}</p>}
+          </>
+        )}
+      </div>
+
       <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Leave Balances</p>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between"><span className="text-muted">Annual Leave</span><span className="font-semibold">{fmtHours(profile.annual_leave_balance)}</span></div>
           <div className="flex justify-between"><span className="text-muted">Personal/Sick Leave</span><span className="font-semibold">{fmtHours(profile.personal_leave_balance)}</span></div>
-          <div className="flex justify-between"><span className="text-muted">Time In Lieu</span><span className="font-semibold text-orange-600">{fmtHours(profile.accrued_til_hours)}</span></div>
+          <div className="flex justify-between"><span className="text-muted">Time in Lieu</span><span className="font-semibold text-skyDeep">{fmtHours(profile.accrued_til_hours)}</span></div>
         </div>
       </div>
     </div>

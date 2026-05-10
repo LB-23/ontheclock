@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v6'
+const CACHE = 'ontheclock-v7'
 const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
@@ -51,17 +51,29 @@ self.addEventListener('fetch', e => {
 })
 
 self.addEventListener('push', e => {
-  const data = e.data?.json() ?? {}
-  e.waitUntil(
-    self.registration.showNotification(data.title ?? 'OnTheClock', {
-      body: data.body ?? '',
-      icon: '/lb-outlined.png',
-      badge: '/lb-outlined.png',
-    })
-  )
+  let data = {}
+  try { data = e.data?.json() ?? {} } catch { data = { title: e.data?.text() } }
+  const title = data.title || 'OnTheClock'
+  const opts = {
+    body: data.body || '',
+    icon: '/lb-outlined.png',
+    badge: '/lb-outlined.png',
+    tag: data.kind || 'ontheclock',
+    data: { url: data.url || '/clock' },
+    requireInteraction: false,
+    vibrate: [200, 100, 200],
+  }
+  e.waitUntil(self.registration.showNotification(title, opts))
 })
 
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  e.waitUntil(clients.openWindow('/'))
+  const target = e.notification.data?.url || '/clock'
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin))
+      if (existing) { existing.focus(); existing.navigate?.(target); return }
+      return clients.openWindow(target)
+    })
+  )
 })

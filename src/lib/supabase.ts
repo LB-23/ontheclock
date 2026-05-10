@@ -27,6 +27,11 @@ export interface Profile {
   is_active: boolean
   created_at: string
   email?: string
+  // Reminder schedule (HH:MM:SS) and notification gate
+  clock_in_reminder:  string | null
+  clock_out_reminder: string | null
+  notifications_enabled: boolean
+  push_subscriptions: PushSubscriptionJSON[]
 }
 
 export interface JobAddress {

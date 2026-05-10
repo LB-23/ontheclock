@@ -14,12 +14,15 @@ type FormState = {
   accrued_til_hours: number
   annual_leave_balance: number
   personal_leave_balance: number
+  clock_in_reminder: string   // 'HH:mm' or ''
+  clock_out_reminder: string
 }
 
 const BLANK: FormState = {
   full_name: '', email: '', password: '', mobile_number: '',
   job_role: '', app_role: 'employee', weekly_hours_category: 38,
   accrued_til_hours: 0, annual_leave_balance: 0, personal_leave_balance: 0,
+  clock_in_reminder: '', clock_out_reminder: '',
 }
 
 export default function Employees() {
@@ -61,6 +64,8 @@ export default function Employees() {
       accrued_til_hours: p.accrued_til_hours ?? 0,
       annual_leave_balance: p.annual_leave_balance ?? 0,
       personal_leave_balance: p.personal_leave_balance ?? 0,
+      clock_in_reminder:  p.clock_in_reminder  ? p.clock_in_reminder.slice(0, 5)  : '',
+      clock_out_reminder: p.clock_out_reminder ? p.clock_out_reminder.slice(0, 5) : '',
     })
     setError('')
     setShowForm(true)
@@ -94,6 +99,8 @@ export default function Employees() {
         mobile_number:         form.mobile_number,
         job_role:              form.job_role,
         app_role:              form.app_role,
+        clock_in_reminder:     form.clock_in_reminder  || null,
+        clock_out_reminder:    form.clock_out_reminder || null,
       }
       if (!isAdmin) {
         updates.weekly_hours_category  = form.weekly_hours_category
@@ -207,6 +214,25 @@ export default function Employees() {
               </div>
             </>
           )}
+
+          {/* Reminder times — admins too can set their own */}
+          {editing && (
+            <div className="grid grid-cols-2 gap-3 border-t border-page pt-4">
+              <div>
+                <label className={labelCls}>Clock-in reminder</label>
+                <input type="time" value={form.clock_in_reminder}
+                       onChange={e => set('clock_in_reminder', e.target.value)} className={inputCls} />
+                <p className="text-[11px] text-muted mt-1">Leave blank to disable</p>
+              </div>
+              <div>
+                <label className={labelCls}>Clock-out reminder</label>
+                <input type="time" value={form.clock_out_reminder}
+                       onChange={e => set('clock_out_reminder', e.target.value)} className={inputCls} />
+                <p className="text-[11px] text-muted mt-1">Leave blank to disable</p>
+              </div>
+            </div>
+          )}
+
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3">
             <button type="submit" disabled={saving} className={`${btnPrimary} h-11`}>{saving ? 'Saving…' : 'Save'}</button>
