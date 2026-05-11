@@ -235,7 +235,7 @@ export default function MyTimesheets() {
     if (s === 'submitted' || s === 'pending') return { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
     if (s === 'approved')                     return { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
     if (s === 'rejected')                     return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
-    return { backgroundColor: '#E8E8E8', color: '#666666' }   // draft (default)
+    return { backgroundColor: '#D9D9D9', color: '#666666' }   // draft (default)
   }
 
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
@@ -382,9 +382,9 @@ export default function MyTimesheets() {
           {selected.status === 'draft' && (
             <button
               onClick={() => { setShowManualForm(true); setErr('') }}
-              className={`${btnSecondary} w-full h-11`}
+              className={`${btnPrimary} w-full h-11`}
             >
-              + Add Manual Entry (no clock-in/out)
+              + Add Manual Entry
             </button>
           )}
 
@@ -397,7 +397,7 @@ export default function MyTimesheets() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink">{fmtDate(e.clock_in)}</p>
                   <p className="text-xs text-muted mt-0.5">
-                    {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳ Active'}
+                    {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}
                   </p>
                   {(e.job_addresses as { address: string })?.address && (
                     <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>

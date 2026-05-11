@@ -37,7 +37,7 @@ export default function Stages() {
           <input value={newName} onChange={e => setNewName(e.target.value)} className={inputCls} placeholder="e.g. Tiling" required />
         </div>
         <button type="submit" disabled={adding} className={`${btnPrimary} h-11 self-end`}>
-          {adding ? '…' : '+ Add'}
+          {adding ? '…' : '+ Add Stage'}
         </button>
       </form>
       <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">

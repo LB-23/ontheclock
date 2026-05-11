@@ -16,7 +16,7 @@ export default function Dashboard() {
       const [{ data: active }, { data: tSheets }, { data: leave }] = await Promise.all([
         supabase.from('time_entries').select('*, profiles(full_name, job_role), job_addresses(address), stages(name)').eq('status', 'active').order('clock_in'),
         supabase.from('timesheets').select('*, profiles(full_name)').eq('status', 'submitted').order('week_start', { ascending: false }),
-        supabase.from('leave_requests').select('*, profiles(full_name)').eq('status', 'pending').order('created_at'),
+        supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at'),
       ])
       setActiveEntries((active as TimeEntry[]) ?? [])
       setPendingTimesheets((tSheets as Timesheet[]) ?? [])
@@ -57,7 +57,7 @@ export default function Dashboard() {
           <button
             key={s.label}
             onClick={() => goTo(s.to)}
-            style={{ backgroundColor: s.bg, color: '#E8E8E8' }}
+            style={{ backgroundColor: s.bg, color: '#FAFAFA' }}
             className="text-left rounded-2xl p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30"
           >
             <p className="text-4xl font-clock font-bold tabular-nums">{s.value}</p>

@@ -37,7 +37,8 @@ export default function TimesheetReview() {
   }
 
   useEffect(() => {
-    supabase.from('profiles').select('id, full_name').order('full_name')
+    // Only show employees (admins don't have timesheets / shouldn't clutter the filter)
+    supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name')
       .then(({ data }) => setEmployees((data as Profile[]) ?? []))
   }, [])
 
@@ -131,7 +132,7 @@ export default function TimesheetReview() {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
-                      <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : '⏳'}</p>
+                      <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}</p>
                       <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
                       {e.notes && (() => {
                         const isRed = e.notes.includes('Auto-closed') || e.notes.includes('Added manually')
@@ -207,11 +208,8 @@ export default function TimesheetReview() {
           <button
             onClick={async () => {
               if (!confirm(`Permanently delete this timesheet for ${(selected.profiles as Profile)?.full_name}?\n\nThis also deletes every time entry inside the week (${fmtWeekRange(selected.week_start)}) and any audit/edit history. This cannot be undone.`)) return
-              // Delete entries first (audit edits cascade via FK)
-              await supabase.from('time_entries').delete()
-                .eq('employee_id', selected.employee_id)
-                .eq('week_start', selected.week_start)
-              await supabase.from('timesheets').delete().eq('id', selected.id)
+              const { error } = await supabase.rpc('admin_delete_timesheet', { timesheet_id: selected.id })
+              if (error) { alert('Delete failed: ' + error.message); return }
               setSelected(null)
               load()
             }}
@@ -248,12 +246,15 @@ export default function TimesheetReview() {
                 <div>
                   <p className="text-sm font-semibold">{(ts.profiles as Profile)?.full_name}</p>
                   <p className="text-xs text-muted">{fmtWeekRange(ts.week_start)}</p>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1 ${
-                    ts.status === 'submitted' ? 'bg-amber-100 text-amber-700'
-                    : ts.status === 'approved' ? 'bg-green-100 text-green-700'
-                    : ts.status === 'rejected' ? 'bg-red-100 text-red-600'
-                    : 'bg-page text-muted'
-                  }`}>{ts.status}</span>
+                  <span
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1"
+                    style={
+                      ts.status === 'submitted' ? { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
+                      : ts.status === 'approved' ? { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
+                      : ts.status === 'rejected' ? { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
+                      : { backgroundColor: '#D9D9D9', color: '#666666' }
+                    }
+                  >{ts.status}</span>
                 </div>
                 <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>

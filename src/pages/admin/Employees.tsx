@@ -39,11 +39,9 @@ export default function Employees() {
   const [viewing, setViewing] = useState<Profile | null>(null)
 
   const load = async () => {
-    const { data: profs } = await supabase.from('profiles').select('*').order('full_name')
-    // Pull email out of auth.users via a select that joins (we already store p.email when /useProfile fetches it,
-    // but the admin needs it for the whole list — use the public.user_emails view, or join via the rpc helper).
-    // Easiest: keep what supabase returns; email is shown only for the logged-in user. The Employees list shows
-    // job_role + role + hours, and clicking opens the detail dialog where we fetch their email separately.
+    // admin_list_employees RPC joins auth.users.email so the admin always
+    // sees and preserves the existing email when editing a profile.
+    const { data: profs } = await supabase.rpc('admin_list_employees')
     setEmployees((profs as Profile[]) ?? [])
     setLoading(false)
   }
@@ -243,26 +241,29 @@ export default function Employees() {
 
       {loading && <p className="text-center text-muted">Loading…</p>}
 
-      <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
-        {employees.map(emp => (
-          <button
-            key={emp.id}
-            onClick={() => setViewing(emp)}
-            className="w-full px-5 py-4 flex justify-between items-center hover:bg-page transition-colors text-left group"
-          >
-            <div>
-              <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
-              <p className="text-xs text-muted">
-                {emp.job_role || 'No role'}
-                {emp.app_role === 'admin'
-                  ? ' · Admin'
-                  : ` · ${emp.weekly_hours_category}h/wk`}
-              </p>
-            </div>
-            <span className="text-xs text-muted group-hover:text-sky">View →</span>
-          </button>
-        ))}
-      </div>
+      {/* Hide the team list while a profile dialog is open */}
+      {!viewing && (
+        <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
+          {employees.map(emp => (
+            <button
+              key={emp.id}
+              onClick={() => setViewing(emp)}
+              className="w-full px-5 py-4 flex justify-between items-center hover:bg-page transition-colors text-left group"
+            >
+              <div>
+                <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
+                <p className="text-xs text-muted">
+                  {emp.job_role || 'No role'}
+                  {emp.app_role === 'admin'
+                    ? ' · Admin'
+                    : ` · ${emp.weekly_hours_category}h/wk`}
+                </p>
+              </div>
+              <span className="text-xs text-muted group-hover:text-sky">View →</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {profileDialog}
     </div>

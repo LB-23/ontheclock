@@ -247,7 +247,7 @@ export default function LeaveAndTIL() {
             { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#0e4d69' },
             { label: 'Time in Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0a3142' },
           ].map(b => (
-            <div key={b.label} style={{ backgroundColor: b.bg, color: '#E8E8E8' }}
+            <div key={b.label} style={{ backgroundColor: b.bg, color: '#FAFAFA' }}
                  className="rounded-2xl p-3 sm:p-4 overflow-hidden">
               <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap opacity-90">
                 {b.label}
@@ -275,31 +275,31 @@ export default function LeaveAndTIL() {
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className={labelCls}>Start Date</label>
               <input type="date" value={form.start_date}
                      onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                     className={inputCls} required />
+                     className={`${inputCls} min-w-0`} required />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className={labelCls}>Start Time</label>
               <input type="time" value={form.start_time}
                      onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                     className={inputCls} required />
+                     className={`${inputCls} min-w-0`} required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className={labelCls}>End Date</label>
               <input type="date" value={form.end_date}
                      onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                     className={inputCls} required />
+                     className={`${inputCls} min-w-0`} required />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className={labelCls}>End Time</label>
               <input type="time" value={form.end_time}
                      onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-                     className={inputCls} required />
+                     className={`${inputCls} min-w-0`} required />
             </div>
           </div>
           <div className="rounded-xl bg-page px-4 py-3 flex justify-between items-center">

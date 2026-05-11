@@ -143,25 +143,21 @@ export default function PunchClock() {
     <div className="max-w-md mx-auto space-y-6">
       {/* Clock display */}
       <div
-        className={`rounded-2xl p-6 text-center shadow-md border ${
-          isClockedIn
-            ? 'text-white border-transparent'
-            : 'bg-surface border-page'
-        }`}
-        style={isClockedIn ? { backgroundColor: '#737373' } : undefined}
+        className="rounded-2xl p-6 text-center shadow-md border border-page text-ink"
+        style={{ backgroundColor: '#FAFAFA' }}
       >
         {isClockedIn ? (
           <>
-            <p className="text-sm font-medium opacity-90 mb-1">Clocked in at</p>
-            <p className="text-3xl font-clock mb-1 tracking-wider">
+            <p className="text-sm font-medium text-muted mb-1">Clocked in at</p>
+            <p className="text-3xl font-clock mb-1 tracking-wider text-ink">
               {format(new Date(activeEntry.clock_in), 'h:mm aaa')}
             </p>
-            <p className="text-7xl font-clock my-3 tracking-wider tabular-nums">{elapsed}</p>
-            <p className="text-sm opacity-90">
+            <p className="text-7xl font-clock my-3 tracking-wider tabular-nums text-ink">{elapsed}</p>
+            <p className="text-sm text-muted">
               {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
             </p>
             {(activeEntry.stages as Stage)?.name && (
-              <p className="text-sm opacity-90">{(activeEntry.stages as Stage).name}</p>
+              <p className="text-sm text-muted">{(activeEntry.stages as Stage).name}</p>
             )}
           </>
         ) : (

@@ -7,6 +7,15 @@ const leaveLabels: Record<string, string> = {
   annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
 }
 
+/** Stable per-employee calendar colour drawn from the brand-approved palette. */
+const EMP_COLOURS = ['#FFEACD', '#F0F9CC', '#CEF0F2', '#E7D0ED', '#F8CDE9'] as const
+function empColour(uuid: string): string {
+  // Simple deterministic hash of the UUID -> palette index
+  let h = 0
+  for (let i = 0; i < uuid.length; i++) h = (h * 31 + uuid.charCodeAt(i)) >>> 0
+  return EMP_COLOURS[h % EMP_COLOURS.length]
+}
+
 export default function LeaveManagement() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [approved, setApproved] = useState<LeaveRequest[]>([])
@@ -18,8 +27,8 @@ export default function LeaveManagement() {
 
   const load = async () => {
     const [{ data: pending }, { data: appr }, { data: emps }] = await Promise.all([
-      supabase.from('leave_requests').select('*, profiles(full_name)').eq('status', 'pending').order('start_date'),
-      supabase.from('leave_requests').select('*, profiles(full_name)').eq('status', 'approved').order('start_date'),
+      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('start_date'),
+      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
       supabase.from('profiles')
         .select('id, full_name, app_role, annual_leave_balance, personal_leave_balance, accrued_til_hours, weekly_hours_category')
         .eq('app_role', 'employee')
@@ -172,15 +181,42 @@ export default function LeaveManagement() {
               return (
                 <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
                   <p className="text-xs text-muted font-medium">{format(day, 'd')}</p>
-                  {leaves.map(l => (
-                    <div key={l.id} className="text-[10px] leading-tight bg-sky/20 text-sky rounded px-0.5 mt-0.5 truncate">
-                      {(l.profiles as Profile)?.full_name?.split(' ')[0]}
-                    </div>
-                  ))}
+                  {leaves.map(l => {
+                    const fullName = (l.profiles as Profile)?.full_name ?? ''
+                    const parts = fullName.trim().split(/\s+/)
+                    const display = parts.length >= 2
+                      ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}`
+                      : parts[0] ?? ''
+                    return (
+                      <div
+                        key={l.id}
+                        className="text-[10px] leading-tight rounded px-0.5 mt-0.5 truncate text-ink"
+                        style={{ backgroundColor: empColour(l.employee_id) }}
+                        title={fullName}
+                      >
+                        {display}
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })}
           </div>
+          {/* Legend */}
+          {approved.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
+              {Array.from(new Map(approved.map(l => [l.employee_id, (l.profiles as Profile)?.full_name ?? ''])).entries()).map(([eid, fullName]) => {
+                const parts = fullName.trim().split(/\s+/)
+                const display = parts.length >= 2 ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}` : parts[0] ?? ''
+                return (
+                  <span key={eid} className="text-[11px] rounded-full px-2 py-0.5 text-ink"
+                        style={{ backgroundColor: empColour(eid) }}>
+                    {display}
+                  </span>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

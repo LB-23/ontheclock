@@ -76,17 +76,17 @@ export function getGPS(): Promise<{ lat: number; lng: number } | null> {
   })
 }
 
-/** Format hours as "7h 30m" */
+/** Format hours as "7h 30m" — always shows minutes (e.g. "8h 0m") */
 export function fmtHours(h: number): string {
-  const hrs = Math.floor(h)
-  const mins = Math.round((h - hrs) * 60)
-  if (mins === 0) return `${hrs}h`
+  const totalMin = Math.round(h * 60)
+  const hrs  = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
   return `${hrs}h ${mins}m`
 }
 
-/** Tailwind class helpers — LB brand palette */
+/** Tailwind class helpers — LB sky-blue primary button */
 export const btnPrimary =
-  'inline-flex items-center justify-center rounded-xl bg-action px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-actionDeep active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center rounded-xl bg-sky px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-skyDeep active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
 
 export const btnSecondary =
   'inline-flex items-center justify-center rounded-xl border border-page bg-surface px-5 py-3 text-sm font-semibold text-ink shadow-sm hover:bg-page active:scale-95 transition-all disabled:opacity-50'
@@ -95,6 +95,6 @@ export const btnDanger =
   'inline-flex items-center justify-center rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50'
 
 export const inputCls =
-  'block w-full rounded-xl border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
+  'block w-full min-w-0 rounded-xl border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
 
 export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
