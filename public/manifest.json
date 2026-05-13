@@ -1,6 +1,6 @@
 {
-  "name": "OnTheClock",
-  "short_name": "OnTheClock",
+  "name": "Larkin Building Group",
+  "short_name": "Larkin Building Group",
   "description": "Time tracking for Larkin Building Group",
   "start_url": "/",
   "display": "standalone",

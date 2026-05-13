@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v7'
+const CACHE = 'ontheclock-v8'
 const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
