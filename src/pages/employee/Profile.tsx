@@ -137,7 +137,7 @@ export default function EmployeeProfile() {
               </button>
             ) : (
               <button type="button" onClick={handleDisablePush} disabled={pushBusy} className={`${btnSecondary} w-full h-11`}>
-                {pushBusy ? 'Disabling…' : '✓ Push enabled — disable on this device'}
+                {pushBusy ? 'Disabling…' : 'Push enabled — disable on this device'}
               </button>
             )}
             {pushErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{pushErr}</p>}

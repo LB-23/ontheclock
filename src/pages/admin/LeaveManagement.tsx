@@ -19,16 +19,18 @@ function empColour(uuid: string): string {
 export default function LeaveManagement() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [approved, setApproved] = useState<LeaveRequest[]>([])
+  const [allRequests, setAllRequests] = useState<LeaveRequest[]>([])
   const [employees, setEmployees] = useState<Profile[]>([])
   const [calMonth, setCalMonth] = useState(new Date())
-  const [tab, setTab] = useState<'pending' | 'balances' | 'calendar'>('pending')
+  const [tab, setTab] = useState<'pending' | 'approved' | 'all' | 'balances' | 'calendar'>('pending')
   const [adminNote, setAdminNote] = useState('')
   const [deciding, setDeciding] = useState<string | null>(null)
 
   const load = async () => {
-    const [{ data: pending }, { data: appr }, { data: emps }] = await Promise.all([
+    const [{ data: pending }, { data: appr }, { data: all }, { data: emps }] = await Promise.all([
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
+      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false }),
       supabase.from('profiles')
         .select('id, full_name, app_role, annual_leave_balance, personal_leave_balance, accrued_til_hours, weekly_hours_category')
         .eq('app_role', 'employee')
@@ -36,6 +38,7 @@ export default function LeaveManagement() {
     ])
     setRequests((pending as LeaveRequest[]) ?? [])
     setApproved((appr as LeaveRequest[]) ?? [])
+    setAllRequests((all as LeaveRequest[]) ?? [])
     setEmployees((emps as Profile[]) ?? [])
   }
 
@@ -91,11 +94,13 @@ export default function LeaveManagement() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
 
-      <div className="flex gap-2">
-        {(['pending', 'balances', 'calendar'] as const).map(t => (
+      <div className="flex gap-2 flex-wrap">
+        {(['pending', 'approved', 'all', 'balances', 'calendar'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${tab === t ? 'bg-sky text-white' : 'bg-surface border border-page text-muted'}`}>
-            {t === 'pending'   ? `Pending (${requests.length})`
+            {t === 'pending'  ? `Pending (${requests.length})`
+             : t === 'approved' ? `Approved (${approved.length})`
+             : t === 'all'      ? `All (${allRequests.length})`
              : t === 'balances' ? `Team Balances (${employees.length})`
              : 'Calendar'}
           </button>
@@ -110,7 +115,9 @@ export default function LeaveManagement() {
               <div className="flex justify-between">
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
-                  <p className="text-sm text-muted">{leaveLabels[r.leave_type]} · {fmtDate(r.start_date)} – {fmtDate(r.end_date)} ({fmtHours(r.total_hours ?? 0)})</p>
+                  <p className="text-sm text-muted">
+                    {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
+                  </p>
                   {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                 </div>
               </div>
@@ -119,11 +126,63 @@ export default function LeaveManagement() {
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} className={inputCls} placeholder="Reason for decision…" />
               </div>
               <div className="flex gap-3">
-                <button onClick={() => decide(r, 'approved')} disabled={deciding === r.id} className={`${btnPrimary} flex-1 h-11`}>✓ Approve</button>
-                <button onClick={() => decide(r, 'declined')} disabled={deciding === r.id} className={`${btnDanger} flex-1 h-11`}>✗ Decline</button>
+                <button onClick={() => decide(r, 'approved')} disabled={deciding === r.id} className={`${btnPrimary} flex-1 h-11`}>Approve</button>
+                <button onClick={() => decide(r, 'declined')} disabled={deciding === r.id} className={`${btnDanger} flex-1 h-11`}>Reject</button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'approved' && (
+        <div className="space-y-3">
+          {approved.length === 0 && <p className="text-center text-muted py-10">No approved leave</p>}
+          {approved.map(r => (
+            <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm px-5 py-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
+                  <p className="text-sm text-muted mt-0.5">
+                    {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''}
+                  </p>
+                  {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
+                </div>
+                <p className="text-sm font-bold font-clock text-skyDeep">{fmtHours(r.total_hours ?? 0)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'all' && (
+        <div className="space-y-3">
+          {allRequests.length === 0 && <p className="text-center text-muted py-10">No leave requests yet</p>}
+          {allRequests.map(r => {
+            const status = r.status
+            const style: React.CSSProperties =
+              status === 'pending'   ? { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
+              : status === 'approved'  ? { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
+              : status === 'withdrawn' ? { backgroundColor: 'rgba(102,102,102,0.15)', color: '#666666' }
+              : { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
+            return (
+              <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm px-5 py-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
+                    <p className="text-sm text-muted mt-0.5">
+                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
+                    </p>
+                    {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
+                    {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
+                    {r.withdrawal_reason && <p className="text-xs text-muted mt-1">↩ Withdrawn: {r.withdrawal_reason}</p>}
+                  </div>
+                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
+                    {status}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 

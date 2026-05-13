@@ -32,6 +32,9 @@ export interface Profile {
   clock_out_reminder: string | null
   notifications_enabled: boolean
   push_subscriptions: PushSubscriptionJSON[]
+  // Weekly leave accrual rates (hours added every Friday by the cron job)
+  annual_accrual_per_week:   number
+  personal_accrual_per_week: number
 }
 
 export interface JobAddress {

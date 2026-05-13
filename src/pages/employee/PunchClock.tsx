@@ -212,7 +212,7 @@ export default function PunchClock() {
             disabled={!selectedJob || loading}
             className={`${btnPrimary} w-full h-14 text-base`}
           >
-            {loading ? 'Clocking in…' : '⏱ Clock In'}
+            {loading ? 'Clocking in…' : 'Clock In'}
           </button>
         </div>
       )}

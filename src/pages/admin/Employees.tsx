@@ -14,6 +14,8 @@ type FormState = {
   accrued_til_hours: number
   annual_leave_balance: number
   personal_leave_balance: number
+  annual_accrual_per_week: number
+  personal_accrual_per_week: number
   clock_in_reminder: string   // 'HH:mm' or ''
   clock_out_reminder: string
 }
@@ -22,6 +24,7 @@ const BLANK: FormState = {
   full_name: '', email: '', password: '', mobile_number: '',
   job_role: '', app_role: 'employee', weekly_hours_category: 38,
   accrued_til_hours: 0, annual_leave_balance: 0, personal_leave_balance: 0,
+  annual_accrual_per_week: 0, personal_accrual_per_week: 0,
   clock_in_reminder: '', clock_out_reminder: '',
 }
 
@@ -62,6 +65,8 @@ export default function Employees() {
       accrued_til_hours: p.accrued_til_hours ?? 0,
       annual_leave_balance: p.annual_leave_balance ?? 0,
       personal_leave_balance: p.personal_leave_balance ?? 0,
+      annual_accrual_per_week:   p.annual_accrual_per_week   ?? 0,
+      personal_accrual_per_week: p.personal_accrual_per_week ?? 0,
       clock_in_reminder:  p.clock_in_reminder  ? p.clock_in_reminder.slice(0, 5)  : '',
       clock_out_reminder: p.clock_out_reminder ? p.clock_out_reminder.slice(0, 5) : '',
     })
@@ -101,10 +106,12 @@ export default function Employees() {
         clock_out_reminder:    form.clock_out_reminder || null,
       }
       if (!isAdmin) {
-        updates.weekly_hours_category  = form.weekly_hours_category
-        updates.accrued_til_hours      = form.accrued_til_hours
-        updates.annual_leave_balance   = form.annual_leave_balance
-        updates.personal_leave_balance = form.personal_leave_balance
+        updates.weekly_hours_category    = form.weekly_hours_category
+        updates.accrued_til_hours        = form.accrued_til_hours
+        updates.annual_leave_balance     = form.annual_leave_balance
+        updates.personal_leave_balance   = form.personal_leave_balance
+        updates.annual_accrual_per_week  = form.annual_accrual_per_week
+        updates.personal_accrual_per_week = form.personal_accrual_per_week
       }
       const { error: updErr } = await supabase.from('profiles').update(updates).eq('id', editing.id)
       if (updErr) { setError(updErr.message); setSaving(false); return }
@@ -152,6 +159,8 @@ export default function Employees() {
               <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
+              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Annual accrual/wk</dt><dd className="text-ink">{fmtHours(viewing.annual_accrual_per_week ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Personal-Sick accrual/wk</dt><dd className="text-ink">{fmtHours(viewing.personal_accrual_per_week ?? 0)}</dd></div>
             </>
           )}
         </dl>
@@ -209,6 +218,26 @@ export default function Employees() {
                 <div><label className={labelCls}>Annual Leave (hours)</label><input type="number" step="0.5" value={form.annual_leave_balance} onChange={e => set('annual_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
                 <div><label className={labelCls}>Personal Leave (hours)</label><input type="number" step="0.5" value={form.personal_leave_balance} onChange={e => set('personal_leave_balance', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
                 <div><label className={labelCls}>TIL (hours)</label><input type="number" step="0.5" value={form.accrued_til_hours} onChange={e => set('accrued_til_hours', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
+              </div>
+
+              {/* Weekly accrual rates — added to the running balance every Friday */}
+              <div className="border-t border-page pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Weekly Accrual (auto-added every Friday)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Annual / week (hours)</label>
+                    <input type="number" step="0.01" min="0" value={form.annual_accrual_per_week}
+                           onChange={e => set('annual_accrual_per_week', parseFloat(e.target.value) || 0)}
+                           className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Personal-Sick / week (hours)</label>
+                    <input type="number" step="0.01" min="0" value={form.personal_accrual_per_week}
+                           onChange={e => set('personal_accrual_per_week', parseFloat(e.target.value) || 0)}
+                           className={inputCls} />
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted mt-2">e.g. for 4 weeks annual leave a year on 38h/wk: 38 × 4 ÷ 52 ≈ 2.92 hr/week</p>
               </div>
             </>
           )}

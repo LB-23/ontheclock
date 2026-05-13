@@ -210,10 +210,10 @@ export default function LeaveAndTIL() {
           )}
         </dl>
 
-        {/* Pending: can be removed outright */}
-        {openReq.status === 'pending' && (
+        {/* Pending / withdrawn / declined: can be removed outright */}
+        {(openReq.status === 'pending' || openReq.status === 'withdrawn' || openReq.status === 'declined') && (
           <button onClick={() => removeRequest(openReq)} className={`${btnDanger} w-full h-11`}>
-            Remove Request
+            Delete Request
           </button>
         )}
 

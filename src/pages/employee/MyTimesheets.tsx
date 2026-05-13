@@ -400,7 +400,7 @@ export default function MyTimesheets() {
                     {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}
                   </p>
                   {(e.job_addresses as { address: string })?.address && (
-                    <p className="text-xs text-muted mt-0.5 truncate">📍 {(e.job_addresses as { address: string }).address}</p>
+                    <p className="text-xs text-muted mt-0.5 truncate">{(e.job_addresses as { address: string }).address}</p>
                   )}
                   {e.notes && (() => {
                     const isAuto    = e.notes.includes('Auto-closed')

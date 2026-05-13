@@ -143,22 +143,32 @@ export default function Dashboard() {
       {pendingLeave.length > 0 && (
         <div className="bg-surface rounded-2xl border border-page shadow-sm">
           <div className="px-5 py-4 border-b border-page flex items-center justify-between">
-            <h2 className="font-semibold text-ink">🌴 Leave Requests Pending</h2>
+            <h2 className="font-semibold text-ink">Leave Requests Pending</h2>
             <button onClick={() => nav('/leave')} className="text-xs text-sky hover:underline">
               Review all →
             </button>
           </div>
           <div className="divide-y divide-page">
-            {pendingLeave.map(lr => (
-              <button
-                key={lr.id}
-                onClick={() => nav('/leave')}
-                className="w-full px-5 py-4 hover:bg-page transition-colors text-left"
-              >
-                <p className="text-sm font-semibold">{(lr.profiles as { full_name: string })?.full_name}</p>
-                <p className="text-xs text-muted capitalize">{lr.leave_type.replace('_', ' ')} · {lr.start_date} → {lr.end_date}</p>
-              </button>
-            ))}
+            {pendingLeave.map(lr => {
+              // Normalise leave-type label: 'time_in_lieu' -> 'time in lieu', plus capitalize.
+              const typeLabel = lr.leave_type.replace(/_/g, ' ')
+              const start = lr.start_time
+                ? `${lr.start_date} ${lr.start_time.slice(0, 5)}`
+                : lr.start_date
+              const end = lr.end_time
+                ? `${lr.end_date} ${lr.end_time.slice(0, 5)}`
+                : lr.end_date
+              return (
+                <button
+                  key={lr.id}
+                  onClick={() => nav('/leave')}
+                  className="w-full px-5 py-4 hover:bg-page transition-colors text-left"
+                >
+                  <p className="text-sm font-semibold">{(lr.profiles as { full_name: string })?.full_name}</p>
+                  <p className="text-xs text-muted capitalize">{typeLabel} · {start} → {end}</p>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
