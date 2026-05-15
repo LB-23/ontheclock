@@ -392,44 +392,58 @@ export default function MyTimesheets() {
             {entries.length === 0 && (
               <p className="p-6 text-center text-muted">No entries this week</p>
             )}
-            {entries.map(e => (
-              <div key={e.id} className="px-5 py-4 flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink">{fmtDate(e.clock_in)}</p>
-                  <p className="text-xs text-muted mt-0.5">
-                    {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}
-                  </p>
-                  {(e.job_addresses as { address: string })?.address && (
-                    <p className="text-xs text-muted mt-0.5 truncate">{(e.job_addresses as { address: string }).address}</p>
-                  )}
-                  {e.notes && (() => {
-                    const isAuto    = e.notes.includes('Auto-closed')
-                    const isManual  = e.notes.includes('Added manually')
-                    const isRedItalic = isAuto || isManual
-                    return (
+            {entries.map(e => {
+              const isSystem  = e.entry_type && e.entry_type !== 'regular'
+              return (
+                <div key={e.id} className="px-5 py-4 flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink">{fmtDate(e.clock_in)}</p>
+                    {isSystem ? (
                       <p
-                        className={`text-[11px] mt-1 ${isRedItalic ? 'italic' : ''}`}
-                        style={{ color: isRedItalic ? '#FF2828' : '#000000' }}
+                        className="text-[12px] italic mt-0.5"
+                        style={{ color: '#15739D' }}
                       >
-                        {e.notes}
+                        {e.notes /* 'Annual Leave', 'Personal/Sick Leave', 'TIL', or 'Public Holiday — <name>' */}
                       </p>
-                    )
-                  })()}
-                  {e.status === 'edited' && (
-                    <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>
-                  )}
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted mt-0.5">
+                          {fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}
+                        </p>
+                        {(e.job_addresses as { address: string })?.address && (
+                          <p className="text-xs text-muted mt-0.5 truncate">{(e.job_addresses as { address: string }).address}</p>
+                        )}
+                        {e.notes && (() => {
+                          const isAuto    = e.notes.includes('Auto-closed')
+                          const isManual  = e.notes.includes('Added manually')
+                          const isRedItalic = isAuto || isManual
+                          return (
+                            <p
+                              className={`text-[11px] mt-1 ${isRedItalic ? 'italic' : ''}`}
+                              style={{ color: isRedItalic ? '#FF2828' : '#000000' }}
+                            >
+                              {e.notes}
+                            </p>
+                          )
+                        })()}
+                        {e.status === 'edited' && (
+                          <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="text-right ml-3 flex-shrink-0">
+                    <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                    {e.is_overtime && !isSystem && <span className="text-xs text-orange-600 font-medium">OT</span>}
+                    {selected.status === 'draft' && !isSystem && (
+                      <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
+                        Edit
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right ml-3 flex-shrink-0">
-                  <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                  {e.is_overtime && <span className="text-xs text-orange-600 font-medium">OT</span>}
-                  {selected.status === 'draft' && (
-                    <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
-                      ✎ Edit
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">

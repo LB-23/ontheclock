@@ -127,24 +127,31 @@ export default function TimesheetReview() {
             {entries.map(e => {
               const entryEdits = edits[e.id] ?? []
               const hasEdits = entryEdits.length > 0
+              const isSystem = e.entry_type && e.entry_type !== 'regular'
               return (
                 <div key={e.id} className="px-5 py-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{fmtDate(e.clock_in)}</p>
-                      <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}</p>
-                      <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
-                      {e.notes && (() => {
-                        const isRed = e.notes.includes('Auto-closed') || e.notes.includes('Added manually')
-                        return (
-                          <p
-                            className={`text-[11px] mt-1 ${isRed ? 'italic' : ''}`}
-                            style={{ color: isRed ? '#FF2828' : '#000000' }}
-                          >
-                            {e.notes}
-                          </p>
-                        )
-                      })()}
+                      {isSystem ? (
+                        <p className="text-[12px] italic mt-0.5" style={{ color: '#15739D' }}>{e.notes}</p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-muted">{fmtTime(e.clock_in)} → {e.clock_out ? fmtTime(e.clock_out) : 'Active'}</p>
+                          <p className="text-xs text-muted truncate">{(e.job_addresses as { address: string })?.address}</p>
+                          {e.notes && (() => {
+                            const isRed = e.notes.includes('Auto-closed') || e.notes.includes('Added manually')
+                            return (
+                              <p
+                                className={`text-[11px] mt-1 ${isRed ? 'italic' : ''}`}
+                                style={{ color: isRed ? '#FF2828' : '#000000' }}
+                              >
+                                {e.notes}
+                              </p>
+                            )
+                          })()}
+                        </>
+                      )}
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, type LeaveRequest, type Profile } from '../../lib/supabase'
+import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
 import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 
@@ -25,6 +25,67 @@ export default function LeaveManagement() {
   const [tab, setTab] = useState<'pending' | 'approved' | 'all' | 'balances' | 'calendar'>('pending')
   const [adminNote, setAdminNote] = useState('')
   const [deciding, setDeciding] = useState<string | null>(null)
+
+  // Edit / delete dialog state
+  const [openReq, setOpenReq] = useState<LeaveRequest | null>(null)
+  const [editForm, setEditForm] = useState({
+    leave_type: 'annual' as LeaveType,
+    start_date: '', start_time: '',
+    end_date:   '', end_time:   '',
+    total_hours: 0,
+    reason: '',
+    admin_notes: '',
+  })
+  const [editBusy, setEditBusy] = useState(false)
+  const [editErr, setEditErr] = useState('')
+
+  const openEdit = (r: LeaveRequest) => {
+    setOpenReq(r)
+    setEditForm({
+      leave_type: r.leave_type,
+      start_date: r.start_date,
+      start_time: r.start_time ? r.start_time.slice(0, 5) : '07:00',
+      end_date:   r.end_date,
+      end_time:   r.end_time   ? r.end_time.slice(0, 5)   : '15:36',
+      total_hours: Number(r.total_hours ?? 0),
+      reason: r.reason ?? '',
+      admin_notes: r.admin_notes ?? '',
+    })
+    setEditErr('')
+  }
+
+  const saveEdit = async () => {
+    if (!openReq) return
+    setEditBusy(true); setEditErr('')
+    const { error } = await supabase.from('leave_requests').update({
+      leave_type:  editForm.leave_type,
+      start_date:  editForm.start_date,
+      start_time:  editForm.start_time + ':00',
+      end_date:    editForm.end_date,
+      end_time:    editForm.end_time   + ':00',
+      total_hours: editForm.total_hours,
+      reason:      editForm.reason || null,
+      admin_notes: editForm.admin_notes || null,
+    }).eq('id', openReq.id)
+    setEditBusy(false)
+    if (error) { setEditErr(error.message); return }
+    setOpenReq(null)
+    load()
+  }
+
+  const deleteRequest = async () => {
+    if (!openReq) return
+    const restoreNote = openReq.status === 'approved'
+      ? `\n\n${fmtHours(openReq.total_hours ?? 0)} will be returned to the employee's ${openReq.leave_type} balance.`
+      : ''
+    if (!confirm(`Permanently delete this leave request for ${(openReq.profiles as Profile)?.full_name}?${restoreNote}`)) return
+    setEditBusy(true)
+    const { error } = await supabase.rpc('admin_delete_leave_request', { req_id: openReq.id })
+    setEditBusy(false)
+    if (error) { setEditErr(error.message); return }
+    setOpenReq(null)
+    load()
+  }
 
   const load = async () => {
     const [{ data: pending }, { data: appr }, { data: all }, { data: emps }] = await Promise.all([
@@ -111,16 +172,19 @@ export default function LeaveManagement() {
         <div className="space-y-4">
           {requests.length === 0 && <p className="text-center text-muted py-10">No pending requests</p>}
           {requests.map(r => (
-            <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
-              <div className="flex justify-between">
-                <div>
-                  <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
-                  <p className="text-sm text-muted">
-                    {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
-                  </p>
-                  {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
+            <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3 hover:border-sky/40 transition-colors">
+              <button type="button" onClick={() => openEdit(r)} className="w-full text-left">
+                <div className="flex justify-between">
+                  <div>
+                    <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
+                    <p className="text-sm text-muted">
+                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
+                    </p>
+                    {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
+                  </div>
+                  <span className="text-xs text-muted">Edit ▸</span>
                 </div>
-              </div>
+              </button>
               <div>
                 <label className={labelCls}>Note (optional)</label>
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} className={inputCls} placeholder="Reason for decision…" />
@@ -138,7 +202,8 @@ export default function LeaveManagement() {
         <div className="space-y-3">
           {approved.length === 0 && <p className="text-center text-muted py-10">No approved leave</p>}
           {approved.map(r => (
-            <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm px-5 py-4">
+            <button key={r.id} onClick={() => openEdit(r)}
+                    className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
@@ -149,7 +214,7 @@ export default function LeaveManagement() {
                 </div>
                 <p className="text-sm font-bold font-clock text-skyDeep">{fmtHours(r.total_hours ?? 0)}</p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -165,7 +230,8 @@ export default function LeaveManagement() {
               : status === 'withdrawn' ? { backgroundColor: 'rgba(102,102,102,0.15)', color: '#666666' }
               : { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
             return (
-              <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm px-5 py-4">
+              <button key={r.id} onClick={() => openEdit(r)}
+                      className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
@@ -180,7 +246,7 @@ export default function LeaveManagement() {
                     {status}
                   </span>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
@@ -218,6 +284,94 @@ export default function LeaveManagement() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Edit/delete dialog — opens when admin clicks any leave entry */}
+      {openReq && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6"
+             onClick={() => setOpenReq(null)}>
+          <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+               onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-lg">{(openReq.profiles as Profile)?.full_name}</p>
+              <button type="button" onClick={() => setOpenReq(null)} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-xs text-muted capitalize">{openReq.status}</p>
+
+            <div>
+              <label className={labelCls}>Leave Type</label>
+              <select value={editForm.leave_type}
+                      onChange={e => setEditForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
+                      className={inputCls}>
+                {Object.entries(leaveLabels).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+                <option value="unpaid">Unpaid</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0">
+                <label className={labelCls}>Start Date</label>
+                <input type="date" value={editForm.start_date}
+                       onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))}
+                       className={`${inputCls} min-w-0`} />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>Start Time</label>
+                <input type="time" value={editForm.start_time}
+                       onChange={e => setEditForm(f => ({ ...f, start_time: e.target.value }))}
+                       className={`${inputCls} min-w-0`} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0">
+                <label className={labelCls}>End Date</label>
+                <input type="date" value={editForm.end_date}
+                       onChange={e => setEditForm(f => ({ ...f, end_date: e.target.value }))}
+                       className={`${inputCls} min-w-0`} />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>End Time</label>
+                <input type="time" value={editForm.end_time}
+                       onChange={e => setEditForm(f => ({ ...f, end_time: e.target.value }))}
+                       className={`${inputCls} min-w-0`} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Total Hours</label>
+              <input type="number" step="any" min="0" value={editForm.total_hours}
+                     onChange={e => setEditForm(f => ({ ...f, total_hours: parseFloat(e.target.value) || 0 }))}
+                     className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Reason</label>
+              <textarea value={editForm.reason}
+                        onChange={e => setEditForm(f => ({ ...f, reason: e.target.value }))}
+                        className={`${inputCls} resize-none`} rows={2} />
+            </div>
+            <div>
+              <label className={labelCls}>Admin Note</label>
+              <textarea value={editForm.admin_notes}
+                        onChange={e => setEditForm(f => ({ ...f, admin_notes: e.target.value }))}
+                        className={`${inputCls} resize-none`} rows={2} />
+            </div>
+            {editErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{editErr}</p>}
+            <div className="flex gap-3 pt-2">
+              <button onClick={saveEdit} disabled={editBusy} className={`${btnPrimary} flex-1 h-11`}>
+                {editBusy ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={() => setOpenReq(null)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+            </div>
+            <button onClick={deleteRequest} disabled={editBusy} className={`${btnDanger} w-full h-11`}>
+              Delete Request
+            </button>
+            {openReq.status === 'approved' && (
+              <p className="text-[11px] text-center text-muted">
+                Deleting will return {fmtHours(Number(openReq.total_hours ?? 0))} to the employee's {leaveLabels[openReq.leave_type]} balance.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

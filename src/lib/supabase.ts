@@ -9,6 +9,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export type AppRole = 'admin' | 'employee'
 export type WeeklyHours = 38 | 40 | 42
 export type EntryStatus = 'active' | 'completed' | 'submitted' | 'approved' | 'edited'
+export type EntryType = 'regular' | 'annual_leave' | 'personal_leave' | 'time_in_lieu' | 'public_holiday'
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
 export type LeaveType = 'annual' | 'personal' | 'time_in_lieu' | 'unpaid'
 export type LeaveStatus = 'pending' | 'approved' | 'declined' | 'withdrawn'
@@ -68,6 +69,8 @@ export interface TimeEntry {
   status: EntryStatus
   week_start: string | null
   notes: string | null
+  entry_type: EntryType
+  source_leave_id: string | null
   created_at: string
   // joined
   job_addresses?: JobAddress

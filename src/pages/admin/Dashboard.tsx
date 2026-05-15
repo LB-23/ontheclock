@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, type TimeEntry, type Timesheet, type LeaveRequest } from '../../lib/supabase'
-import { fmtTime, fmtHours } from '../../lib/utils'
+import { fmtTime, fmtHours, fmtWeekRangeLong } from '../../lib/utils'
 import { format } from 'date-fns'
 
 export default function Dashboard() {
@@ -88,7 +88,7 @@ export default function Dashboard() {
                       In at {fmtTime(e.clock_in)} · {(e.job_addresses as { address: string })?.address ?? '—'}
                     </p>
                     {(e.stages as { name: string })?.name && (
-                      <p className="text-xs text-muted">🔧 {(e.stages as { name: string }).name}</p>
+                      <p className="text-xs text-muted">{(e.stages as { name: string }).name}</p>
                     )}
                     {e.clock_in_lat && (
                       <a
@@ -98,7 +98,7 @@ export default function Dashboard() {
                         className="text-xs text-sky underline"
                         onClick={ev => ev.stopPropagation()}
                       >
-                        📍 View on map
+                        View on map
                       </a>
                     )}
                   </div>
@@ -116,7 +116,7 @@ export default function Dashboard() {
       {pendingTimesheets.length > 0 && (
         <div className="bg-surface rounded-2xl border border-page shadow-sm">
           <div className="px-5 py-4 border-b border-page flex items-center justify-between">
-            <h2 className="font-semibold text-ink">📋 Timesheets Awaiting Approval</h2>
+            <h2 className="font-semibold text-ink">Timesheets Awaiting Approval</h2>
             <button onClick={() => nav('/timesheets')} className="text-xs text-sky hover:underline">
               Review all →
             </button>
@@ -130,7 +130,7 @@ export default function Dashboard() {
               >
                 <div>
                   <p className="text-sm font-semibold">{(ts.profiles as { full_name: string })?.full_name}</p>
-                  <p className="text-xs text-muted">Week of {ts.week_start}</p>
+                  <p className="text-xs text-muted">Week of {fmtWeekRangeLong(ts.week_start)}</p>
                 </div>
                 <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>

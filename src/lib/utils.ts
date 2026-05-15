@@ -24,6 +24,19 @@ export function fmtWeekRange(weekStart: string): string {
   return `${format(start, 'EEE d MMM')} – ${format(end, 'EEE d MMM')}`
 }
 
+/** "8 Mar 2026 – 14 Mar 2026" — no weekday, includes year. Used by reports and dashboard. */
+export function fmtWeekRangeLong(weekStart: string): string {
+  const start = parseISO(weekStart)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+  return `${format(start, 'd MMM yyyy')} – ${format(end, 'd MMM yyyy')}`
+}
+
+/** "8 Mar 2026" — single-day variant matching the same style */
+export function fmtDateLong(iso: string): string {
+  return format(parseISO(iso), 'd MMM yyyy')
+}
+
 /** Hours between two ISO timestamps, rounded to 2dp */
 export function calcHours(clockIn: string, clockOut: string): number {
   const ms = new Date(clockOut).getTime() - new Date(clockIn).getTime()
