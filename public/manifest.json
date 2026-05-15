@@ -1,6 +1,6 @@
 {
-  "name": "Larkin Building Group",
-  "short_name": "Larkin Building Group",
+  "name": "Larkin Building",
+  "short_name": "Larkin Building",
   "description": "Time tracking for Larkin Building Group",
   "start_url": "/",
   "display": "standalone",

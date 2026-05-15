@@ -159,8 +159,8 @@ export default function Employees() {
               <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
-              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Annual accrual/wk</dt><dd className="text-ink">{fmtHours(viewing.annual_accrual_per_week ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Personal-Sick accrual/wk</dt><dd className="text-ink">{fmtHours(viewing.personal_accrual_per_week ?? 0)}</dd></div>
+              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock tabular-nums">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(4)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock tabular-nums">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(4)}</dd></div>
             </>
           )}
         </dl>
@@ -222,22 +222,22 @@ export default function Employees() {
 
               {/* Weekly accrual rates — added to the running balance every Friday */}
               <div className="border-t border-page pt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Weekly Accrual (auto-added every Friday)</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Accrued Leave P/W (auto-added every Thursday)</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Annual / week (hours)</label>
-                    <input type="number" step="0.01" min="0" value={form.annual_accrual_per_week}
+                    <label className={labelCls}>Annual P/W (hours)</label>
+                    <input type="number" step="0.0001" min="0" value={form.annual_accrual_per_week}
                            onChange={e => set('annual_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Personal-Sick / week (hours)</label>
-                    <input type="number" step="0.01" min="0" value={form.personal_accrual_per_week}
+                    <label className={labelCls}>Personal/Sick P/W (hours)</label>
+                    <input type="number" step="0.0001" min="0" value={form.personal_accrual_per_week}
                            onChange={e => set('personal_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>
                 </div>
-                <p className="text-[11px] text-muted mt-2">e.g. for 4 weeks annual leave a year on 38h/wk: 38 × 4 ÷ 52 ≈ 2.92 hr/week</p>
+                <p className="text-[11px] text-muted mt-2">e.g. 4 weeks annual leave a year on 38h/wk → 38 × 4 ÷ 52 ≈ 2.9231 hr/week</p>
               </div>
             </>
           )}
