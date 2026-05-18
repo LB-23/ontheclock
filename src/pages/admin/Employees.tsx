@@ -271,28 +271,52 @@ export default function Employees() {
       {loading && <p className="text-center text-muted">Loading…</p>}
 
       {/* Hide the team list while a profile dialog is open */}
-      {!viewing && (
-        <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
-          {employees.map(emp => (
-            <button
-              key={emp.id}
-              onClick={() => setViewing(emp)}
-              className="w-full px-5 py-4 flex justify-between items-center hover:bg-page transition-colors text-left group"
-            >
-              <div>
-                <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
-                <p className="text-xs text-muted">
-                  {emp.job_role || 'No role'}
-                  {emp.app_role === 'admin'
-                    ? ' · Admin'
-                    : ` · ${emp.weekly_hours_category}h/wk`}
-                </p>
-              </div>
-              <span className="text-xs text-muted group-hover:text-sky">View →</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {!viewing && (() => {
+        const admins    = employees.filter(e => e.app_role === 'admin')
+        const employed  = employees.filter(e => e.app_role === 'employee')
+
+        const renderList = (list: Profile[], emptyLabel: string) => (
+          <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
+            {list.length === 0 ? (
+              <p className="px-5 py-6 text-center text-muted text-sm">{emptyLabel}</p>
+            ) : list.map(emp => (
+              <button
+                key={emp.id}
+                onClick={() => setViewing(emp)}
+                className="w-full px-5 py-4 flex justify-between items-center hover:bg-page transition-colors text-left group"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
+                  <p className="text-xs text-muted">
+                    {emp.job_role || 'No role'}
+                    {emp.app_role === 'admin'
+                      ? ' · Admin'
+                      : ` · ${emp.weekly_hours_category}h/wk`}
+                  </p>
+                </div>
+                <span className="text-xs text-muted group-hover:text-sky">View →</span>
+              </button>
+            ))}
+          </div>
+        )
+
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+                Admins ({admins.length})
+              </h2>
+              {renderList(admins, 'No admin users')}
+            </div>
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+                Employees ({employed.length})
+              </h2>
+              {renderList(employed, 'No employees yet')}
+            </div>
+          </div>
+        )
+      })()}
 
       {profileDialog}
     </div>

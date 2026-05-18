@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
@@ -24,6 +26,12 @@ export default function MyTimesheets() {
   const [submitting, setSubmitting] = useState(false)
   const [jobAddresses, setJobAddresses] = useState<JobAddress[]>([])
   const [err, setErr] = useState('')
+
+  // Export dialog
+  const [showExport, setShowExport] = useState(false)
+  const [expFrom, setExpFrom] = useState('')
+  const [expTo,   setExpTo]   = useState('')
+  const [exporting, setExporting] = useState(false)
 
   // Manual entry form
   const [showManualForm, setShowManualForm] = useState(false)
@@ -89,6 +97,92 @@ export default function MyTimesheets() {
       reason:      '',
     })
     setErr('')
+  }
+
+  /** Export every timesheet in [expFrom..expTo] as a multi-page PDF, one week per page. */
+  const exportPdf = async () => {
+    if (!profile || !expFrom || !expTo) { setErr('Pick a date range first.'); return }
+    setExporting(true); setErr('')
+
+    // 1. Find every timesheet whose week_start falls in [expFrom..expTo]
+    const { data: tsRows } = await supabase
+      .from('timesheets')
+      .select('*')
+      .eq('employee_id', profile.id)
+      .gte('week_start', expFrom)
+      .lte('week_start', expTo)
+      .order('week_start')
+
+    const sheets = (tsRows as Timesheet[]) ?? []
+    if (sheets.length === 0) {
+      setErr('No timesheets found in that range.')
+      setExporting(false)
+      return
+    }
+
+    // 2. Pull every entry across those weeks in one query
+    const weekStarts = sheets.map(s => s.week_start)
+    const { data: entryRows } = await supabase
+      .from('time_entries')
+      .select('*, job_addresses(address), stages(name)')
+      .eq('employee_id', profile.id)
+      .in('week_start', weekStarts)
+      .order('clock_in')
+    const byWeek: Record<string, TimeEntry[]> = {}
+    for (const e of (entryRows as TimeEntry[]) ?? []) {
+      const k = e.week_start ?? ''
+      ;(byWeek[k] ||= []).push(e)
+    }
+
+    // 3. Build the PDF — one timesheet per page
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
+
+    sheets.forEach((ts, idx) => {
+      if (idx > 0) pdf.addPage()
+
+      pdf.setFontSize(16)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(profile.full_name || 'Employee', 40, 50)
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'normal')
+      pdf.text(`Timesheet · ${fmtWeekRange(ts.week_start)}`, 40, 70)
+      pdf.text(`Status: ${ts.status}`, 40, 86)
+
+      const rows = (byWeek[ts.week_start] ?? []).map(e => [
+        format(new Date(e.clock_in), 'EEE dd MMM'),
+        (e.job_addresses as { address: string })?.address ?? '—',
+        (e.stages as { name: string })?.name ?? '—',
+        format(new Date(e.clock_in), 'HH:mm'),
+        e.clock_out ? format(new Date(e.clock_out), 'HH:mm') : '—',
+        e.total_hours ? fmtHours(Number(e.total_hours)) : '—',
+        e.notes ?? '',
+      ])
+
+      autoTable(pdf, {
+        startY: 105,
+        head: [['Date', 'Site', 'Stage', 'In', 'Out', 'Hours', 'Notes']],
+        body: rows.length > 0 ? rows : [['No entries this week', '', '', '', '', '', '']],
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [28, 159, 218], textColor: 250 },
+        columnStyles: { 6: { cellWidth: 120 } },
+      })
+
+      // Footer totals
+      const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`Regular: ${fmtHours(Number(ts.regular_hours ?? 0))}`,  40, finalY)
+      pdf.text(`Overtime: ${fmtHours(Number(ts.overtime_hours ?? 0))}`, 180, finalY)
+      pdf.text(`Total: ${fmtHours(Number(ts.total_hours ?? 0))}`,       340, finalY)
+      if (ts.admin_notes) {
+        pdf.setFont('helvetica', 'italic')
+        pdf.setFontSize(9)
+        pdf.text(`Admin note: ${ts.admin_notes}`, 40, finalY + 18, { maxWidth: 510 })
+      }
+    })
+
+    pdf.save(`${profile.full_name.replace(/\s+/g, '_')}_timesheets_${expFrom}_to_${expTo}.pdf`)
+    setExporting(false)
+    setShowExport(false)
   }
 
   const submitManualEntry = async (e: React.FormEvent) => {
@@ -490,6 +584,17 @@ export default function MyTimesheets() {
         </div>
       ) : (
         <>
+          <button
+            onClick={() => {
+              const today = format(new Date(), 'yyyy-MM-dd')
+              const monthAgo = format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd')
+              setExpFrom(monthAgo); setExpTo(today); setShowExport(true); setErr('')
+            }}
+            className={`${btnSecondary} w-full h-11`}
+          >
+            ↓ Export Timesheets (PDF)
+          </button>
+
           {timesheets.length === 0 && (
             <div className="text-center py-16 text-muted">No timesheets yet — clock in once to start one.</div>
           )}
@@ -505,13 +610,38 @@ export default function MyTimesheets() {
                   <span className={badgeCls} style={statusStyle(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>
+                  <p className="text-sm font-bold text-sky">{fmtHours(ts.total_hours ?? 0)}</p>
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>
             ))}
           </div>
         </>
+      )}
+
+      {showExport && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
+          <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold">Export Timesheets</p>
+              <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-xs text-muted">One PDF, one page per timesheet within the selected date range.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={labelCls}>From</label>
+                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>To</label>
+                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)} className={inputCls} /></div>
+            </div>
+            {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
+            <div className="flex gap-3 pt-2">
+              <button onClick={exportPdf} disabled={exporting} className={`${btnPrimary} flex-1 h-11`}>
+                {exporting ? 'Generating…' : 'Generate PDF'}
+              </button>
+              <button onClick={() => { setShowExport(false); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {editDialog}

@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v10'
+const CACHE = 'ontheclock-v11'
 const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
@@ -53,9 +53,8 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let data = {}
   try { data = e.data?.json() ?? {} } catch { data = { title: e.data?.text() } }
-  const title = data.title || 'OnTheClock'
+  const title = data.title || 'Larkin Building Group'
   const opts = {
-    body: data.body || '',
     icon: '/lb-outlined.png',
     badge: '/lb-outlined.png',
     tag: data.kind || 'ontheclock',
@@ -63,6 +62,9 @@ self.addEventListener('push', e => {
     requireInteraction: false,
     vibrate: [200, 100, 200],
   }
+  // Only include `body` when it's a non-empty string. iOS renders an empty
+  // body as a visible blank line; omitting it collapses the layout.
+  if (data.body && String(data.body).length > 0) opts.body = String(data.body)
   e.waitUntil(self.registration.showNotification(title, opts))
 })
 

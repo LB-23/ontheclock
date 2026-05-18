@@ -149,12 +149,12 @@ export default function Reports() {
           const isLeave = e.entry_type && e.entry_type !== 'regular'
           const leaveLabel = entryTypeLabel(e.entry_type as string)
           return {
-            Employee:   (e.profiles as { full_name: string })?.full_name ?? '',
-            Date:       e.clock_in ? fmtDateLong(e.clock_in as string) : '',
-            Site:       (e.job_addresses as { address: string })?.address ?? '',
-            Stage:      (e.stages as { name: string })?.name ?? '',
-            'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'HH:mm') : '',
-            'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'HH:mm') : '',
+            Employee:     (e.profiles as { full_name: string })?.full_name ?? '',
+            Date:         e.clock_in ? fmtDateLong(e.clock_in as string) : '',
+            Site:         (e.job_addresses as { address: string })?.address ?? '',
+            Stage:        (e.stages as { name: string })?.name ?? '',
+            'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'HH:mm') : '',
+            'End Time':   e.clock_out ? format(new Date(e.clock_out as string), 'HH:mm') : '',
             'Total Hours': fmtHours(Number(e.total_hours ?? 0)),
             'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
           }
@@ -287,7 +287,7 @@ export default function Reports() {
               <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
                 <input type="radio" name="weeklyVariant" checked={weeklyVariant === 'detailed'}
                        onChange={() => setWeeklyVariant('detailed')} className="accent-sky" />
-                <span><strong>Detailed</strong> — every entry per employee with Date, Site, Stage, times, hours, leave taken</span>
+                <span><strong>Detailed</strong> — Date, Site, Stage, Start Time, End Time, Total Hours, Leave Taken</span>
               </label>
             </fieldset>
           </>

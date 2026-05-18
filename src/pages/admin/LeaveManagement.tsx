@@ -212,7 +212,7 @@ export default function LeaveManagement() {
                   </p>
                   {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
                 </div>
-                <p className="text-sm font-bold font-clock text-skyDeep">{fmtHours(r.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold font-clock text-sky">{fmtHours(r.total_hours ?? 0)}</p>
               </div>
             </button>
           ))}
@@ -240,7 +240,7 @@ export default function LeaveManagement() {
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                     {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
-                    {r.withdrawal_reason && <p className="text-xs text-muted mt-1">↩ Withdrawn: {r.withdrawal_reason}</p>}
+                    {r.withdrawal_reason && <p className="text-xs text-muted mt-1">Withdrawn: {r.withdrawal_reason}</p>}
                   </div>
                   <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
                     {status}
@@ -277,7 +277,7 @@ export default function LeaveManagement() {
                       <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(a)}</td>
                       <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(p)}</td>
                       <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(t)}</td>
-                      <td className="px-4 py-3 text-right font-semibold font-clock tabular-nums text-skyDeep">{fmtHours(a + p + t)}</td>
+                      <td className="px-4 py-3 text-right font-semibold font-clock tabular-nums text-sky">{fmtHours(a + p + t)}</td>
                     </tr>
                   )
                 })}
@@ -389,11 +389,18 @@ export default function LeaveManagement() {
           </div>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
-            {days.map(day => {
-              const leaves = leavesOnDay(day)
-              return (
-                <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
-                  <p className="text-xs text-muted font-medium">{format(day, 'd')}</p>
+            {(() => {
+              // Mon..Sun of the current week (calendar grid week, not LBG pay week)
+              const now = new Date()
+              const weekday = (now.getDay() + 6) % 7  // 0 = Mon ... 6 = Sun
+              const monday = new Date(now); monday.setDate(now.getDate() - weekday); monday.setHours(0,0,0,0)
+              const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999)
+              return days.map(day => {
+                const leaves = leavesOnDay(day)
+                const inCurrentWeek = day >= monday && day <= sunday
+                return (
+                  <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
+                    <p className="text-xs font-medium" style={{ color: inCurrentWeek ? '#1c9fda' : undefined }}>{format(day, 'd')}</p>
                   {leaves.map(l => {
                     const fullName = (l.profiles as Profile)?.full_name ?? ''
                     const parts = fullName.trim().split(/\s+/)
@@ -413,7 +420,8 @@ export default function LeaveManagement() {
                   })}
                 </div>
               )
-            })}
+              })
+            })()}
           </div>
           {/* Legend */}
           {approved.length > 0 && (

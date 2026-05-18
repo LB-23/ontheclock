@@ -58,10 +58,10 @@ export default function Dashboard() {
             key={s.label}
             onClick={() => goTo(s.to)}
             style={{ backgroundColor: s.bg, color: '#FAFAFA' }}
-            className="text-left rounded-2xl p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30"
+            className="text-left rounded-2xl p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30 overflow-hidden"
           >
-            <p className="text-4xl font-clock font-bold tabular-nums">{s.value}</p>
-            <p className="text-[11px] font-semibold uppercase tracking-wide mt-1 opacity-80">{s.label} →</p>
+            <p className="text-3xl sm:text-4xl font-clock font-bold tabular-nums">{s.value}</p>
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight mt-1 opacity-90 whitespace-nowrap">{s.label}</p>
           </button>
         ))}
       </div>
