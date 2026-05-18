@@ -99,6 +99,25 @@ export default function MyTimesheets() {
     setErr('')
   }
 
+  /** Fetch a TTF and base64-encode it for jsPDF.addFileToVFS. Returns null on failure. */
+  const fetchTtfBase64 = async (url: string): Promise<string | null> => {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) return null
+      const buf = await res.arrayBuffer()
+      const bytes = new Uint8Array(buf)
+      let bin = ''
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+      return btoa(bin)
+    } catch { return null }
+  }
+
+  /** Format an ISO timestamp as h:mm AM/PM (Australian style) */
+  const fmtPdfTime = (iso: string) => format(new Date(iso), 'h:mm a')
+
+  /** Capitalise first letter of a status word: 'submitted' -> 'Submitted' */
+  const capStatus = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+
   /** Export every timesheet in [expFrom..expTo] as a multi-page PDF, one week per page. */
   const exportPdf = async () => {
     if (!profile || !expFrom || !expTo) { setErr('Pick a date range first.'); return }
@@ -137,46 +156,65 @@ export default function MyTimesheets() {
     // 3. Build the PDF — one timesheet per page
     const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
 
+    // Try to load Familjen Grotesk from jsdelivr's Google Fonts mirror (TTF format).
+    // Falls back silently to Helvetica if the fetch fails (offline, CORS, etc.).
+    let bodyFont = 'helvetica'
+    const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk/static'
+    const [fgRegular, fgBold] = await Promise.all([
+      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Regular.ttf`),
+      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Bold.ttf`),
+    ])
+    if (fgRegular && fgBold) {
+      pdf.addFileToVFS('FamiljenGrotesk-Regular.ttf', fgRegular)
+      pdf.addFont('FamiljenGrotesk-Regular.ttf', 'FamiljenGrotesk', 'normal')
+      pdf.addFileToVFS('FamiljenGrotesk-Bold.ttf', fgBold)
+      pdf.addFont('FamiljenGrotesk-Bold.ttf', 'FamiljenGrotesk', 'bold')
+      bodyFont = 'FamiljenGrotesk'
+    }
+
     sheets.forEach((ts, idx) => {
       if (idx > 0) pdf.addPage()
 
-      pdf.setFontSize(16)
-      pdf.setFont('helvetica', 'bold')
+      // Header — larger employee name (bold) + sub-line for week + status
+      pdf.setFont(bodyFont, 'bold')
+      pdf.setFontSize(14)
       pdf.text(profile.full_name || 'Employee', 40, 50)
-      pdf.setFontSize(11)
-      pdf.setFont('helvetica', 'normal')
-      pdf.text(`Timesheet · ${fmtWeekRange(ts.week_start)}`, 40, 70)
-      pdf.text(`Status: ${ts.status}`, 40, 86)
+
+      pdf.setFont(bodyFont, 'normal')
+      pdf.setFontSize(9)
+      pdf.text(`Timesheet · ${fmtWeekRange(ts.week_start)}`, 40, 66)
+      pdf.text(`Status: ${capStatus(ts.status)}`, 40, 80)
 
       const rows = (byWeek[ts.week_start] ?? []).map(e => [
         format(new Date(e.clock_in), 'EEE dd MMM'),
         (e.job_addresses as { address: string })?.address ?? '—',
         (e.stages as { name: string })?.name ?? '—',
-        format(new Date(e.clock_in), 'HH:mm'),
-        e.clock_out ? format(new Date(e.clock_out), 'HH:mm') : '—',
+        fmtPdfTime(e.clock_in),
+        e.clock_out ? fmtPdfTime(e.clock_out) : '—',
         e.total_hours ? fmtHours(Number(e.total_hours)) : '—',
         e.notes ?? '',
       ])
 
       autoTable(pdf, {
-        startY: 105,
+        startY: 100,
         head: [['Date', 'Site', 'Stage', 'In', 'Out', 'Hours', 'Notes']],
         body: rows.length > 0 ? rows : [['No entries this week', '', '', '', '', '', '']],
-        styles: { fontSize: 9, cellPadding: 4 },
-        headStyles: { fillColor: [28, 159, 218], textColor: 250 },
-        columnStyles: { 6: { cellWidth: 120 } },
+        styles: { font: bodyFont, fontStyle: 'normal', fontSize: 8, cellPadding: 5, lineColor: [230,230,230] },
+        headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 8, fillColor: [28, 159, 218], textColor: 250 },
+        columnStyles: { 6: { cellWidth: 130 } },
       })
 
-      // Footer totals
-      const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 14
-      pdf.setFont('helvetica', 'bold')
+      // Footer totals — sit 32pt below the last row for breathing room
+      const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 32
+      pdf.setFont(bodyFont, 'bold')
+      pdf.setFontSize(9)
       pdf.text(`Regular: ${fmtHours(Number(ts.regular_hours ?? 0))}`,  40, finalY)
       pdf.text(`Overtime: ${fmtHours(Number(ts.overtime_hours ?? 0))}`, 180, finalY)
       pdf.text(`Total: ${fmtHours(Number(ts.total_hours ?? 0))}`,       340, finalY)
       if (ts.admin_notes) {
-        pdf.setFont('helvetica', 'italic')
-        pdf.setFontSize(9)
-        pdf.text(`Admin note: ${ts.admin_notes}`, 40, finalY + 18, { maxWidth: 510 })
+        pdf.setFont(bodyFont, 'normal')
+        pdf.setFontSize(8)
+        pdf.text(`Admin note: ${ts.admin_notes}`, 40, finalY + 22, { maxWidth: 510 })
       }
     })
 
@@ -628,10 +666,10 @@ export default function MyTimesheets() {
             </div>
             <p className="text-xs text-muted">One PDF, one page per timesheet within the selected date range.</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={labelCls}>From</label>
-                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} className={inputCls} /></div>
-              <div><label className={labelCls}>To</label>
-                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)} className={inputCls} /></div>
+              <div className="min-w-0"><label className={labelCls}>From</label>
+                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} className={`${inputCls} min-w-0`} /></div>
+              <div className="min-w-0"><label className={labelCls}>To</label>
+                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)} className={`${inputCls} min-w-0`} /></div>
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
             <div className="flex gap-3 pt-2">

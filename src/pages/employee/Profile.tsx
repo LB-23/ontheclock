@@ -4,6 +4,17 @@ import { useProfile } from '../../hooks/useProfile'
 import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
 import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
+/** Render a 'HH:MM:SS' reminder time as 12-hour with AM/PM (e.g. '7:25 AM') */
+function fmtReminderTime(t: string | null | undefined): string {
+  if (!t) return '— not set —'
+  const [hStr, mStr] = t.split(':')
+  const h = Number(hStr)
+  const m = mStr ?? '00'
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = ((h + 11) % 12) + 1
+  return `${h12}:${m} ${period}`
+}
+
 export default function EmployeeProfile() {
   const { profile, refresh } = useProfile()
   const [mobile, setMobile] = useState(profile?.mobile_number ?? '')
@@ -112,9 +123,9 @@ export default function EmployeeProfile() {
           Get reminded to clock in and out at the times your admin sets:
           <br />
           <span className="text-ink">
-            In: <strong>{profile.clock_in_reminder ? profile.clock_in_reminder.slice(0, 5) : '— not set —'}</strong>
+            In: <strong>{fmtReminderTime(profile.clock_in_reminder)}</strong>
             {'   '}·{'   '}
-            Out: <strong>{profile.clock_out_reminder ? profile.clock_out_reminder.slice(0, 5) : '— not set —'}</strong>
+            Out: <strong>{fmtReminderTime(profile.clock_out_reminder)}</strong>
           </span>
         </p>
 
@@ -133,11 +144,11 @@ export default function EmployeeProfile() {
             </div>
             {!subscribed ? (
               <button type="button" onClick={handleEnablePush} disabled={pushBusy} className={`${btnPrimary} w-full h-11`}>
-                {pushBusy ? 'Enabling…' : 'Enable push reminders on this device'}
+                {pushBusy ? 'Enabling…' : 'Enable Push Reminders'}
               </button>
             ) : (
               <button type="button" onClick={handleDisablePush} disabled={pushBusy} className={`${btnSecondary} w-full h-11`}>
-                {pushBusy ? 'Disabling…' : 'Push enabled — disable on this device'}
+                {pushBusy ? 'Disabling…' : 'Disable Push Reminders'}
               </button>
             )}
             {pushErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{pushErr}</p>}
