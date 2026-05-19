@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { exportCSV, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
+import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
 import { format } from 'date-fns'
 
 type ReportTab = 'employee' | 'job' | 'weekly'
@@ -298,8 +298,8 @@ export default function Reports() {
           </button>
           {rows.length > 0 && (
             <>
-              <button onClick={() => exportCSV(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.csv`)} className={btnSecondary}>
-                ↓ Export CSV
+              <button onClick={() => exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)} className={btnSecondary}>
+                ↓ Export Excel
               </button>
               <button onClick={saveReport} className={btnSecondary}>Save Report</button>
             </>
@@ -355,7 +355,7 @@ export default function Reports() {
             </div>
             {renderTable(openSaved.data, openSaved.report_type === 'weekly_detailed' ? { groupBy: 'Employee' } : undefined)}
             <div className="flex gap-3 pt-2">
-              <button onClick={() => exportCSV(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.csv`)} className={btnSecondary}>↓ Export CSV</button>
+              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={btnSecondary}>↓ Export Excel</button>
               <button onClick={() => deleteSaved(openSaved)} className={btnDanger}>Delete</button>
             </div>
           </div>

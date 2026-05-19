@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { supabase, type Profile } from '../../lib/supabase'
-import { exportCSV, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { exportXLSX, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 
 type AuditFlag = 'ok' | 'no_clock_in_gps' | 'no_clock_out_gps' | 'site_not_geocoded' | 'clock_in_far' | 'clock_out_far'
 
@@ -86,7 +86,7 @@ export default function AuditReport() {
   useEffect(() => { load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filterEmp, filterFlag, from, to, threshold])
 
   const downloadCSV = () => {
-    exportCSV(rows.map(r => ({
+    exportXLSX(rows.map(r => ({
       Date:                format(new Date(r.clock_in), 'yyyy-MM-dd HH:mm'),
       Employee:            r.employee_name,
       JobSite:             r.job_address ?? '',
@@ -96,7 +96,7 @@ export default function AuditReport() {
       ClockInGPS:          r.clock_in_lat ? `${r.clock_in_lat},${r.clock_in_lng}` : '',
       ClockOutGPS:         r.clock_out_lat ? `${r.clock_out_lat},${r.clock_out_lng}` : '',
       JobSiteGPS:          r.job_lat ? `${r.job_lat},${r.job_lng}` : '',
-    })), `location-audit-${from}_to_${to}.csv`)
+    })), `location-audit-${from}_to_${to}.xlsx`)
   }
 
   // Summary counts
@@ -166,7 +166,7 @@ export default function AuditReport() {
 
       <div className="flex justify-end">
         {rows.length > 0 && (
-          <button onClick={downloadCSV} className={btnSecondary}>↓ Export CSV</button>
+          <button onClick={downloadCSV} className={btnSecondary}>↓ Export Excel</button>
         )}
       </div>
 

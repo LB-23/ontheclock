@@ -54,7 +54,7 @@ export function workdaysBetween(start: string, end: string): number {
   return differenceInCalendarDays(parseISO(end), parseISO(start)) + 1
 }
 
-/** Download an array of objects as a CSV file */
+/** Download an array of objects as a CSV file (kept for legacy callers) */
 export function exportCSV(rows: Record<string, unknown>[], filename: string): void {
   if (!rows.length) return
   const headers = Object.keys(rows[0])
@@ -75,6 +75,64 @@ export function exportCSV(rows: Record<string, unknown>[], filename: string): vo
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+/** Download an array of row-objects as a branded .xlsx file.
+ *  Header row gets the LB brand blue band (#1B89BB) with bold white caps
+ *  text; body rows use Calibri 11pt black. Column widths auto-size to
+ *  the widest value in each column.
+ */
+export async function exportXLSX(rows: Record<string, unknown>[], filename: string, sheetName = 'Report'): Promise<void> {
+  if (!rows.length) return
+  const ExcelJS = (await import('exceljs')).default
+  const wb = new ExcelJS.Workbook()
+  const ws = wb.addWorksheet(sheetName, { views: [{ state: 'frozen', ySplit: 1 }] })
+
+  const headers = Object.keys(rows[0])
+  ws.columns = headers.map(h => ({ header: h.toUpperCase(), key: h, width: Math.max(12, h.length + 2) }))
+
+  // Style the header row
+  const headerRow = ws.getRow(1)
+  headerRow.height = 22
+  headerRow.eachCell(cell => {
+    cell.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+    cell.alignment = { vertical: 'middle', horizontal: 'left' }
+  })
+
+  // Body
+  for (const r of rows) {
+    const row = ws.addRow(r)
+    row.eachCell(cell => {
+      cell.font = { name: 'Familjen Grotesk', size: 11, color: { argb: 'FF000000' } }
+      cell.alignment = { vertical: 'middle', horizontal: 'left' }
+    })
+  }
+
+  // Auto-width to max content
+  ws.columns.forEach(col => {
+    let max = (col.header as string | undefined)?.length ?? 8
+    col.eachCell?.({ includeEmpty: false }, cell => {
+      const v = cell.value == null ? '' : String(cell.value)
+      if (v.length > max) max = v.length
+    })
+    col.width = Math.min(60, Math.max(10, max + 2))
+  })
+
+  const buf = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** Split hours decimal into integer hours and rounded minutes */
+export function splitHM(h: number): { h: number; m: number } {
+  const totalMin = Math.round(Number(h ?? 0) * 60)
+  return { h: Math.floor(totalMin / 60), m: totalMin % 60 }
 }
 
 /** Get browser geolocation — returns null if denied */

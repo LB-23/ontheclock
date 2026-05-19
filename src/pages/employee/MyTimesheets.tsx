@@ -4,7 +4,18 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+
+/** Maps an entry_type to the label shown in the Notes column for leave rows */
+function leaveLabel(t: TimeEntry['entry_type']): string {
+  switch (t) {
+    case 'annual_leave':   return 'Annual Leave'
+    case 'personal_leave': return 'Personal/Sick Leave'
+    case 'time_in_lieu':   return 'TIL'
+    case 'public_holiday': return 'Public Holiday'
+    default:               return ''
+  }
+}
 
 type EditDraft = {
   entry: TimeEntry
@@ -118,28 +129,17 @@ export default function MyTimesheets() {
   /** Capitalise first letter of a status word: 'submitted' -> 'Submitted' */
   const capStatus = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
-  /** Export every timesheet in [expFrom..expTo] as a multi-page PDF, one week per page. */
-  const exportPdf = async () => {
-    if (!profile || !expFrom || !expTo) { setErr('Pick a date range first.'); return }
-    setExporting(true); setErr('')
-
-    // 1. Find every timesheet whose week_start falls in [expFrom..expTo]
+  /** Helper used by both PDF + XLSX exports: pull every timesheet + entries for the range */
+  const loadRange = async () => {
+    if (!profile || !expFrom || !expTo) { setErr('Pick a date range first.'); return null }
     const { data: tsRows } = await supabase
-      .from('timesheets')
-      .select('*')
+      .from('timesheets').select('*')
       .eq('employee_id', profile.id)
-      .gte('week_start', expFrom)
-      .lte('week_start', expTo)
+      .gte('week_start', expFrom).lte('week_start', expTo)
       .order('week_start')
-
     const sheets = (tsRows as Timesheet[]) ?? []
-    if (sheets.length === 0) {
-      setErr('No timesheets found in that range.')
-      setExporting(false)
-      return
-    }
+    if (sheets.length === 0) { setErr('No timesheets found in that range.'); return null }
 
-    // 2. Pull every entry across those weeks in one query
     const weekStarts = sheets.map(s => s.week_start)
     const { data: entryRows } = await supabase
       .from('time_entries')
@@ -152,12 +152,24 @@ export default function MyTimesheets() {
       const k = e.week_start ?? ''
       ;(byWeek[k] ||= []).push(e)
     }
+    return { sheets, byWeek }
+  }
 
-    // 3. Build the PDF — one timesheet per page
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
+  /** Export every timesheet in [expFrom..expTo] as a multi-page PDF, one week per page.
+   *  Layout follows the user's spec image: bold employee name, caps TIMESHEET/STATUS
+   *  meta lines, a blue header band, 11pt body rows in black (or #1C8DBF for leave-only
+   *  rows), and a stacked Regular/Overtime/Total summary with blue label cells and
+   *  separate H + M number columns. */
+  const exportPdf = async () => {
+    if (!profile) return
+    setExporting(true); setErr('')
+    const loaded = await loadRange()
+    if (!loaded) { setExporting(false); return }
+    const { sheets, byWeek } = loaded
 
-    // Try to load Familjen Grotesk from jsdelivr's Google Fonts mirror (TTF format).
-    // Falls back silently to Helvetica if the fetch fails (offline, CORS, etc.).
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
+
+    // Familjen Grotesk; falls back to Calibri-equivalent Helvetica
     let bodyFont = 'helvetica'
     const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk/static'
     const [fgRegular, fgBold] = await Promise.all([
@@ -172,53 +184,227 @@ export default function MyTimesheets() {
       bodyFont = 'FamiljenGrotesk'
     }
 
+    const HEAD_BG: [number, number, number] = [27, 137, 187]   // #1B89BB
+    const LEAVE_FG: [number, number, number] = [28, 141, 191]  // #1C8DBF
+    const BLACK: [number, number, number]    = [0, 0, 0]
+
     sheets.forEach((ts, idx) => {
       if (idx > 0) pdf.addPage()
 
-      // Header — larger employee name (bold) + sub-line for week + status
-      pdf.setFont(bodyFont, 'bold')
-      pdf.setFontSize(14)
+      // ── Header ─────────────────────────────────────
+      // Employee name (13pt bold)
+      pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(...BLACK)
       pdf.text(profile.full_name || 'Employee', 40, 50)
 
-      pdf.setFont(bodyFont, 'normal')
+      // TIMESHEET / STATUS labels (9pt all-caps bold) with values to the right
       pdf.setFontSize(9)
-      pdf.text(`Timesheet · ${fmtWeekRange(ts.week_start)}`, 40, 66)
-      pdf.text(`Status: ${capStatus(ts.status)}`, 40, 80)
+      pdf.text('TIMESHEET:', 40, 72)
+      pdf.text('STATUS:',    40, 86)
+      pdf.setFont(bodyFont, 'normal')
+      pdf.text(fmtWeekRange(ts.week_start), 120, 72)
+      pdf.text(capStatus(ts.status),         120, 86)
 
-      const rows = (byWeek[ts.week_start] ?? []).map(e => [
-        format(new Date(e.clock_in), 'EEE dd MMM'),
-        (e.job_addresses as { address: string })?.address ?? '—',
-        (e.stages as { name: string })?.name ?? '—',
-        fmtPdfTime(e.clock_in),
-        e.clock_out ? fmtPdfTime(e.clock_out) : '—',
-        e.total_hours ? fmtHours(Number(e.total_hours)) : '—',
-        e.notes ?? '',
-      ])
-
-      autoTable(pdf, {
-        startY: 100,
-        head: [['Date', 'Site', 'Stage', 'In', 'Out', 'Hours', 'Notes']],
-        body: rows.length > 0 ? rows : [['No entries this week', '', '', '', '', '', '']],
-        styles: { font: bodyFont, fontStyle: 'normal', fontSize: 8, cellPadding: 5, lineColor: [230,230,230] },
-        headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 8, fillColor: [28, 159, 218], textColor: 250 },
-        columnStyles: { 6: { cellWidth: 130 } },
+      // ── Body rows (separate H and M columns) ───────
+      const rows = (byWeek[ts.week_start] ?? []).map(e => {
+        const isLeave = e.entry_type && e.entry_type !== 'regular'
+        const hm = splitHM(Number(e.total_hours ?? 0))
+        if (isLeave) {
+          return {
+            cells: [
+              format(new Date(e.clock_in), 'EEE d MMM'),
+              '', '', '', '',
+              `${hm.h}H`, `${hm.m}M`,
+              leaveLabel(e.entry_type),
+            ],
+            colour: LEAVE_FG,
+          }
+        }
+        return {
+          cells: [
+            format(new Date(e.clock_in), 'EEE d MMM'),
+            (e.job_addresses as { address: string })?.address ?? '',
+            (e.stages as { name: string })?.name ?? '',
+            fmtPdfTime(e.clock_in),
+            e.clock_out ? fmtPdfTime(e.clock_out) : '',
+            `${hm.h}H`, `${hm.m}M`,
+            e.notes ?? '',
+          ],
+          colour: BLACK,
+        }
       })
 
-      // Footer totals — sit 32pt below the last row for breathing room
-      const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 32
-      pdf.setFont(bodyFont, 'bold')
-      pdf.setFontSize(9)
-      pdf.text(`Regular: ${fmtHours(Number(ts.regular_hours ?? 0))}`,  40, finalY)
-      pdf.text(`Overtime: ${fmtHours(Number(ts.overtime_hours ?? 0))}`, 180, finalY)
-      pdf.text(`Total: ${fmtHours(Number(ts.total_hours ?? 0))}`,       340, finalY)
+      autoTable(pdf, {
+        startY: 105,
+        head: [['DATE', 'SITE', 'STAGE', 'IN', 'OUT', 'H', 'M', 'NOTES']],
+        body: rows.length > 0
+          ? rows.map(r => r.cells)
+          : [['No entries this week', '', '', '', '', '', '', '']],
+        styles: { font: bodyFont, fontStyle: 'normal', fontSize: 11, cellPadding: 5, lineColor: [240,240,240], textColor: BLACK },
+        headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: HEAD_BG, textColor: 255, halign: 'left' },
+        columnStyles: {
+          5: { cellWidth: 36, halign: 'left' },  // H
+          6: { cellWidth: 36, halign: 'left' },  // M
+          7: { cellWidth: 200 },                  // NOTES
+        },
+        // Per-row text colour: leave rows in #1C8DBF
+        didParseCell: data => {
+          if (data.section !== 'body') return
+          const r = rows[data.row.index]
+          if (r) data.cell.styles.textColor = r.colour
+        },
+      })
+
+      // ── Stacked Regular / Overtime / Total summary ──
+      const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24
+      const reg = splitHM(Number(ts.regular_hours  ?? 0))
+      const ot  = splitHM(Number(ts.overtime_hours ?? 0))
+      const tot = splitHM(Number(ts.total_hours    ?? 0))
+
+      const SUMMARY_LEFT = 380
+      const LABEL_W      = 130
+      const NUM_COL_W    = 36
+      const ROW_H        = 18
+
+      const drawSummaryRow = (y: number, label: string, h: number, m: number, bold: boolean) => {
+        // Label cell with blue background + white caps text
+        pdf.setFillColor(...HEAD_BG)
+        pdf.rect(SUMMARY_LEFT, y, LABEL_W, ROW_H, 'F')
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFont(bodyFont, bold ? 'bold' : 'bold')
+        pdf.setFontSize(9)
+        pdf.text(label.toUpperCase(), SUMMARY_LEFT + LABEL_W - 6, y + ROW_H / 2 + 3, { align: 'right' })
+        // H + M values to the right of the label
+        pdf.setTextColor(...BLACK)
+        pdf.setFont(bodyFont, bold ? 'bold' : 'normal')
+        pdf.text(`${h}H`, SUMMARY_LEFT + LABEL_W + 8,                  y + ROW_H / 2 + 3)
+        pdf.text(`${m}M`, SUMMARY_LEFT + LABEL_W + 8 + NUM_COL_W,      y + ROW_H / 2 + 3)
+      }
+
+      drawSummaryRow(finalY,             'Regular',     reg.h, reg.m, false)
+      drawSummaryRow(finalY + ROW_H,     'Overtime',    ot.h,  ot.m,  false)
+      drawSummaryRow(finalY + ROW_H * 2, 'Total Hours', tot.h, tot.m, true)
+
       if (ts.admin_notes) {
         pdf.setFont(bodyFont, 'normal')
-        pdf.setFontSize(8)
-        pdf.text(`Admin note: ${ts.admin_notes}`, 40, finalY + 22, { maxWidth: 510 })
+        pdf.setFontSize(9)
+        pdf.setTextColor(...BLACK)
+        pdf.text(`Admin note: ${ts.admin_notes}`, 40, finalY + ROW_H * 3 + 24, { maxWidth: 700 })
       }
     })
 
     pdf.save(`${profile.full_name.replace(/\s+/g, '_')}_timesheets_${expFrom}_to_${expTo}.pdf`)
+    setExporting(false)
+    setShowExport(false)
+  }
+
+  /** Export the same date range as a styled XLSX, one row per entry,
+   *  matching the PDF's column structure (H + M separated). */
+  const exportXlsx = async () => {
+    if (!profile) return
+    setExporting(true); setErr('')
+    const loaded = await loadRange()
+    if (!loaded) { setExporting(false); return }
+    const { sheets, byWeek } = loaded
+
+    const ExcelJS = (await import('exceljs')).default
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Timesheets', { views: [{ state: 'frozen', ySplit: 1 }] })
+
+    ws.columns = [
+      { header: 'EMPLOYEE',  key: 'employee',  width: 22 },
+      { header: 'WEEK',      key: 'week',      width: 22 },
+      { header: 'STATUS',    key: 'status',    width: 12 },
+      { header: 'DATE',      key: 'date',      width: 14 },
+      { header: 'SITE',      key: 'site',      width: 30 },
+      { header: 'STAGE',     key: 'stage',     width: 14 },
+      { header: 'IN',        key: 'in',        width: 10 },
+      { header: 'OUT',       key: 'out',       width: 10 },
+      { header: 'H',         key: 'h',         width: 6 },
+      { header: 'M',         key: 'm',         width: 6 },
+      { header: 'NOTES',     key: 'notes',     width: 32 },
+    ]
+    const hdr = ws.getRow(1)
+    hdr.height = 22
+    hdr.eachCell(c => {
+      c.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+      c.alignment = { vertical: 'middle', horizontal: 'left' }
+    })
+
+    sheets.forEach(ts => {
+      const entries = byWeek[ts.week_start] ?? []
+      const writeRow = (row: Record<string, unknown>, isLeave: boolean) => {
+        const r = ws.addRow(row)
+        const colour = isLeave ? 'FF1C8DBF' : 'FF000000'
+        r.eachCell(c => {
+          c.font = { name: 'Familjen Grotesk', size: 11, color: { argb: colour } }
+          c.alignment = { vertical: 'middle', horizontal: 'left' }
+        })
+      }
+      if (entries.length === 0) {
+        writeRow({
+          employee: profile.full_name, week: fmtWeekRange(ts.week_start), status: capStatus(ts.status),
+          date: 'No entries this week', site: '', stage: '', in: '', out: '', h: '', m: '', notes: '',
+        }, false)
+      } else {
+        for (const e of entries) {
+          const isLeave = e.entry_type && e.entry_type !== 'regular'
+          const hm = splitHM(Number(e.total_hours ?? 0))
+          if (isLeave) {
+            writeRow({
+              employee: profile.full_name,
+              week: fmtWeekRange(ts.week_start),
+              status: capStatus(ts.status),
+              date: format(new Date(e.clock_in), 'EEE d MMM'),
+              site: '', stage: '', in: '', out: '',
+              h: hm.h, m: hm.m,
+              notes: leaveLabel(e.entry_type),
+            }, true)
+          } else {
+            writeRow({
+              employee: profile.full_name,
+              week: fmtWeekRange(ts.week_start),
+              status: capStatus(ts.status),
+              date: format(new Date(e.clock_in), 'EEE d MMM'),
+              site: (e.job_addresses as { address: string })?.address ?? '',
+              stage: (e.stages as { name: string })?.name ?? '',
+              in: format(new Date(e.clock_in), 'h:mm a'),
+              out: e.clock_out ? format(new Date(e.clock_out), 'h:mm a') : '',
+              h: hm.h, m: hm.m,
+              notes: e.notes ?? '',
+            }, false)
+          }
+        }
+      }
+
+      // Summary rows for this week: Regular, Overtime, Total
+      const reg = splitHM(Number(ts.regular_hours ?? 0))
+      const ot  = splitHM(Number(ts.overtime_hours ?? 0))
+      const tot = splitHM(Number(ts.total_hours ?? 0))
+      const addSummary = (label: string, h: number, m: number, bold: boolean) => {
+        const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), h, m, notes: '' })
+        r.getCell('out').font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+        r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
+        for (const k of ['h', 'm']) {
+          r.getCell(k).font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FF000000' } }
+        }
+      }
+      addSummary('Regular',     reg.h, reg.m, false)
+      addSummary('Overtime',    ot.h,  ot.m,  false)
+      addSummary('Total Hours', tot.h, tot.m, true)
+      ws.addRow({})  // blank separator row between timesheets
+    })
+
+    const buf = await wb.xlsx.writeBuffer()
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${profile.full_name.replace(/\s+/g, '_')}_timesheets_${expFrom}_to_${expTo}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+
     setExporting(false)
     setShowExport(false)
   }
@@ -674,7 +860,10 @@ export default function MyTimesheets() {
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
             <div className="flex gap-3 pt-2">
               <button onClick={exportPdf} disabled={exporting} className={`${btnPrimary} flex-1 h-11`}>
-                {exporting ? 'Generating…' : 'Generate PDF'}
+                {exporting ? 'Generating…' : 'PDF'}
+              </button>
+              <button onClick={exportXlsx} disabled={exporting} className={`${btnPrimary} flex-1 h-11`}>
+                {exporting ? 'Generating…' : 'Excel'}
               </button>
               <button onClick={() => { setShowExport(false); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
             </div>

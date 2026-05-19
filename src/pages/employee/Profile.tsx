@@ -147,7 +147,11 @@ export default function EmployeeProfile() {
                 {pushBusy ? 'Enabling…' : 'Enable Push Reminders'}
               </button>
             ) : (
-              <button type="button" onClick={handleDisablePush} disabled={pushBusy} className={`${btnSecondary} w-full h-11`}>
+              <button
+                type="button" onClick={handleDisablePush} disabled={pushBusy}
+                style={{ backgroundColor: '#747474', color: '#FFFFFF' }}
+                className="inline-flex items-center justify-center w-full h-11 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+              >
                 {pushBusy ? 'Disabling…' : 'Disable Push Reminders'}
               </button>
             )}
