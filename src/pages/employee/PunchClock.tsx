@@ -148,9 +148,9 @@ export default function PunchClock() {
       >
         {isClockedIn ? (
           <>
-            <p className="text-sm font-medium text-muted mb-1">Clocked in at</p>
-            <p className="text-3xl font-clock mb-1 tracking-wider text-ink">
-              {format(new Date(activeEntry.clock_in), 'h:mm aaa')}
+            <p className="text-sm mb-1 text-ink">
+              <span className="text-muted font-medium">Clocked-In:</span>{' '}
+              <span className="font-clock tracking-wider">{format(new Date(activeEntry.clock_in), 'h:mm aaa')}</span>
             </p>
             <p className="text-7xl font-clock my-3 tracking-wider tabular-nums text-ink">{elapsed}</p>
             <p className="text-sm text-muted">
@@ -212,7 +212,7 @@ export default function PunchClock() {
             disabled={!selectedJob || loading}
             className={`${btnPrimary} w-full h-14 text-base`}
           >
-            {loading ? 'Clocking in…' : 'Clock In'}
+            {loading ? 'Clocking in…' : 'Clock-In'}
           </button>
         </div>
       )}
@@ -225,7 +225,7 @@ export default function PunchClock() {
           className="inline-flex items-center justify-center w-full h-14 text-base rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
           style={{ backgroundColor: '#FF3131' }}
         >
-          Clock Out
+          Clock-Out
         </button>
       )}
 
@@ -266,7 +266,7 @@ export default function PunchClock() {
                 className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
                 style={{ backgroundColor: '#FF3131' }}
               >
-                {loading ? 'Clocking out…' : 'Confirm Clock Out'}
+                {loading ? 'Clocking out…' : 'Confirm Clock-Out'}
               </button>
               <button type="button" onClick={() => setShowOutDialog(false)} disabled={loading} className={`${btnSecondary} flex-1 h-12`}>
                 Cancel

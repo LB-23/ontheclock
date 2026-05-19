@@ -22,7 +22,7 @@ export default function LeaveManagement() {
   const [allRequests, setAllRequests] = useState<LeaveRequest[]>([])
   const [employees, setEmployees] = useState<Profile[]>([])
   const [calMonth, setCalMonth] = useState(new Date())
-  const [tab, setTab] = useState<'pending' | 'approved' | 'all' | 'balances' | 'calendar'>('pending')
+  const [tab, setTab] = useState<'calendar' | 'pending' | 'approved' | 'all' | 'balances'>('calendar')
   const [adminNote, setAdminNote] = useState('')
   const [deciding, setDeciding] = useState<string | null>(null)
 
@@ -156,14 +156,14 @@ export default function LeaveManagement() {
       <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
 
       <div className="flex gap-2 flex-wrap">
-        {(['pending', 'approved', 'all', 'balances', 'calendar'] as const).map(t => (
+        {(['calendar', 'pending', 'approved', 'all', 'balances'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors ${tab === t ? 'bg-sky text-white' : 'bg-surface border border-page text-muted'}`}>
-            {t === 'pending'  ? `Pending (${requests.length})`
+            {t === 'calendar'   ? 'Calendar'
+             : t === 'pending'  ? `Pending (${requests.length})`
              : t === 'approved' ? `Approved (${approved.length})`
              : t === 'all'      ? `All (${allRequests.length})`
-             : t === 'balances' ? `Team Balances (${employees.length})`
-             : 'Calendar'}
+             : `Balances (${employees.length})`}
           </button>
         ))}
       </div>

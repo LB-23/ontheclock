@@ -169,34 +169,47 @@ export default function MyTimesheets() {
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
 
-    // Familjen Grotesk; falls back to Calibri-equivalent Helvetica
+    // Calibri-clone for embedding (jsPDF only ships Helvetica/Times/Courier).
+    // Tries Carlito first (free metric-equivalent of Calibri), falls back to
+    // the built-in Helvetica family. The PDF document tag still reads
+    // 'Calibri' so Office viewers prefer the system Calibri when present.
     let bodyFont = 'helvetica'
-    const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk/static'
-    const [fgRegular, fgBold] = await Promise.all([
-      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Regular.ttf`),
-      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Bold.ttf`),
+    const CARLITO_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito'
+    const [carlitoReg, carlitoBold, carlitoIt] = await Promise.all([
+      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Regular.ttf`),
+      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Bold.ttf`),
+      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Italic.ttf`),
     ])
-    if (fgRegular && fgBold) {
-      pdf.addFileToVFS('FamiljenGrotesk-Regular.ttf', fgRegular)
-      pdf.addFont('FamiljenGrotesk-Regular.ttf', 'FamiljenGrotesk', 'normal')
-      pdf.addFileToVFS('FamiljenGrotesk-Bold.ttf', fgBold)
-      pdf.addFont('FamiljenGrotesk-Bold.ttf', 'FamiljenGrotesk', 'bold')
-      bodyFont = 'FamiljenGrotesk'
+    if (carlitoReg && carlitoBold) {
+      pdf.addFileToVFS('Calibri-Regular.ttf', carlitoReg)
+      pdf.addFont('Calibri-Regular.ttf', 'Calibri', 'normal')
+      pdf.addFileToVFS('Calibri-Bold.ttf', carlitoBold)
+      pdf.addFont('Calibri-Bold.ttf', 'Calibri', 'bold')
+      if (carlitoIt) {
+        pdf.addFileToVFS('Calibri-Italic.ttf', carlitoIt)
+        pdf.addFont('Calibri-Italic.ttf', 'Calibri', 'italic')
+      }
+      bodyFont = 'Calibri'
     }
 
-    const HEAD_BG: [number, number, number] = [27, 137, 187]   // #1B89BB
+    const HEAD_BG : [number, number, number] = [27, 137, 187]  // #1B89BB - column band
+    const SUM_1   : [number, number, number] = [21, 115, 157]  // #15739D - REGULAR
+    const SUM_2   : [number, number, number] = [14, 77, 105]   // #0E4D69 - OVERTIME
+    const SUM_3   : [number, number, number] = [10, 49, 66]    // #0A3142 - TOTAL HOURS
     const LEAVE_FG: [number, number, number] = [28, 141, 191]  // #1C8DBF
-    const BLACK: [number, number, number]    = [0, 0, 0]
+    const RED     : [number, number, number] = [255, 40, 40]   // #FF2828 - flagged notes
+    const BLACK   : [number, number, number] = [0, 0, 0]
+
+    const isFlaggedNote = (n: string | null | undefined) =>
+      !!n && (n.includes('Auto-closed') || n.includes('Added manually'))
 
     sheets.forEach((ts, idx) => {
       if (idx > 0) pdf.addPage()
 
-      // ── Header ─────────────────────────────────────
-      // Employee name (13pt bold)
+      // ── Header ──
       pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(...BLACK)
       pdf.text(profile.full_name || 'Employee', 40, 50)
 
-      // TIMESHEET / STATUS labels (9pt all-caps bold) with values to the right
       pdf.setFontSize(9)
       pdf.text('TIMESHEET:', 40, 72)
       pdf.text('STATUS:',    40, 86)
@@ -204,19 +217,20 @@ export default function MyTimesheets() {
       pdf.text(fmtWeekRange(ts.week_start), 120, 72)
       pdf.text(capStatus(ts.status),         120, 86)
 
-      // ── Body rows (separate H and M columns) ───────
-      const rows = (byWeek[ts.week_start] ?? []).map(e => {
+      // ── Body rows: merged HOURS column = '00H 00M' ──
+      const entryRows = (byWeek[ts.week_start] ?? []).map(e => {
         const isLeave = e.entry_type && e.entry_type !== 'regular'
         const hm = splitHM(Number(e.total_hours ?? 0))
+        const hoursStr = `${String(hm.h).padStart(2,'0')}H ${String(hm.m).padStart(2,'0')}M`
         if (isLeave) {
           return {
             cells: [
               format(new Date(e.clock_in), 'EEE d MMM'),
               '', '', '', '',
-              `${hm.h}H`, `${hm.m}M`,
+              hoursStr,
               leaveLabel(e.entry_type),
             ],
-            colour: LEAVE_FG,
+            colour: LEAVE_FG, italic: false, isLeave: true, isFlagged: false,
           }
         }
         return {
@@ -226,31 +240,39 @@ export default function MyTimesheets() {
             (e.stages as { name: string })?.name ?? '',
             fmtPdfTime(e.clock_in),
             e.clock_out ? fmtPdfTime(e.clock_out) : '',
-            `${hm.h}H`, `${hm.m}M`,
+            hoursStr,
             e.notes ?? '',
           ],
           colour: BLACK,
+          italic: false,
+          isLeave: false,
+          isFlagged: isFlaggedNote(e.notes),
         }
       })
 
       autoTable(pdf, {
         startY: 105,
-        head: [['DATE', 'SITE', 'STAGE', 'IN', 'OUT', 'H', 'M', 'NOTES']],
-        body: rows.length > 0
-          ? rows.map(r => r.cells)
-          : [['No entries this week', '', '', '', '', '', '', '']],
-        styles: { font: bodyFont, fontStyle: 'normal', fontSize: 11, cellPadding: 5, lineColor: [240,240,240], textColor: BLACK },
+        head: [['DATE', 'SITE', 'STAGE', 'IN', 'OUT', 'HOURS', 'NOTES']],
+        body: entryRows.length > 0
+          ? entryRows.map(r => r.cells)
+          : [['No entries this week', '', '', '', '', '', '']],
+        styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240,240,240], textColor: BLACK },
         headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: HEAD_BG, textColor: 255, halign: 'left' },
         columnStyles: {
-          5: { cellWidth: 36, halign: 'left' },  // H
-          6: { cellWidth: 36, halign: 'left' },  // M
-          7: { cellWidth: 200 },                  // NOTES
+          5: { cellWidth: 64, halign: 'left' },  // HOURS (00H 00M)
+          6: { cellWidth: 200 },                  // NOTES
         },
-        // Per-row text colour: leave rows in #1C8DBF
         didParseCell: data => {
           if (data.section !== 'body') return
-          const r = rows[data.row.index]
-          if (r) data.cell.styles.textColor = r.colour
+          const r = entryRows[data.row.index]
+          if (!r) return
+          // Leave rows in #1C8DBF
+          if (r.isLeave) { data.cell.styles.textColor = r.colour; return }
+          // Notes cell (col index 6) carrying Auto-closed / Added manually -> red italic
+          if (data.column.index === 6 && r.isFlagged) {
+            data.cell.styles.textColor = RED
+            data.cell.styles.fontStyle = 'italic'
+          }
         },
       })
 
@@ -260,29 +282,28 @@ export default function MyTimesheets() {
       const ot  = splitHM(Number(ts.overtime_hours ?? 0))
       const tot = splitHM(Number(ts.total_hours    ?? 0))
 
-      const SUMMARY_LEFT = 380
-      const LABEL_W      = 130
+      const SUMMARY_LEFT = 420
+      const LABEL_W      = 120
       const NUM_COL_W    = 36
       const ROW_H        = 18
 
-      const drawSummaryRow = (y: number, label: string, h: number, m: number, bold: boolean) => {
-        // Label cell with blue background + white caps text
-        pdf.setFillColor(...HEAD_BG)
+      const drawSummaryRow = (y: number, label: string, h: number, m: number, bg: [number, number, number], bold: boolean) => {
+        pdf.setFillColor(...bg)
         pdf.rect(SUMMARY_LEFT, y, LABEL_W, ROW_H, 'F')
         pdf.setTextColor(255, 255, 255)
-        pdf.setFont(bodyFont, bold ? 'bold' : 'bold')
+        pdf.setFont(bodyFont, bold ? 'bold' : 'normal')
         pdf.setFontSize(9)
         pdf.text(label.toUpperCase(), SUMMARY_LEFT + LABEL_W - 6, y + ROW_H / 2 + 3, { align: 'right' })
-        // H + M values to the right of the label
+        // H + M values to the right of the label cell
         pdf.setTextColor(...BLACK)
         pdf.setFont(bodyFont, bold ? 'bold' : 'normal')
-        pdf.text(`${h}H`, SUMMARY_LEFT + LABEL_W + 8,                  y + ROW_H / 2 + 3)
-        pdf.text(`${m}M`, SUMMARY_LEFT + LABEL_W + 8 + NUM_COL_W,      y + ROW_H / 2 + 3)
+        pdf.text(`${String(h).padStart(2,'0')}H`, SUMMARY_LEFT + LABEL_W + 10,                  y + ROW_H / 2 + 3)
+        pdf.text(`${String(m).padStart(2,'0')}M`, SUMMARY_LEFT + LABEL_W + 10 + NUM_COL_W,      y + ROW_H / 2 + 3)
       }
 
-      drawSummaryRow(finalY,             'Regular',     reg.h, reg.m, false)
-      drawSummaryRow(finalY + ROW_H,     'Overtime',    ot.h,  ot.m,  false)
-      drawSummaryRow(finalY + ROW_H * 2, 'Total Hours', tot.h, tot.m, true)
+      drawSummaryRow(finalY,             'Regular',     reg.h, reg.m, SUM_1, false)
+      drawSummaryRow(finalY + ROW_H,     'Overtime',    ot.h,  ot.m,  SUM_2, false)
+      drawSummaryRow(finalY + ROW_H * 2, 'Total Hours', tot.h, tot.m, SUM_3, true)
 
       if (ts.admin_notes) {
         pdf.setFont(bodyFont, 'normal')
@@ -319,37 +340,45 @@ export default function MyTimesheets() {
       { header: 'STAGE',     key: 'stage',     width: 14 },
       { header: 'IN',        key: 'in',        width: 10 },
       { header: 'OUT',       key: 'out',       width: 10 },
-      { header: 'H',         key: 'h',         width: 6 },
-      { header: 'M',         key: 'm',         width: 6 },
+      { header: 'HOURS',     key: 'hours',     width: 10 },
       { header: 'NOTES',     key: 'notes',     width: 32 },
     ]
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
+      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
 
+    const isFlaggedNoteExcel = (n: string | null | undefined) =>
+      !!n && (n.includes('Auto-closed') || n.includes('Added manually'))
+
     sheets.forEach(ts => {
       const entries = byWeek[ts.week_start] ?? []
-      const writeRow = (row: Record<string, unknown>, isLeave: boolean) => {
+      const writeRow = (row: Record<string, unknown>, opts: { isLeave: boolean; flaggedCol?: string }) => {
         const r = ws.addRow(row)
-        const colour = isLeave ? 'FF1C8DBF' : 'FF000000'
-        r.eachCell(c => {
-          c.font = { name: 'Familjen Grotesk', size: 11, color: { argb: colour } }
+        const colour = opts.isLeave ? 'FF1C8DBF' : 'FF000000'
+        r.eachCell((c, colNumber) => {
+          c.font = { name: 'Calibri', size: 9, color: { argb: colour } }
           c.alignment = { vertical: 'middle', horizontal: 'left' }
+          // Notes column auto-flag: Auto-closed / Added manually -> red italic
+          const colKey = (ws.columns[colNumber - 1] as { key?: string }).key
+          if (colKey === 'notes' && opts.flaggedCol === 'notes') {
+            c.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FFFF2828' } }
+          }
         })
       }
       if (entries.length === 0) {
         writeRow({
           employee: profile.full_name, week: fmtWeekRange(ts.week_start), status: capStatus(ts.status),
-          date: 'No entries this week', site: '', stage: '', in: '', out: '', h: '', m: '', notes: '',
-        }, false)
+          date: 'No entries this week', site: '', stage: '', in: '', out: '', hours: '', notes: '',
+        }, { isLeave: false })
       } else {
         for (const e of entries) {
           const isLeave = e.entry_type && e.entry_type !== 'regular'
           const hm = splitHM(Number(e.total_hours ?? 0))
+          const hoursStr = `${String(hm.h).padStart(2,'0')}H ${String(hm.m).padStart(2,'0')}M`
           if (isLeave) {
             writeRow({
               employee: profile.full_name,
@@ -357,9 +386,9 @@ export default function MyTimesheets() {
               status: capStatus(ts.status),
               date: format(new Date(e.clock_in), 'EEE d MMM'),
               site: '', stage: '', in: '', out: '',
-              h: hm.h, m: hm.m,
+              hours: hoursStr,
               notes: leaveLabel(e.entry_type),
-            }, true)
+            }, { isLeave: true })
           } else {
             writeRow({
               employee: profile.full_name,
@@ -370,30 +399,29 @@ export default function MyTimesheets() {
               stage: (e.stages as { name: string })?.name ?? '',
               in: format(new Date(e.clock_in), 'h:mm a'),
               out: e.clock_out ? format(new Date(e.clock_out), 'h:mm a') : '',
-              h: hm.h, m: hm.m,
+              hours: hoursStr,
               notes: e.notes ?? '',
-            }, false)
+            }, { isLeave: false, flaggedCol: isFlaggedNoteExcel(e.notes) ? 'notes' : undefined })
           }
         }
       }
 
-      // Summary rows for this week: Regular, Overtime, Total
+      // Summary rows: Regular, Overtime, Total — coloured cell backgrounds per spec
       const reg = splitHM(Number(ts.regular_hours ?? 0))
       const ot  = splitHM(Number(ts.overtime_hours ?? 0))
       const tot = splitHM(Number(ts.total_hours ?? 0))
-      const addSummary = (label: string, h: number, m: number, bold: boolean) => {
-        const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), h, m, notes: '' })
-        r.getCell('out').font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
-        r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+      const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
+        const hoursStr = `${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`
+        const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
+        r.getCell('out').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
-        for (const k of ['h', 'm']) {
-          r.getCell(k).font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FF000000' } }
-        }
+        r.getCell('hours').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FF000000' } }
       }
-      addSummary('Regular',     reg.h, reg.m, false)
-      addSummary('Overtime',    ot.h,  ot.m,  false)
-      addSummary('Total Hours', tot.h, tot.m, true)
-      ws.addRow({})  // blank separator row between timesheets
+      addSummary('Regular',     reg.h, reg.m, 'FF15739D', false)
+      addSummary('Overtime',    ot.h,  ot.m,  'FF0E4D69', false)
+      addSummary('Total Hours', tot.h, tot.m, 'FF0A3142', true)
+      ws.addRow({})  // blank separator
     })
 
     const buf = await wb.xlsx.writeBuffer()
@@ -582,7 +610,7 @@ export default function MyTimesheets() {
           </select>
         </div>
         <div>
-          <label className={labelCls}>Clock In</label>
+          <label className={labelCls}>Clock-In</label>
           <input
             type="datetime-local"
             value={editing.newClockIn}
@@ -592,7 +620,7 @@ export default function MyTimesheets() {
           />
         </div>
         <div>
-          <label className={labelCls}>Clock Out</label>
+          <label className={labelCls}>Clock-Out</label>
           <input
             type="datetime-local"
             value={editing.newClockOut}
@@ -816,18 +844,44 @@ export default function MyTimesheets() {
             }}
             className={`${btnSecondary} w-full h-11`}
           >
-            ↓ Export Timesheets (PDF)
+            ↓ Export Timesheets
           </button>
 
           {timesheets.length === 0 && (
             <div className="text-center py-16 text-muted">No timesheets yet — clock in once to start one.</div>
           )}
+          <p className="text-[11px] text-muted text-center">Tip: press and hold any timesheet to remove it.</p>
           <div className="space-y-3">
-            {timesheets.map(ts => (
+            {timesheets.map(ts => {
+              let pressTimer: ReturnType<typeof setTimeout> | null = null
+              let longPressed = false
+              const promptRemove = async () => {
+                longPressed = true
+                if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(ts.week_start)} — ${fmtHours(ts.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
+                if (!profile) return
+                // Wipe edits, then entries, then timesheet (own rows: RLS allows it)
+                await supabase.from('time_entry_edits').delete().in('time_entry_id',
+                  ((await supabase.from('time_entries').select('id').eq('employee_id', profile.id).eq('week_start', ts.week_start)).data ?? [])
+                    .map((e: { id: string }) => e.id))
+                await supabase.from('time_entries').delete().eq('employee_id', profile.id).eq('week_start', ts.week_start)
+                await supabase.from('timesheets').delete().eq('id', ts.id)
+                loadTimesheets()
+              }
+              const startPress = () => {
+                longPressed = false
+                pressTimer = setTimeout(promptRemove, 650)
+              }
+              const cancelPress = () => {
+                if (pressTimer) { clearTimeout(pressTimer); pressTimer = null }
+              }
+              return (
               <button
                 key={ts.id}
-                onClick={() => loadEntries(ts)}
-                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors"
+                onClick={() => { if (!longPressed) loadEntries(ts) }}
+                onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress} onTouchMove={cancelPress}
+                onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
+                onContextMenu={ev => { ev.preventDefault(); cancelPress(); promptRemove() }}
+                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors select-none"
               >
                 <div>
                   <p className="text-sm font-semibold">{fmtWeekRange(ts.week_start)}</p>
@@ -838,7 +892,7 @@ export default function MyTimesheets() {
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>
-            ))}
+            )})}
           </div>
         </>
       )}
@@ -850,12 +904,18 @@ export default function MyTimesheets() {
               <p className="font-semibold">Export Timesheets</p>
               <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
             </div>
-            <p className="text-xs text-muted">One PDF, one page per timesheet within the selected date range.</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="min-w-0"><label className={labelCls}>From</label>
-                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)} className={`${inputCls} min-w-0`} /></div>
-              <div className="min-w-0"><label className={labelCls}>To</label>
-                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)} className={`${inputCls} min-w-0`} /></div>
+            <p className="text-xs text-muted">Select a date range for export.</p>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="min-w-0">
+                <label className={labelCls}>From</label>
+                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)}
+                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </div>
+              <div className="min-w-0">
+                <label className={labelCls}>To</label>
+                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)}
+                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </div>
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
             <div className="flex gap-3 pt-2">

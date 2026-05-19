@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
@@ -6,7 +8,69 @@ import { format } from 'date-fns'
 
 type ReportTab = 'employee' | 'job' | 'weekly'
 type WeeklyVariant = 'simple' | 'detailed'
+type EmployeeSort = 'employee' | 'date' | 'site' | 'stage'
 type Row = Record<string, unknown>
+
+/** Render a Row[] as a branded PDF (#1B89BB header, 9pt Calibri-ish body, AM/PM times). */
+async function reportRowsToPdf(title: string, rows: Row[], filename: string, groupBy?: string) {
+  if (rows.length === 0) return
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
+  let bodyFont = 'helvetica'
+  const CARLITO_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito'
+  try {
+    const [reg, bold] = await Promise.all([
+      fetch(`${CARLITO_BASE}/Carlito-Regular.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+      fetch(`${CARLITO_BASE}/Carlito-Bold.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+    ])
+    if (reg && bold) {
+      const b64 = (buf: ArrayBuffer) => {
+        const bytes = new Uint8Array(buf)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+        return btoa(bin)
+      }
+      pdf.addFileToVFS('Calibri-Regular.ttf', b64(reg))
+      pdf.addFont('Calibri-Regular.ttf', 'Calibri', 'normal')
+      pdf.addFileToVFS('Calibri-Bold.ttf', b64(bold))
+      pdf.addFont('Calibri-Bold.ttf', 'Calibri', 'bold')
+      bodyFont = 'Calibri'
+    }
+  } catch { /* fall back to Helvetica */ }
+
+  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
+  pdf.text(title, 40, 50)
+
+  const headers = Object.keys(rows[0]).map(h => h.toUpperCase())
+  const body    = rows.map(r => Object.values(r).map(v => v == null ? '' : String(v)))
+
+  // If grouped, insert a thicker bottom border between group changes
+  let prevGroup = ''
+  const groupBoundaries = new Set<number>()
+  if (groupBy) {
+    rows.forEach((r, i) => {
+      const g = String(r[groupBy] ?? '')
+      if (i > 0 && g !== prevGroup) groupBoundaries.add(i)
+      prevGroup = g
+    })
+  }
+
+  autoTable(pdf, {
+    startY: 70,
+    head: [headers],
+    body,
+    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240, 240, 240], textColor: [0, 0, 0] },
+    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [27, 137, 187], textColor: 255, halign: 'left' },
+    willDrawCell: data => {
+      if (data.section === 'body' && groupBoundaries.has(data.row.index)) {
+        // Draw a thick top border on the first row of each new group
+        pdf.setDrawColor(0, 0, 0); pdf.setLineWidth(1.4)
+        pdf.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y)
+      }
+    },
+  })
+
+  pdf.save(filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
+}
 
 interface SavedReport {
   id: string
@@ -31,6 +95,7 @@ export default function Reports() {
   const [dateFrom, setDateFrom] = useState(format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd'))
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [weeklyVariant, setWeeklyVariant] = useState<WeeklyVariant>('simple')
+  const [empSort, setEmpSort] = useState<EmployeeSort>('employee')
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(false)
   const [savedList, setSavedList] = useState<SavedReport[]>([])
@@ -71,23 +136,34 @@ export default function Reports() {
       let q = supabase.from('time_entries').select('*, profiles!time_entries_employee_id_fkey(full_name), job_addresses(address), stages(name)')
         .gte('clock_in', dateFrom).lte('clock_in', dateTo + 'T23:59:59')
       if (filterEmp) q = q.eq('employee_id', filterEmp)
-      const { data } = await q.order('clock_in')
-      nextRows = (data ?? []).map((e: Record<string, unknown>) => {
+      const { data } = await q
+      // Map first, then sort per user-selected key (Employee by default)
+      const mapped = (data ?? []).map((e: Record<string, unknown>) => {
         const isLeave = e.entry_type && e.entry_type !== 'regular'
         const leaveLabel = entryTypeLabel(e.entry_type as string)
         return {
-          Date:       e.clock_in ? fmtDateLong(e.clock_in as string) : '',
           Employee:   (e.profiles as { full_name: string })?.full_name ?? '',
+          Date:       e.clock_in ? fmtDateLong(e.clock_in as string) : '',
           Site:       (e.job_addresses as { address: string })?.address ?? '',
           Stage:      (e.stages as { name: string })?.name ?? '',
-          'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'HH:mm') : '',
-          'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'HH:mm') : '',
-          Hours:      e.total_hours ?? '',
+          'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
+          'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
+          Hours:      fmtHours(Number(e.total_hours ?? 0)),
           Overtime:   e.is_overtime ? 'Yes' : 'No',
           'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
           Notes:      (e.notes as string) ?? '',
+          // Hidden sort keys (stripped before export below)
+          __date: e.clock_in as string,
         }
       })
+      const sortKey: Record<EmployeeSort, (r: Record<string, unknown>) => string> = {
+        employee: r => String(r.Employee) + '_' + String(r.__date),
+        date:     r => String(r.__date),
+        site:     r => String(r.Site) + '_' + String(r.__date),
+        stage:    r => String(r.Stage) + '_' + String(r.__date),
+      }
+      mapped.sort((a, b) => sortKey[empSort](a).localeCompare(sortKey[empSort](b)))
+      nextRows = mapped.map(({ __date, ...rest }) => { void __date; return rest })
     } else if (tab === 'job') {
       let q = supabase.from('time_entries').select('*, profiles!time_entries_employee_id_fkey(full_name), job_addresses(address)')
         .gte('clock_in', dateFrom).lte('clock_in', dateTo + 'T23:59:59')
@@ -99,8 +175,8 @@ export default function Reports() {
         Date:      e.clock_in ? fmtDateLong(e.clock_in as string) : '',
         Site:      (e.job_addresses as { address: string })?.address ?? '',
         Employee:  (e.profiles as { full_name: string })?.full_name ?? '',
-        'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'HH:mm') : '',
-        'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'HH:mm') : '',
+        'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
+        'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
         Hours:     fmtHours(Number(e.total_hours ?? 0)),
       }))
     } else {
@@ -153,8 +229,8 @@ export default function Reports() {
             Date:         e.clock_in ? fmtDateLong(e.clock_in as string) : '',
             Site:         (e.job_addresses as { address: string })?.address ?? '',
             Stage:        (e.stages as { name: string })?.name ?? '',
-            'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'HH:mm') : '',
-            'End Time':   e.clock_out ? format(new Date(e.clock_out as string), 'HH:mm') : '',
+            'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
+            'End Time':   e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
             'Total Hours': fmtHours(Number(e.total_hours ?? 0)),
             'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
           }
@@ -260,10 +336,24 @@ export default function Reports() {
           </div>
         )}
         {tab === 'employee' && (
-          <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={inputCls}>
-            <option value="">All employees</option>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
-          </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Filter Employee</label>
+              <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={inputCls}>
+                <option value="">All employees</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+              </select>
+            </div>
+            <div className="min-w-0">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Sort By</label>
+              <select value={empSort} onChange={e => setEmpSort(e.target.value as EmployeeSort)} className={inputCls}>
+                <option value="employee">Employee</option>
+                <option value="date">Date</option>
+                <option value="site">Job Site</option>
+                <option value="stage">Stage</option>
+              </select>
+            </div>
+          </div>
         )}
         {tab === 'job' && (
           <select value={filterJob} onChange={e => setFilterJob(e.target.value)} className={inputCls}>
@@ -292,15 +382,23 @@ export default function Reports() {
             </fieldset>
           </>
         )}
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-end">
           <button onClick={runReport} disabled={loading} className={btnPrimary}>
             {loading ? 'Loading…' : 'Run Report'}
           </button>
           {rows.length > 0 && (
             <>
-              <button onClick={() => exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)} className={btnSecondary}>
-                ↓ Export Excel
-              </button>
+              <div className="relative">
+                <details className="group">
+                  <summary className={`${btnSecondary} cursor-pointer list-none select-none`}>↓ Export</summary>
+                  <div className="absolute right-0 mt-2 z-10 bg-surface border border-page rounded-xl shadow-lg min-w-[160px] overflow-hidden">
+                    <button onClick={() => exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)}
+                            className="block w-full px-4 py-2 text-left text-sm hover:bg-page">Excel (.xlsx)</button>
+                    <button onClick={() => reportRowsToPdf(`${tab === 'weekly' ? 'Weekly ' + weeklyVariant : tab === 'employee' ? 'By Employee' : 'By Job Site'} report`, rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.pdf`, tab === 'employee' ? 'Employee' : tab === 'weekly' && weeklyVariant === 'detailed' ? 'Employee' : undefined)}
+                            className="block w-full px-4 py-2 text-left text-sm hover:bg-page">PDF (.pdf)</button>
+                  </div>
+                </details>
+              </div>
               <button onClick={saveReport} className={btnSecondary}>Save Report</button>
             </>
           )}
@@ -308,7 +406,12 @@ export default function Reports() {
       </div>
 
       {/* Live result */}
-      {rows.length > 0 && renderTable(rows, tab === 'weekly' && weeklyVariant === 'detailed' ? { groupBy: 'Employee' } : undefined)}
+      {rows.length > 0 && renderTable(
+        rows,
+        (tab === 'weekly' && weeklyVariant === 'detailed')                ? { groupBy: 'Employee' }
+        : (tab === 'employee' && empSort === 'employee' && !filterEmp)    ? { groupBy: 'Employee' }
+        : undefined,
+      )}
 
       {/* Saved reports archive */}
       <div className="bg-surface rounded-2xl border border-page shadow-sm">
@@ -355,7 +458,8 @@ export default function Reports() {
             </div>
             {renderTable(openSaved.data, openSaved.report_type === 'weekly_detailed' ? { groupBy: 'Employee' } : undefined)}
             <div className="flex gap-3 pt-2">
-              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={btnSecondary}>↓ Export Excel</button>
+              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={btnSecondary}>↓ Excel</button>
+              <button onClick={() => reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'weekly_detailed' || openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={btnSecondary}>↓ PDF</button>
               <button onClick={() => deleteSaved(openSaved)} className={btnDanger}>Delete</button>
             </div>
           </div>

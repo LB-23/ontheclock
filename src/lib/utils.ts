@@ -91,20 +91,20 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   const headers = Object.keys(rows[0])
   ws.columns = headers.map(h => ({ header: h.toUpperCase(), key: h, width: Math.max(12, h.length + 2) }))
 
-  // Style the header row
+  // Style the header row — Calibri 9pt bold white on #1B89BB
   const headerRow = ws.getRow(1)
   headerRow.height = 22
   headerRow.eachCell(cell => {
-    cell.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
     cell.alignment = { vertical: 'middle', horizontal: 'left' }
   })
 
-  // Body
+  // Body — Calibri 9pt black
   for (const r of rows) {
     const row = ws.addRow(r)
     row.eachCell(cell => {
-      cell.font = { name: 'Familjen Grotesk', size: 11, color: { argb: 'FF000000' } }
+      cell.font = { name: 'Calibri', size: 9, color: { argb: 'FF000000' } }
       cell.alignment = { vertical: 'middle', horizontal: 'left' }
     })
   }
@@ -147,12 +147,12 @@ export function getGPS(): Promise<{ lat: number; lng: number } | null> {
   })
 }
 
-/** Format hours as "7h 30m" — always shows minutes (e.g. "8h 0m") */
+/** Format hours as "00h 00m" — zero-padded so values line up neatly */
 export function fmtHours(h: number): string {
-  const totalMin = Math.round(h * 60)
+  const totalMin = Math.round(Number(h ?? 0) * 60)
   const hrs  = Math.floor(totalMin / 60)
   const mins = totalMin % 60
-  return `${hrs}h ${mins}m`
+  return `${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m`
 }
 
 /** Tailwind class helpers — LB sky-blue primary button */
