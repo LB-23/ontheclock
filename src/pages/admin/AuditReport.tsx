@@ -148,19 +148,19 @@ export default function AuditReport() {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Summary — colour-coded by severity */}
       <div className="grid grid-cols-3 gap-3">
-        <div style={{ backgroundColor: 'rgba(255,153,216,0.30)' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{total}</p>
-          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Entries in range</p>
+        <div style={{ backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold tabular-nums">{total}</p>
+          <p className="text-[11px] mt-1 font-semibold uppercase tracking-wide opacity-90">Entries in range</p>
         </div>
-        <div style={{ backgroundColor: 'rgba(255,102,196,0.30)' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{flaggedRed}</p>
-          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Off-site</p>
+        <div style={{ backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold tabular-nums">{flaggedRed}</p>
+          <p className="text-[11px] mt-1 font-semibold uppercase tracking-wide opacity-90">Off-site</p>
         </div>
-        <div style={{ backgroundColor: 'rgba(255,31,169,0.30)' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold text-ink tabular-nums">{flaggedAmber}</p>
-          <p className="text-[11px] text-ink/80 mt-1 font-semibold uppercase tracking-wide">Missing GPS</p>
+        <div style={{ backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }} className="rounded-2xl p-4">
+          <p className="text-4xl font-clock font-bold tabular-nums">{flaggedAmber}</p>
+          <p className="text-[11px] mt-1 font-semibold uppercase tracking-wide opacity-90">Missing GPS</p>
         </div>
       </div>
 

@@ -91,12 +91,12 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   const headers = Object.keys(rows[0])
   ws.columns = headers.map(h => ({ header: h.toUpperCase(), key: h, width: Math.max(12, h.length + 2) }))
 
-  // Style the header row — Calibri 9pt bold white on #1B89BB
+  // Style the header row — Calibri 9pt bold black on #ADADAD grey
   const headerRow = ws.getRow(1)
   headerRow.height = 22
   headerRow.eachCell(cell => {
-    cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+    cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF000000' } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
     cell.alignment = { vertical: 'middle', horizontal: 'left' }
   })
 
@@ -147,12 +147,12 @@ export function getGPS(): Promise<{ lat: number; lng: number } | null> {
   })
 }
 
-/** Format hours as "00h 00m" — zero-padded so values line up neatly */
+/** Format hours as "Xh Ym" — never zero-padded (e.g. '1h 5m', '38h 41m') */
 export function fmtHours(h: number): string {
   const totalMin = Math.round(Number(h ?? 0) * 60)
   const hrs  = Math.floor(totalMin / 60)
   const mins = totalMin % 60
-  return `${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m`
+  return `${hrs}h ${mins}m`
 }
 
 /** Tailwind class helpers — LB sky-blue primary button */

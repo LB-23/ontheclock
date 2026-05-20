@@ -59,7 +59,7 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
     head: [headers],
     body,
     styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240, 240, 240], textColor: [0, 0, 0] },
-    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [27, 137, 187], textColor: 255, halign: 'left' },
+    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
     willDrawCell: data => {
       if (data.section === 'body' && groupBoundaries.has(data.row.index)) {
         // Draw a thick top border on the first row of each new group
@@ -324,7 +324,7 @@ export default function Reports() {
 
       <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
         {(tab === 'employee' || tab === 'job') && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
               <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">From</label>
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} />

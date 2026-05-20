@@ -192,16 +192,23 @@ export default function MyTimesheets() {
       bodyFont = 'Calibri'
     }
 
-    const HEAD_BG : [number, number, number] = [27, 137, 187]  // #1B89BB - column band
-    const SUM_1   : [number, number, number] = [21, 115, 157]  // #15739D - REGULAR
-    const SUM_2   : [number, number, number] = [14, 77, 105]   // #0E4D69 - OVERTIME
-    const SUM_3   : [number, number, number] = [10, 49, 66]    // #0A3142 - TOTAL HOURS
-    const LEAVE_FG: [number, number, number] = [28, 141, 191]  // #1C8DBF
-    const RED     : [number, number, number] = [255, 40, 40]   // #FF2828 - flagged notes
+    // Greys per user spec
+    const HEAD_BG : [number, number, number] = [173, 173, 173]   // #ADADAD - column band
+    const SUM_1   : [number, number, number] = [127, 127, 127]   // #7F7F7F - REGULAR
+    const SUM_2   : [number, number, number] = [89, 89, 89]      // #595959 - OVERTIME
+    const SUM_3   : [number, number, number] = [64, 64, 64]      // #404040 - TOTAL HOURS
+    const LEAVE_FG: [number, number, number] = [28, 141, 191]    // #1C8DBF
+    const RED     : [number, number, number] = [255, 40, 40]     // #FF2828 - flagged notes
     const BLACK   : [number, number, number] = [0, 0, 0]
 
     const isFlaggedNote = (n: string | null | undefined) =>
       !!n && (n.includes('Auto-closed') || n.includes('Added manually'))
+
+    // 'Xh Ym' lowercase, no padding, no space between digits and units
+    const fmtCellHours = (h: number) => {
+      const hm = splitHM(h)
+      return `${hm.h}h ${hm.m}m`
+    }
 
     sheets.forEach((ts, idx) => {
       if (idx > 0) pdf.addPage()
@@ -217,11 +224,10 @@ export default function MyTimesheets() {
       pdf.text(fmtWeekRange(ts.week_start), 120, 72)
       pdf.text(capStatus(ts.status),         120, 86)
 
-      // ── Body rows: merged HOURS column = '00H 00M' ──
+      // ── Body rows ──
       const entryRows = (byWeek[ts.week_start] ?? []).map(e => {
         const isLeave = e.entry_type && e.entry_type !== 'regular'
-        const hm = splitHM(Number(e.total_hours ?? 0))
-        const hoursStr = `${String(hm.h).padStart(2,'0')}H ${String(hm.m).padStart(2,'0')}M`
+        const hoursStr = fmtCellHours(Number(e.total_hours ?? 0))
         if (isLeave) {
           return {
             cells: [
@@ -250,6 +256,12 @@ export default function MyTimesheets() {
         }
       })
 
+      // Reserve column widths so we can compute the HOURS column x position
+      const HOURS_COL_WIDTH = 64
+      const NOTES_COL_WIDTH = 200
+
+      let hoursColX = 0
+      let hoursColW = 0
       autoTable(pdf, {
         startY: 105,
         head: [['DATE', 'SITE', 'STAGE', 'IN', 'OUT', 'HOURS', 'NOTES']],
@@ -257,53 +269,62 @@ export default function MyTimesheets() {
           ? entryRows.map(r => r.cells)
           : [['No entries this week', '', '', '', '', '', '']],
         styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240,240,240], textColor: BLACK },
-        headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: HEAD_BG, textColor: 255, halign: 'left' },
+        headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: HEAD_BG, textColor: BLACK, halign: 'left' },
         columnStyles: {
-          5: { cellWidth: 64, halign: 'left' },  // HOURS (00H 00M)
-          6: { cellWidth: 200 },                  // NOTES
+          5: { cellWidth: HOURS_COL_WIDTH, halign: 'left' },
+          6: { cellWidth: NOTES_COL_WIDTH },
         },
         didParseCell: data => {
           if (data.section !== 'body') return
           const r = entryRows[data.row.index]
           if (!r) return
-          // Leave rows in #1C8DBF
           if (r.isLeave) { data.cell.styles.textColor = r.colour; return }
-          // Notes cell (col index 6) carrying Auto-closed / Added manually -> red italic
           if (data.column.index === 6 && r.isFlagged) {
             data.cell.styles.textColor = RED
             data.cell.styles.fontStyle = 'italic'
           }
         },
+        didDrawCell: data => {
+          // Capture the HOURS column's x + width on the FIRST head draw so the
+          // summary block below can align its hours value to the same x.
+          if (data.section === 'head' && data.column.index === 5 && hoursColX === 0) {
+            hoursColX = data.cell.x
+            hoursColW = data.cell.width
+          }
+        },
       })
 
-      // ── Stacked Regular / Overtime / Total summary ──
+      // ── Stacked summary aligned to HOURS column ──
       const finalY = (pdf as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 24
       const reg = splitHM(Number(ts.regular_hours  ?? 0))
       const ot  = splitHM(Number(ts.overtime_hours ?? 0))
       const tot = splitHM(Number(ts.total_hours    ?? 0))
 
-      const SUMMARY_LEFT = 420
-      const LABEL_W      = 120
-      const NUM_COL_W    = 36
-      const ROW_H        = 18
+      // Label cell sits to the LEFT of the HOURS column; HOURS value sits inside the HOURS column rect
+      const LABEL_W = 120
+      const ROW_H   = 18
+      const labelX  = hoursColX - LABEL_W  // place label cell directly abutting HOURS column
+      const valueX  = hoursColX + 6        // hours value text left-aligned inside HOURS column
 
       const drawSummaryRow = (y: number, label: string, h: number, m: number, bg: [number, number, number], bold: boolean) => {
         pdf.setFillColor(...bg)
-        pdf.rect(SUMMARY_LEFT, y, LABEL_W, ROW_H, 'F')
+        pdf.rect(labelX, y, LABEL_W, ROW_H, 'F')
         pdf.setTextColor(255, 255, 255)
         pdf.setFont(bodyFont, bold ? 'bold' : 'normal')
         pdf.setFontSize(9)
-        pdf.text(label.toUpperCase(), SUMMARY_LEFT + LABEL_W - 6, y + ROW_H / 2 + 3, { align: 'right' })
-        // H + M values to the right of the label cell
+        pdf.text(label.toUpperCase(), labelX + LABEL_W - 6, y + ROW_H / 2 + 3, { align: 'right' })
+        // Single 'Xh Ym' string — no gap between hours and minutes, aligned to table HOURS column
         pdf.setTextColor(...BLACK)
         pdf.setFont(bodyFont, bold ? 'bold' : 'normal')
-        pdf.text(`${String(h).padStart(2,'0')}H`, SUMMARY_LEFT + LABEL_W + 10,                  y + ROW_H / 2 + 3)
-        pdf.text(`${String(m).padStart(2,'0')}M`, SUMMARY_LEFT + LABEL_W + 10 + NUM_COL_W,      y + ROW_H / 2 + 3)
+        pdf.text(`${h}h ${m}m`, valueX, y + ROW_H / 2 + 3)
       }
 
       drawSummaryRow(finalY,             'Regular',     reg.h, reg.m, SUM_1, false)
       drawSummaryRow(finalY + ROW_H,     'Overtime',    ot.h,  ot.m,  SUM_2, false)
       drawSummaryRow(finalY + ROW_H * 2, 'Total Hours', tot.h, tot.m, SUM_3, true)
+
+      // Keep linter happy
+      void hoursColW
 
       if (ts.admin_notes) {
         pdf.setFont(bodyFont, 'normal')
@@ -346,8 +367,8 @@ export default function MyTimesheets() {
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FFFFFFFF' } }
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B89BB' } }
+      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF000000' } }
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
 
@@ -378,7 +399,7 @@ export default function MyTimesheets() {
         for (const e of entries) {
           const isLeave = e.entry_type && e.entry_type !== 'regular'
           const hm = splitHM(Number(e.total_hours ?? 0))
-          const hoursStr = `${String(hm.h).padStart(2,'0')}H ${String(hm.m).padStart(2,'0')}M`
+          const hoursStr = `${hm.h}h ${hm.m}m`
           if (isLeave) {
             writeRow({
               employee: profile.full_name,
@@ -411,16 +432,16 @@ export default function MyTimesheets() {
       const ot  = splitHM(Number(ts.overtime_hours ?? 0))
       const tot = splitHM(Number(ts.total_hours ?? 0))
       const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
-        const hoursStr = `${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`
+        const hoursStr = `${h}h ${m}m`
         const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
         r.getCell('out').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FFFFFFFF' } }
         r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
         r.getCell('hours').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FF000000' } }
       }
-      addSummary('Regular',     reg.h, reg.m, 'FF15739D', false)
-      addSummary('Overtime',    ot.h,  ot.m,  'FF0E4D69', false)
-      addSummary('Total Hours', tot.h, tot.m, 'FF0A3142', true)
+      addSummary('Regular',     reg.h, reg.m, 'FF7F7F7F', false)
+      addSummary('Overtime',    ot.h,  ot.m,  'FF595959', false)
+      addSummary('Total Hours', tot.h, tot.m, 'FF404040', true)
       ws.addRow({})  // blank separator
     })
 
@@ -905,16 +926,17 @@ export default function MyTimesheets() {
               <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
             </div>
             <p className="text-xs text-muted">Select a date range for export.</p>
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {/* Stack vertically on phones (where date picker is bulky), 2-up on sm+ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="min-w-0">
                 <label className={labelCls}>From</label>
                 <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)}
-                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-3 py-2.5 text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
               </div>
               <div className="min-w-0">
                 <label className={labelCls}>To</label>
                 <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)}
-                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+                       className="block w-full min-w-0 max-w-full rounded-xl border border-page bg-surface px-3 py-2.5 text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
               </div>
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
