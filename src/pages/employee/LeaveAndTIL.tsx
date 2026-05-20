@@ -252,7 +252,7 @@ export default function LeaveAndTIL() {
               <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap opacity-90">
                 {b.label}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1 font-clock">{b.value}</p>
+              <p className="text-xl sm:text-2xl font-bold mt-1 font-clock normal-case">{b.value}</p>
             </div>
           ))}
         </div>
@@ -304,7 +304,7 @@ export default function LeaveAndTIL() {
           </div>
           <div className="rounded-xl bg-page px-4 py-3 flex justify-between items-center">
             <span className="text-xs uppercase font-semibold tracking-wide text-muted">Total leave hours</span>
-            <span className="text-lg font-clock font-bold text-skyDeep">{fmtHours(totalHours)}</span>
+            <span className="text-lg font-clock normal-case font-bold text-skyDeep">{fmtHours(totalHours)}</span>
           </div>
           <div>
             <label className={labelCls}>Reason (optional)</label>

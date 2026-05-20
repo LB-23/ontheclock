@@ -103,7 +103,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-clock text-sky tracking-wider tabular-nums">{fmtHours(elapsed)}</p>
+                    <p className="text-xl font-clock normal-case text-sky tracking-wider tabular-nums">{fmtHours(elapsed)}</p>
                   </div>
                 </div>
               )
