@@ -282,39 +282,42 @@ export default function LeaveAndTIL() {
               ))}
             </select>
           </div>
-          {/* Compact date/time inputs so the native iOS chrome can't overflow the card */}
-          <div className="flex gap-3">
-            <label className="flex-1 min-w-0">
+          {/* CSS grid (not flex) gives each cell a fixed 50% width that the native
+              iOS date/time chrome cannot overflow. `overflow-hidden` clips any
+              rogue picker UI, `appearance:none` removes Safari's intrinsic
+              min-width from the placeholder so cells sit clearly separated. */}
+          <div className="grid grid-cols-2 gap-4">
+            <label className="min-w-0 overflow-hidden">
               <span className={labelCls}>Start Date</span>
               <input type="date" value={form.start_date}
                      onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                      className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                      required />
             </label>
-            <label className="flex-1 min-w-0">
+            <label className="min-w-0 overflow-hidden">
               <span className={labelCls}>Start Time</span>
               <input type="time" value={form.start_time}
                      onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                      className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                      required />
             </label>
           </div>
-          <div className="flex gap-3">
-            <label className="flex-1 min-w-0">
+          <div className="grid grid-cols-2 gap-4">
+            <label className="min-w-0 overflow-hidden">
               <span className={labelCls}>End Date</span>
               <input type="date" value={form.end_date}
                      onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                      className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                      required />
             </label>
-            <label className="flex-1 min-w-0">
+            <label className="min-w-0 overflow-hidden">
               <span className={labelCls}>End Time</span>
               <input type="time" value={form.end_time}
                      onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                      className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                      required />
             </label>

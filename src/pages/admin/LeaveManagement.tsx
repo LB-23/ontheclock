@@ -406,7 +406,7 @@ export default function LeaveManagement() {
                   {phName && (
                     <div
                       className="text-[10px] leading-tight rounded px-0.5 mt-0.5 truncate font-semibold"
-                      style={{ backgroundColor: '#FFD7D7', color: '#8C1B1B' }}
+                      style={{ backgroundColor: '#B4B3B3', color: '#595858' }}
                       title={phName}
                     >
                       P/H
@@ -438,7 +438,7 @@ export default function LeaveManagement() {
           {approved.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
               <span className="text-[11px] rounded-full px-2 py-0.5 font-semibold"
-                    style={{ backgroundColor: '#FFD7D7', color: '#8C1B1B' }}>
+                    style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
                 P/H — VIC Public Holiday
               </span>
               {Array.from(new Map(approved.map(l => [l.employee_id, (l.profiles as Profile)?.full_name ?? ''])).entries()).map(([eid, fullName]) => {

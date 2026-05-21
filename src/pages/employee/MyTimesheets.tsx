@@ -848,16 +848,16 @@ export default function MyTimesheets() {
             </button>
           )}
 
-          {/* Permanent delete — always available, hard delete of timesheet + entries + edits */}
+          {/* Permanent delete — uses the SECURITY DEFINER RPC so it can disable the
+              recalc trigger atomically (otherwise sync_timesheet_on_entry_change
+              re-INSERTs the timesheet via ON CONFLICT while entries are deleted,
+              leaving an orphan row that re-appears in the list). */}
           <button
             onClick={async () => {
               if (!profile) return
               if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(selected.week_start)} — ${fmtHours(selected.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
-              // 1. wipe edits, 2. wipe entries, 3. wipe timesheet
-              const entryIds = ((await supabase.from('time_entries').select('id').eq('employee_id', profile.id).eq('week_start', selected.week_start)).data ?? []).map((e: { id: string }) => e.id)
-              if (entryIds.length) await supabase.from('time_entry_edits').delete().in('time_entry_id', entryIds)
-              await supabase.from('time_entries').delete().eq('employee_id', profile.id).eq('week_start', selected.week_start)
-              await supabase.from('timesheets').delete().eq('id', selected.id)
+              const { error } = await supabase.rpc('employee_delete_own_timesheet', { timesheet_id: selected.id })
+              if (error) { alert(`Could not delete timesheet:\n${error.message}`); return }
               setSelected(null)
               loadTimesheets()
             }}
@@ -877,9 +877,10 @@ export default function MyTimesheets() {
         <>
           <button
             onClick={() => {
-              const today = format(new Date(), 'yyyy-MM-dd')
-              const monthAgo = format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd')
-              setExpFrom(monthAgo); setExpTo(today); setShowExport(true); setErr('')
+              // Per spec: open with the date pickers BLANK so the user picks a
+              // deliberate range every time rather than re-exporting whatever
+              // happens to fall in the default window.
+              setExpFrom(''); setExpTo(''); setShowExport(true); setErr('')
             }}
             className={`${btnSecondary} w-full h-11`}
           >
@@ -918,21 +919,31 @@ export default function MyTimesheets() {
               <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
             </div>
             <p className="text-xs text-muted">Select a date range for export.</p>
-            {/* Side-by-side. CSS sizing: `width:100%` plus `min-width:0` plus
-                `box-sizing:border-box` on the input — so iOS Safari can't expand
-                the native date chrome past the flex column edge. */}
-            <div className="flex gap-3">
-              <label className="flex-1 min-w-0">
+            {/* CSS grid (not flex) gives each cell a fixed 50% width that the
+                native iOS date chrome cannot overflow. `overflow-hidden` on each
+                cell clips any rogue picker UI, and `appearance:none` on the input
+                neutralises Safari's intrinsic min-width from the dd/mm/yyyy
+                placeholder so blank inputs sit nicely side-by-side. */}
+            <div className="grid grid-cols-2 gap-4">
+              <label className="min-w-0 overflow-hidden">
                 <span className={labelCls}>From</span>
-                <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)}
-                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
-                       className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+                <input
+                  type="date"
+                  value={expFrom}
+                  onChange={e => setExpFrom(e.target.value)}
+                  style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                  className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                />
               </label>
-              <label className="flex-1 min-w-0">
+              <label className="min-w-0 overflow-hidden">
                 <span className={labelCls}>To</span>
-                <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)}
-                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
-                       className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+                <input
+                  type="date"
+                  value={expTo}
+                  onChange={e => setExpTo(e.target.value)}
+                  style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                  className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                />
               </label>
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
