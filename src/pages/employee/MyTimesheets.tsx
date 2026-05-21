@@ -124,7 +124,7 @@ export default function MyTimesheets() {
   }
 
   /** Format an ISO timestamp as h:mm AM/PM (Australian style) */
-  const fmtPdfTime = (iso: string) => format(new Date(iso), 'h:mm a')
+  const fmtPdfTime = (iso: string) => format(new Date(iso), 'h:mm aaa')
 
   /** Capitalise first letter of a status word: 'submitted' -> 'Submitted' */
   const capStatus = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
@@ -169,27 +169,25 @@ export default function MyTimesheets() {
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
 
-    // Calibri-clone for embedding (jsPDF only ships Helvetica/Times/Courier).
-    // Tries Carlito first (free metric-equivalent of Calibri), falls back to
-    // the built-in Helvetica family. The PDF document tag still reads
-    // 'Calibri' so Office viewers prefer the system Calibri when present.
+    // Embed Barlow (Semi Bold variant) from jsdelivr's Google Fonts mirror.
+    // Falls back to Helvetica if the fetch fails (offline / CORS).
     let bodyFont = 'helvetica'
-    const CARLITO_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito'
-    const [carlitoReg, carlitoBold, carlitoIt] = await Promise.all([
-      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Regular.ttf`),
-      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Bold.ttf`),
-      fetchTtfBase64(`${CARLITO_BASE}/Carlito-Italic.ttf`),
+    const BARLOW_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlow'
+    const [barlowReg, barlowBold, barlowIt] = await Promise.all([
+      fetchTtfBase64(`${BARLOW_BASE}/Barlow-Regular.ttf`),
+      fetchTtfBase64(`${BARLOW_BASE}/Barlow-SemiBold.ttf`),
+      fetchTtfBase64(`${BARLOW_BASE}/Barlow-Italic.ttf`),
     ])
-    if (carlitoReg && carlitoBold) {
-      pdf.addFileToVFS('Calibri-Regular.ttf', carlitoReg)
-      pdf.addFont('Calibri-Regular.ttf', 'Calibri', 'normal')
-      pdf.addFileToVFS('Calibri-Bold.ttf', carlitoBold)
-      pdf.addFont('Calibri-Bold.ttf', 'Calibri', 'bold')
-      if (carlitoIt) {
-        pdf.addFileToVFS('Calibri-Italic.ttf', carlitoIt)
-        pdf.addFont('Calibri-Italic.ttf', 'Calibri', 'italic')
+    if (barlowReg && barlowBold) {
+      pdf.addFileToVFS('Barlow-Regular.ttf', barlowReg)
+      pdf.addFont('Barlow-Regular.ttf', 'Barlow', 'normal')
+      pdf.addFileToVFS('Barlow-SemiBold.ttf', barlowBold)
+      pdf.addFont('Barlow-SemiBold.ttf', 'Barlow', 'bold')
+      if (barlowIt) {
+        pdf.addFileToVFS('Barlow-Italic.ttf', barlowIt)
+        pdf.addFont('Barlow-Italic.ttf', 'Barlow', 'italic')
       }
-      bodyFont = 'Calibri'
+      bodyFont = 'Barlow'
     }
 
     // Greys per user spec
@@ -367,7 +365,7 @@ export default function MyTimesheets() {
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF000000' } }
+      c.font = { name: 'Barlow', size: 9, bold: true, color: { argb: 'FF000000' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
@@ -381,12 +379,12 @@ export default function MyTimesheets() {
         const r = ws.addRow(row)
         const colour = opts.isLeave ? 'FF1C8DBF' : 'FF000000'
         r.eachCell((c, colNumber) => {
-          c.font = { name: 'Calibri', size: 9, color: { argb: colour } }
+          c.font = { name: 'Barlow', size: 9, color: { argb: colour } }
           c.alignment = { vertical: 'middle', horizontal: 'left' }
           // Notes column auto-flag: Auto-closed / Added manually -> red italic
           const colKey = (ws.columns[colNumber - 1] as { key?: string }).key
           if (colKey === 'notes' && opts.flaggedCol === 'notes') {
-            c.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FFFF2828' } }
+            c.font = { name: 'Barlow', size: 9, italic: true, color: { argb: 'FFFF2828' } }
           }
         })
       }
@@ -418,8 +416,8 @@ export default function MyTimesheets() {
               date: format(new Date(e.clock_in), 'EEE d MMM'),
               site: (e.job_addresses as { address: string })?.address ?? '',
               stage: (e.stages as { name: string })?.name ?? '',
-              in: format(new Date(e.clock_in), 'h:mm a'),
-              out: e.clock_out ? format(new Date(e.clock_out), 'h:mm a') : '',
+              in: format(new Date(e.clock_in), 'h:mm aaa'),
+              out: e.clock_out ? format(new Date(e.clock_out), 'h:mm aaa') : '',
               hours: hoursStr,
               notes: e.notes ?? '',
             }, { isLeave: false, flaggedCol: isFlaggedNoteExcel(e.notes) ? 'notes' : undefined })
@@ -434,10 +432,10 @@ export default function MyTimesheets() {
       const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
         const hoursStr = `${h}h ${m}m`
         const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
-        r.getCell('out').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').font = { name: 'Barlow', size: 9, bold, color: { argb: 'FFFFFFFF' } }
         r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
-        r.getCell('hours').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FF000000' } }
+        r.getCell('hours').font = { name: 'Barlow', size: 9, bold, color: { argb: 'FF000000' } }
       }
       addSummary('Regular',     reg.h, reg.m, 'FF7F7F7F', false)
       addSummary('Overtime',    ot.h,  ot.m,  'FF595959', false)
@@ -599,8 +597,8 @@ export default function MyTimesheets() {
 
   const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'submitted' || s === 'pending') return { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
-    if (s === 'approved')                     return { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
+    if (s === 'submitted' || s === 'pending') return { backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }
+    if (s === 'approved')                     return { backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }
     if (s === 'rejected')                     return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
     return { backgroundColor: '#D9D9D9', color: '#666666' }   // draft (default)
   }
@@ -820,7 +818,7 @@ export default function MyTimesheets() {
             </div>
             <div className="flex justify-between text-sm mb-4">
               <span className="text-muted">Overtime hours</span>
-              <span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span>
+              <span className="font-semibold" style={{ color: '#FF2828' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
               <span>Total</span>
@@ -849,6 +847,26 @@ export default function MyTimesheets() {
               Reopen for editing
             </button>
           )}
+
+          {/* Permanent delete — always available, hard delete of timesheet + entries + edits */}
+          <button
+            onClick={async () => {
+              if (!profile) return
+              if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(selected.week_start)} — ${fmtHours(selected.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
+              // 1. wipe edits, 2. wipe entries, 3. wipe timesheet
+              const entryIds = ((await supabase.from('time_entries').select('id').eq('employee_id', profile.id).eq('week_start', selected.week_start)).data ?? []).map((e: { id: string }) => e.id)
+              if (entryIds.length) await supabase.from('time_entry_edits').delete().in('time_entry_id', entryIds)
+              await supabase.from('time_entries').delete().eq('employee_id', profile.id).eq('week_start', selected.week_start)
+              await supabase.from('timesheets').delete().eq('id', selected.id)
+              setSelected(null)
+              loadTimesheets()
+            }}
+            style={{ backgroundColor: '#FF2828', color: '#FFFFFF' }}
+            className="inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all"
+          >
+            Delete Timesheet
+          </button>
+
           {selected.admin_notes && (
             <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-700">
               💬 Admin note: {selected.admin_notes}
@@ -871,38 +889,12 @@ export default function MyTimesheets() {
           {timesheets.length === 0 && (
             <div className="text-center py-16 text-muted">No timesheets yet — clock in once to start one.</div>
           )}
-          <p className="text-[11px] text-muted text-center">Tip: press and hold any timesheet to remove it.</p>
           <div className="space-y-3">
-            {timesheets.map(ts => {
-              let pressTimer: ReturnType<typeof setTimeout> | null = null
-              let longPressed = false
-              const promptRemove = async () => {
-                longPressed = true
-                if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(ts.week_start)} — ${fmtHours(ts.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
-                if (!profile) return
-                // Wipe edits, then entries, then timesheet (own rows: RLS allows it)
-                await supabase.from('time_entry_edits').delete().in('time_entry_id',
-                  ((await supabase.from('time_entries').select('id').eq('employee_id', profile.id).eq('week_start', ts.week_start)).data ?? [])
-                    .map((e: { id: string }) => e.id))
-                await supabase.from('time_entries').delete().eq('employee_id', profile.id).eq('week_start', ts.week_start)
-                await supabase.from('timesheets').delete().eq('id', ts.id)
-                loadTimesheets()
-              }
-              const startPress = () => {
-                longPressed = false
-                pressTimer = setTimeout(promptRemove, 650)
-              }
-              const cancelPress = () => {
-                if (pressTimer) { clearTimeout(pressTimer); pressTimer = null }
-              }
-              return (
+            {timesheets.map(ts => (
               <button
                 key={ts.id}
-                onClick={() => { if (!longPressed) loadEntries(ts) }}
-                onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress} onTouchMove={cancelPress}
-                onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
-                onContextMenu={ev => { ev.preventDefault(); cancelPress(); promptRemove() }}
-                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors select-none"
+                onClick={() => loadEntries(ts)}
+                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors"
               >
                 <div>
                   <p className="text-sm font-semibold">{fmtWeekRange(ts.week_start)}</p>
@@ -913,7 +905,7 @@ export default function MyTimesheets() {
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>
-            )})}
+            ))}
           </div>
         </>
       )}
@@ -926,19 +918,22 @@ export default function MyTimesheets() {
               <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
             </div>
             <p className="text-xs text-muted">Select a date range for export.</p>
-            {/* Side-by-side on every viewport; compact paddings + min-w-0 so the
-                native iOS/Android date chrome can't push past the dialog edge */}
-            <div className="flex gap-3 min-w-0">
-              <div className="flex-1 min-w-0">
-                <label className={labelCls}>From</label>
+            {/* Side-by-side. CSS sizing: `width:100%` plus `min-width:0` plus
+                `box-sizing:border-box` on the input — so iOS Safari can't expand
+                the native date chrome past the flex column edge. */}
+            <div className="flex gap-3">
+              <label className="flex-1 min-w-0">
+                <span className={labelCls}>From</span>
                 <input type="date" value={expFrom} onChange={e => setExpFrom(e.target.value)}
-                       className="block w-full min-w-0 max-w-full box-border rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className={labelCls}>To</label>
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                       className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </label>
+              <label className="flex-1 min-w-0">
+                <span className={labelCls}>To</span>
                 <input type="date" value={expTo} onChange={e => setExpTo(e.target.value)}
-                       className="block w-full min-w-0 max-w-full box-border rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
-              </div>
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                       className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </label>
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
             <div className="flex gap-3 pt-2">

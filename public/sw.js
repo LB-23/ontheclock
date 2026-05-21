@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v11'
+const CACHE = 'ontheclock-v12'
 const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
 
 self.addEventListener('install', e => {
@@ -53,18 +53,35 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let data = {}
   try { data = e.data?.json() ?? {} } catch { data = { title: e.data?.text() } }
-  const title = data.title || 'Larkin Building Group'
+
+  // Derive title from the reminder kind so the OS renders the bold heading the
+  // brand wants ("Reminder to Clock-In" / "Reminder to Clock-Out") — even if
+  // the Edge Function payload only carries `kind`. Falls back to whatever the
+  // server explicitly set, then to the company name.
+  const kind = data.kind || ''
+  const titleByKind =
+    kind === 'clock_in_reminder'  ? 'Reminder to Clock-In'  :
+    kind === 'clock_out_reminder' ? 'Reminder to Clock-Out' :
+    null
+  const title = data.title || titleByKind || 'Larkin Building Group'
+
   const opts = {
     icon: '/lb-outlined.png',
     badge: '/lb-outlined.png',
-    tag: data.kind || 'ontheclock',
+    tag: kind || 'ontheclock',
     data: { url: data.url || '/clock' },
     requireInteraction: false,
     vibrate: [200, 100, 200],
   }
-  // Only include `body` when it's a non-empty string. iOS renders an empty
-  // body as a visible blank line; omitting it collapses the layout.
-  if (data.body && String(data.body).length > 0) opts.body = String(data.body)
+  // Body line beneath the bold title. Defaults to "from Larkin Building Group"
+  // so the company is named even when iOS hides the source-app tag. Server can
+  // override with any non-empty string; explicit `body: ''` collapses it.
+  const body =
+    typeof data.body === 'string'
+      ? data.body
+      : titleByKind ? 'from Larkin Building Group' : ''
+  if (body.length > 0) opts.body = body
+
   e.waitUntil(self.registration.showNotification(title, opts))
 })
 

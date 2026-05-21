@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
 import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
+import { holidayFor } from '../../lib/holidays'
 
 const leaveLabels: Record<string, string> = {
   annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
@@ -398,9 +399,19 @@ export default function LeaveManagement() {
               return days.map(day => {
                 const leaves = leavesOnDay(day)
                 const inCurrentWeek = day >= monday && day <= sunday
+                const phName = holidayFor(day)
                 return (
                   <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
                     <p className="text-xs font-medium" style={{ color: inCurrentWeek ? '#1c9fda' : undefined }}>{format(day, 'd')}</p>
+                  {phName && (
+                    <div
+                      className="text-[10px] leading-tight rounded px-0.5 mt-0.5 truncate font-semibold"
+                      style={{ backgroundColor: '#FFD7D7', color: '#8C1B1B' }}
+                      title={phName}
+                    >
+                      P/H
+                    </div>
+                  )}
                   {leaves.map(l => {
                     const fullName = (l.profiles as Profile)?.full_name ?? ''
                     const parts = fullName.trim().split(/\s+/)
@@ -426,6 +437,10 @@ export default function LeaveManagement() {
           {/* Legend */}
           {approved.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
+              <span className="text-[11px] rounded-full px-2 py-0.5 font-semibold"
+                    style={{ backgroundColor: '#FFD7D7', color: '#8C1B1B' }}>
+                P/H — VIC Public Holiday
+              </span>
               {Array.from(new Map(approved.map(l => [l.employee_id, (l.profiles as Profile)?.full_name ?? ''])).entries()).map(([eid, fullName]) => {
                 const parts = fullName.trim().split(/\s+/)
                 const display = parts.length >= 2 ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}` : parts[0] ?? ''

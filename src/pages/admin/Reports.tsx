@@ -16,11 +16,11 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
   if (rows.length === 0) return
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
   let bodyFont = 'helvetica'
-  const CARLITO_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito'
+  const BARLOW_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlow'
   try {
     const [reg, bold] = await Promise.all([
-      fetch(`${CARLITO_BASE}/Carlito-Regular.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
-      fetch(`${CARLITO_BASE}/Carlito-Bold.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+      fetch(`${BARLOW_BASE}/Barlow-Regular.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+      fetch(`${BARLOW_BASE}/Barlow-SemiBold.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
     ])
     if (reg && bold) {
       const b64 = (buf: ArrayBuffer) => {
@@ -29,11 +29,11 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
         return btoa(bin)
       }
-      pdf.addFileToVFS('Calibri-Regular.ttf', b64(reg))
-      pdf.addFont('Calibri-Regular.ttf', 'Calibri', 'normal')
-      pdf.addFileToVFS('Calibri-Bold.ttf', b64(bold))
-      pdf.addFont('Calibri-Bold.ttf', 'Calibri', 'bold')
-      bodyFont = 'Calibri'
+      pdf.addFileToVFS('Barlow-Regular.ttf', b64(reg))
+      pdf.addFont('Barlow-Regular.ttf', 'Barlow', 'normal')
+      pdf.addFileToVFS('Barlow-SemiBold.ttf', b64(bold))
+      pdf.addFont('Barlow-SemiBold.ttf', 'Barlow', 'bold')
+      bodyFont = 'Barlow'
     }
   } catch { /* fall back to Helvetica */ }
 
@@ -102,7 +102,8 @@ export default function Reports() {
   const [openSaved, setOpenSaved] = useState<SavedReport | null>(null)
 
   useEffect(() => {
-    supabase.from('profiles').select('id, full_name').order('full_name').then(({ data }) => setEmployees((data as Profile[]) ?? []))
+    // Filter to employees only — admin accounts shouldn't clutter the report-builder picker
+    supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name').then(({ data }) => setEmployees((data as Profile[]) ?? []))
     supabase.from('job_addresses').select('id, address').eq('is_active', true).order('address').then(({ data }) => setJobs(data ?? []))
     loadSaved()
   }, [])
@@ -146,8 +147,8 @@ export default function Reports() {
           Date:       e.clock_in ? fmtDateLong(e.clock_in as string) : '',
           Site:       (e.job_addresses as { address: string })?.address ?? '',
           Stage:      (e.stages as { name: string })?.name ?? '',
-          'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
-          'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
+          'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm aaa') : '',
+          'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm aaa') : '',
           Hours:      fmtHours(Number(e.total_hours ?? 0)),
           Overtime:   e.is_overtime ? 'Yes' : 'No',
           'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
@@ -175,8 +176,8 @@ export default function Reports() {
         Date:      e.clock_in ? fmtDateLong(e.clock_in as string) : '',
         Site:      (e.job_addresses as { address: string })?.address ?? '',
         Employee:  (e.profiles as { full_name: string })?.full_name ?? '',
-        'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
-        'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
+        'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm aaa') : '',
+        'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm aaa') : '',
         Hours:     fmtHours(Number(e.total_hours ?? 0)),
       }))
     } else {
@@ -229,8 +230,8 @@ export default function Reports() {
             Date:         e.clock_in ? fmtDateLong(e.clock_in as string) : '',
             Site:         (e.job_addresses as { address: string })?.address ?? '',
             Stage:        (e.stages as { name: string })?.name ?? '',
-            'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm a') : '',
-            'End Time':   e.clock_out ? format(new Date(e.clock_out as string), 'h:mm a') : '',
+            'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm aaa') : '',
+            'End Time':   e.clock_out ? format(new Date(e.clock_out as string), 'h:mm aaa') : '',
             'Total Hours': fmtHours(Number(e.total_hours ?? 0)),
             'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
           }

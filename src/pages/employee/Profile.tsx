@@ -4,13 +4,13 @@ import { useProfile } from '../../hooks/useProfile'
 import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
 import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
-/** Render a 'HH:MM:SS' reminder time as 12-hour with AM/PM (e.g. '7:25 AM') */
+/** Render a 'HH:MM:SS' reminder time as 12-hour with am/pm (e.g. '7:25 am') */
 function fmtReminderTime(t: string | null | undefined): string {
   if (!t) return '— not set —'
   const [hStr, mStr] = t.split(':')
   const h = Number(hStr)
   const m = mStr ?? '00'
-  const period = h >= 12 ? 'PM' : 'AM'
+  const period = h >= 12 ? 'pm' : 'am'
   const h12 = ((h + 11) % 12) + 1
   return `${h12}:${m} ${period}`
 }

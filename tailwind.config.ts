@@ -45,7 +45,7 @@ export default {
       fontFamily: {
         sans:    ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
         grotesk: ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
-        clock:   ['"Avenir Next Condensed"', '"Fjalla One"', '"Helvetica Neue Condensed"', '"Arial Narrow"', 'system-ui', 'sans-serif'],
+        clock:   ['Barlow', '"Familjen Grotesk"', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
       },
     },
   },

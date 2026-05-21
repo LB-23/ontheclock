@@ -29,9 +29,9 @@ type FormState = {
 const BLANK: FormState = {
   leave_type: 'annual',
   start_date: '',
-  start_time: '07:00',
+  start_time: '00:00',
   end_date:   '',
-  end_time:   '15:36',  // 7am + 8h36 = 15:36 for 38hr/week (default)
+  end_time:   '00:00',
   reason: '',
 }
 
@@ -176,10 +176,10 @@ export default function LeaveAndTIL() {
   }
 
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'pending')   return { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
-    if (s === 'approved')  return { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
+    if (s === 'pending')   return { backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }
+    if (s === 'approved')  return { backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }
     if (s === 'declined' || s === 'rejected') return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
-    if (s === 'withdrawn') return { backgroundColor: 'rgba(102,102,102,0.15)', color: '#666666' }
+    if (s === 'withdrawn') return { backgroundColor: 'rgba(102,102,102,0.10)', color: '#666666' }
     return {}
   }
   const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
@@ -258,7 +258,15 @@ export default function LeaveAndTIL() {
         </div>
       )}
 
-      <button onClick={() => { setShowForm(!showForm); setErr('') }} className={`${btnPrimary} w-full h-12`}>
+      <button
+        onClick={() => { setShowForm(!showForm); setErr('') }}
+        style={showForm ? { backgroundColor: '#FF2828', color: '#FFFFFF' } : undefined}
+        className={
+          showForm
+            ? 'inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all'
+            : `${btnPrimary} w-full h-12`
+        }
+      >
         {showForm ? 'Cancel' : '+ Request Leave'}
       </button>
 
@@ -274,37 +282,46 @@ export default function LeaveAndTIL() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="min-w-0">
-              <label className={labelCls}>Start Date</label>
+          {/* Compact date/time inputs so the native iOS chrome can't overflow the card */}
+          <div className="flex gap-3">
+            <label className="flex-1 min-w-0">
+              <span className={labelCls}>Start Date</span>
               <input type="date" value={form.start_date}
                      onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                     className={`${inputCls} min-w-0`} required />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>Start Time</label>
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                     required />
+            </label>
+            <label className="flex-1 min-w-0">
+              <span className={labelCls}>Start Time</span>
               <input type="time" value={form.start_time}
                      onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-                     className={`${inputCls} min-w-0`} required />
-            </div>
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                     required />
+            </label>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="min-w-0">
-              <label className={labelCls}>End Date</label>
+          <div className="flex gap-3">
+            <label className="flex-1 min-w-0">
+              <span className={labelCls}>End Date</span>
               <input type="date" value={form.end_date}
                      onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                     className={`${inputCls} min-w-0`} required />
-            </div>
-            <div className="min-w-0">
-              <label className={labelCls}>End Time</label>
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                     required />
+            </label>
+            <label className="flex-1 min-w-0">
+              <span className={labelCls}>End Time</span>
               <input type="time" value={form.end_time}
                      onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-                     className={`${inputCls} min-w-0`} required />
-            </div>
+                     style={{ width: '100%', minWidth: 0, boxSizing: 'border-box' }}
+                     className="block rounded-xl border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                     required />
+            </label>
           </div>
           <div className="rounded-xl bg-page px-4 py-3 flex justify-between items-center">
             <span className="text-xs uppercase font-semibold tracking-wide text-muted">Total leave hours</span>
-            <span className="text-lg font-clock normal-case font-bold text-skyDeep">{fmtHours(totalHours)}</span>
+            <span className="text-lg font-clock normal-case font-bold text-ink">{fmtHours(totalHours)}</span>
           </div>
           <div>
             <label className={labelCls}>Reason (optional)</label>
