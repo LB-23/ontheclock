@@ -29,12 +29,16 @@ body {
 
 /* Brand headings + widget typography — Barlow Semi Bold (weight 600).
  * Body text uses Familjen Grotesk; this class is reserved for headings,
- * widget values, stat tiles and similar punchier copy. ALL CAPS by default. */
-.font-clock {
-  font-family: 'Barlow', 'Familjen Grotesk', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+ * widget values, stat tiles and similar punchier copy. ALL CAPS by default.
+ * Declared inside @layer components so Tailwind utilities like `normal-case`
+ * can override the text-transform on a case-by-case basis. */
+@layer components {
+  .font-clock {
+    font-family: 'Barlow', 'Familjen Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
 }
 
 /* Safe area for PWA on notched phones */
