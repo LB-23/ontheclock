@@ -200,8 +200,21 @@ export default function TimesheetReview() {
 
           {(selected.status === 'submitted') && (
             <div className="flex gap-3">
-              <button onClick={() => updateStatus('approved')} className={`${btnPrimary} flex-1 h-12`}>Approve</button>
-              <button onClick={() => updateStatus('rejected')} className={`${btnDanger} flex-1 h-12`}>Reject</button>
+              {/* Brand palette: lime approve / red reject / charcoal delete */}
+              <button
+                onClick={() => updateStatus('approved')}
+                style={{ backgroundColor: '#AEE001', color: '#000000' }}
+                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => updateStatus('rejected')}
+                style={{ backgroundColor: '#FF2828', color: '#000000' }}
+                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+              >
+                Reject
+              </button>
             </div>
           )}
           {selected.status === 'draft' && (
@@ -220,7 +233,8 @@ export default function TimesheetReview() {
               setSelected(null)
               load()
             }}
-            className={`${btnDanger} w-full h-11 mt-2`}
+            style={{ backgroundColor: '#595858', color: '#E8E8E8' }}
+            className="inline-flex items-center justify-center w-full h-11 mt-2 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
           >
             Delete this timesheet
           </button>
