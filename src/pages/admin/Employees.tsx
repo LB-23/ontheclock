@@ -20,11 +20,23 @@ type FormState = {
   clock_out_reminder: string
 }
 
+/** Per-week leave accrual rates by required-hours category.
+ *  Derived from the LBG entitlement: 0.076923 hr annual + 0.038461 hr personal
+ *  per hour worked. Multiplying by the weekly target gives the per-week amount
+ *  the cron auto-credits each Thursday. Auto-populated when a new employee's
+ *  Required Hours dropdown changes, but admins can still override the cell. */
+const ACCRUAL_TABLE: Record<WeeklyHours, { annual: number; personal: number }> = {
+  38: { annual: 2.923074, personal: 1.461518 },
+  40: { annual: 3.076920, personal: 1.538440 },
+  42: { annual: 3.230766, personal: 1.615362 },
+}
+
 const BLANK: FormState = {
   full_name: '', email: '', password: '', mobile_number: '',
   job_role: '', app_role: 'employee', weekly_hours_category: 38,
   accrued_til_hours: 0, annual_leave_balance: 0, personal_leave_balance: 0,
-  annual_accrual_per_week: 0, personal_accrual_per_week: 0,
+  annual_accrual_per_week:   ACCRUAL_TABLE[38].annual,
+  personal_accrual_per_week: ACCRUAL_TABLE[38].personal,
   clock_in_reminder: '', clock_out_reminder: '',
 }
 
@@ -94,6 +106,8 @@ export default function Employees() {
         emp_annual_balance:    isAdmin ? 0  : form.annual_leave_balance,
         emp_personal_balance:  isAdmin ? 0  : form.personal_leave_balance,
         emp_til_hours:         isAdmin ? 0  : form.accrued_til_hours,
+        emp_annual_accrual:    isAdmin ? 0  : form.annual_accrual_per_week,
+        emp_personal_accrual:  isAdmin ? 0  : form.personal_accrual_per_week,
       })
       if (rpcErr) { setError(rpcErr.message); setSaving(false); return }
     } else {
@@ -159,8 +173,8 @@ export default function Employees() {
               <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
-              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock tabular-nums">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(4)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock tabular-nums">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(4)}</dd></div>
+              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
             </>
           )}
         </dl>
@@ -208,7 +222,21 @@ export default function Employees() {
             <>
               <div>
                 <label className={labelCls}>Required Hours P/W</label>
-                <select value={form.weekly_hours_category} onChange={e => set('weekly_hours_category', Number(e.target.value) as WeeklyHours)} className={inputCls}>
+                <select
+                  value={form.weekly_hours_category}
+                  onChange={e => {
+                    const hrs = Number(e.target.value) as WeeklyHours
+                    const accr = ACCRUAL_TABLE[hrs]
+                    // On Add: auto-populate the weekly accrual rates from the
+                    // table. On Edit: leave whatever the admin already set so
+                    // their overrides aren't silently overwritten.
+                    setForm(f => editing
+                      ? { ...f, weekly_hours_category: hrs }
+                      : { ...f, weekly_hours_category: hrs, annual_accrual_per_week: accr.annual, personal_accrual_per_week: accr.personal }
+                    )
+                  }}
+                  className={inputCls}
+                >
                   <option value={38}>38 hours</option>
                   <option value={40}>40 hours</option>
                   <option value={42}>42 hours</option>
@@ -226,18 +254,21 @@ export default function Employees() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={labelCls}>Annual P/W (hours)</label>
-                    <input type="number" step="0.0001" min="0" value={form.annual_accrual_per_week}
+                    {/* Auto-populated from Required Hours but fully editable —
+                        backspacing the field clean falls through to 0 via the
+                        `|| 0` guard, matching the spec. */}
+                    <input type="number" step="0.01" min="0" value={form.annual_accrual_per_week}
                            onChange={e => set('annual_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>
                   <div>
                     <label className={labelCls}>Personal/Sick P/W (hours)</label>
-                    <input type="number" step="0.0001" min="0" value={form.personal_accrual_per_week}
+                    <input type="number" step="0.01" min="0" value={form.personal_accrual_per_week}
                            onChange={e => set('personal_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>
                 </div>
-                <p className="text-[11px] text-muted mt-2">e.g. 4 weeks annual leave a year on 38h/wk → 38 × 4 ÷ 52 ≈ 2.9231 hr/week</p>
+                <p className="text-[11px] text-muted mt-2">Auto-populated from Required Hours — override here if needed.</p>
               </div>
             </>
           )}
