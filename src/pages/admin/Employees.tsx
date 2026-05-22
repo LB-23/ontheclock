@@ -22,13 +22,14 @@ type FormState = {
 
 /** Per-week leave accrual rates by required-hours category.
  *  Derived from the LBG entitlement: 0.076923 hr annual + 0.038461 hr personal
- *  per hour worked. Multiplying by the weekly target gives the per-week amount
- *  the cron auto-credits each Thursday. Auto-populated when a new employee's
- *  Required Hours dropdown changes, but admins can still override the cell. */
+ *  per hour worked. Multiplying by the weekly target and rounding to 2 decimals
+ *  gives the per-week amount the cron auto-credits each Thursday. Stored at 2dp
+ *  so the field reads cleanly in both the form and the admin profile view —
+ *  the admin can still override either cell with a precise figure if needed. */
 const ACCRUAL_TABLE: Record<WeeklyHours, { annual: number; personal: number }> = {
-  38: { annual: 2.923074, personal: 1.461518 },
-  40: { annual: 3.076920, personal: 1.538440 },
-  42: { annual: 3.230766, personal: 1.615362 },
+  38: { annual: 2.92, personal: 1.46 }, // 38 × 0.076923 ≈ 2.92 · 38 × 0.038461 ≈ 1.46
+  40: { annual: 3.08, personal: 1.54 }, // 40 × 0.076923 ≈ 3.08 · 40 × 0.038461 ≈ 1.54
+  42: { annual: 3.23, personal: 1.62 }, // 42 × 0.076923 ≈ 3.23 · 42 × 0.038461 ≈ 1.62
 }
 
 const BLANK: FormState = {
