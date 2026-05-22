@@ -200,8 +200,8 @@ export default function TimesheetReview() {
 
           {(selected.status === 'submitted') && (
             <div className="flex gap-3">
-              <button onClick={() => updateStatus('approved')} className={`${btnPrimary} flex-1 h-12`}>✓ Approve</button>
-              <button onClick={() => updateStatus('rejected')} className={`${btnDanger} flex-1 h-12`}>✗ Reject</button>
+              <button onClick={() => updateStatus('approved')} className={`${btnPrimary} flex-1 h-12`}>Approve</button>
+              <button onClick={() => updateStatus('rejected')} className={`${btnDanger} flex-1 h-12`}>Reject</button>
             </div>
           )}
           {selected.status === 'draft' && (
