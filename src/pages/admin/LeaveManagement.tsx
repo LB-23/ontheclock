@@ -264,7 +264,7 @@ export default function LeaveManagement() {
           {requests.length === 0 && <p className="text-center text-muted py-10">No Pending Requests</p>}
           {requests.map(r => (
             <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3 hover:border-sky/40 transition-colors">
-              <button type="button" onClick={() => openEdit(r)} className="w-full text-left">
+              <button type="button" onClick={() => openEdit(r)} className="w-full text-left normal-case">
                 <div className="flex justify-between">
                   <div>
                     <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
@@ -308,7 +308,7 @@ export default function LeaveManagement() {
           {approved.length === 0 && <p className="text-center text-muted py-10">No Approved Leave</p>}
           {approved.map(r => (
             <button key={r.id} onClick={() => openEdit(r)}
-                    className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
+                    className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
@@ -317,7 +317,7 @@ export default function LeaveManagement() {
                   </p>
                   {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
                 </div>
-                <p className="text-sm font-bold font-clock text-sky">{fmtHours(r.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold font-clock text-ink normal-case">{fmtHours(r.total_hours ?? 0)}</p>
               </div>
             </button>
           ))}
@@ -336,7 +336,7 @@ export default function LeaveManagement() {
               : { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
             return (
               <button key={r.id} onClick={() => openEdit(r)}
-                      className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
+                      className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>

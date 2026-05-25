@@ -28,8 +28,25 @@ export default function TimesheetReview() {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    let q = supabase.from('timesheets').select('*, profiles(full_name)').order('week_start', { ascending: false })
-    if (filterStatus) q = q.eq('status', filterStatus)
+    // Compute today's Friday LBG-week-start in local time so we hide any
+    // future-week timesheet auto-created by the leave/holiday pre-population
+    // job — admin only wants to see weeks that have already begun or earlier.
+    const today = new Date()
+    const dow = today.getDay() // 0=Sun ... 5=Fri ... 6=Sat
+    const offsetToFri = (dow - 5 + 7) % 7
+    const thisFri = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offsetToFri)
+    const thisWeekStart = format(thisFri, 'yyyy-MM-dd')
+
+    let q = supabase.from('timesheets').select('*, profiles(full_name)')
+      .lte('week_start', thisWeekStart)  // hide future weeks
+      .order('week_start', { ascending: false })
+    if (filterStatus) {
+      q = q.eq('status', filterStatus)
+    } else {
+      // "All Statuses" still excludes drafts — admin only cares about
+      // timesheets the employee has actually submitted / actioned.
+      q = q.in('status', ['submitted', 'approved', 'rejected'])
+    }
     if (filterEmp)   q = q.eq('employee_id', filterEmp)
     const { data } = await q
     setTimesheets((data as Timesheet[]) ?? [])
@@ -242,15 +259,16 @@ export default function TimesheetReview() {
       ) : (
         <>
           <div className="flex gap-3 flex-wrap">
+            {/* Drafts dropped per spec — admin only ever needs to triage
+                timesheets that the employee has already submitted. */}
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={`${inputCls} w-auto`}>
-              <option value="">All statuses</option>
-              <option value="draft">Drafts</option>
+              <option value="">All Statuses</option>
               <option value="submitted">Submitted</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
             </select>
             <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={`${inputCls} w-auto`}>
-              <option value="">All employees</option>
+              <option value="">All Employees</option>
               {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
             </select>
           </div>
@@ -263,7 +281,9 @@ export default function TimesheetReview() {
           <div className="space-y-3">
             {timesheets.map(ts => (
               <button key={ts.id} onClick={() => openTimesheet(ts)}
-                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors">
+                /* normal-case prevents the global `button { uppercase }`
+                   from shouting names + week ranges on the list. */
+                className="w-full text-left bg-surface border border-page px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors normal-case">
                 <div>
                   <p className="text-sm font-semibold">{(ts.profiles as Profile)?.full_name}</p>
                   <p className="text-xs text-muted">{fmtWeekRange(ts.week_start)}</p>

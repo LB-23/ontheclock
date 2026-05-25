@@ -763,7 +763,13 @@ export default function MyTimesheets() {
       {selected ? (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
+            <button
+              onClick={() => setSelected(null)}
+              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              className={btnSecondary}
+            >
+              ← Back
+            </button>
             <div>
               <p className="font-semibold">{fmtWeekRange(selected.week_start)}</p>
               <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
@@ -845,7 +851,7 @@ export default function MyTimesheets() {
             </div>
             <div className="flex justify-between text-sm mb-4">
               <span className="text-muted">Overtime Hours</span>
-              <span className="font-semibold" style={{ color: '#FF2828' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
+              <span className="font-semibold" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
               <span>Total</span>
@@ -855,15 +861,15 @@ export default function MyTimesheets() {
 
           {selected.status === 'draft' && entries.length > 0 && (() => {
             const needClockOut = entries.some(e => !e.clock_out)
-            // While any entry is still active the button switches to the
-            // "Clock-Out Of All Entries First" prompt with its own light-grey
-            // colour; once everything's closed it becomes the dark-grey Submit.
-            const bg = needClockOut ? '#A4A3A3' : '#737373'
+            // Prompt stays light-grey while any entry is open; once everything
+            // is closed the CTA flips to the lime Submit For Approval colour.
+            const bg = needClockOut ? '#A4A3A3' : '#D7E363'
+            const fg = needClockOut ? '#FAFAFA' : '#141414'
             return (
               <button
                 onClick={submitTimesheet}
                 disabled={submitting || needClockOut}
-                style={{ backgroundColor: bg, color: '#FAFAFA' }}
+                style={{ backgroundColor: bg, color: fg }}
                 className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all disabled:opacity-60"
               >
                 {submitting ? 'Submitting…' : needClockOut ? 'Clock-Out Of All Entries First' : 'Submit For Approval'}
@@ -917,7 +923,7 @@ export default function MyTimesheets() {
               // happens to fall in the default window.
               setExpFrom(''); setExpTo(''); setShowExport(true); setErr('')
             }}
-            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#A4A3A3', color: '#141414' }}
             className={`${btnSecondary} w-full h-11`}
           >
             ↓ Export Timesheets
@@ -931,14 +937,17 @@ export default function MyTimesheets() {
               <button
                 key={ts.id}
                 onClick={() => loadEntries(ts)}
-                className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors"
+                /* normal-case overrides the global `button { uppercase }`
+                   so the week range renders "Fri 25 Apr – Thu 1 May" and the
+                   total renders "38h 30m" exactly as fmt* emit them. */
+                className="w-full text-left bg-surface border border-page px-5 py-4 flex justify-between items-center hover:border-sky/40 transition-colors normal-case"
               >
                 <div>
                   <p className="text-sm font-semibold">{fmtWeekRange(ts.week_start)}</p>
                   <span className={badgeCls} style={statusStyle(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-sky">{fmtHours(ts.total_hours ?? 0)}</p>
+                  <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>
