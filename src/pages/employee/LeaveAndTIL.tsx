@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtHours, btnPrimary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 
 const leaveLabels: Record<LeaveType, string> = {
   annual:       'Annual Leave',
@@ -239,39 +239,45 @@ export default function LeaveAndTIL() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-ink">Leave & TIL</h1>
 
-      {/* Balances — equal-size tiles, labels on one line */}
-      {profile && (
+      {/* Balances — equal-size tiles, labels on one line.
+          Per brand update, the H/M figure is rendered non-bold so the heading
+          (leave type) is the only emphasised line in each tile. Balances are
+          hidden while the request form is open so the form sits high on the
+          page right under the heading. */}
+      {profile && !showForm && (
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#15739d' },
             { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#0e4d69' },
-            { label: 'Time in Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0a3142' },
+            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0a3142' },
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#FAFAFA' }}
-                 className="rounded-2xl p-3 sm:p-4 overflow-hidden">
+                 className="p-3 sm:p-4 overflow-hidden">
               <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap opacity-90">
                 {b.label}
               </p>
-              <p className="text-xl sm:text-2xl font-bold mt-1 font-clock normal-case">{b.value}</p>
+              <p className="text-xl sm:text-2xl font-normal mt-1 font-clock normal-case">{b.value}</p>
             </div>
           ))}
         </div>
       )}
 
-      <button
-        onClick={() => { setShowForm(!showForm); setErr('') }}
-        style={showForm ? { backgroundColor: '#FF2828', color: '#FFFFFF' } : undefined}
-        className={
-          showForm
-            ? 'inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all'
-            : `${btnPrimary} w-full h-12`
-        }
-      >
-        {showForm ? 'Cancel' : '+ Request Leave'}
-      </button>
+      {/* When the form is closed we surface the Request Leave button; when it's
+          open we collapse that prompt and lift the form to take its place. The
+          Cancel + Submit buttons then sit side-by-side at the bottom of the
+          form so the action pair lives in one consistent spot. */}
+      {!showForm && (
+        <button
+          onClick={() => { setShowForm(true); setErr('') }}
+          style={{ backgroundColor: '#A4A3A3', color: '#141414' }}
+          className={`${btnPrimary} w-full h-12`}
+        >
+          + Request Leave
+        </button>
+      )}
 
       {showForm && (
-        <form onSubmit={submit} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
+        <form onSubmit={submit} className="bg-surface border border-page p-5 space-y-4">
           <div>
             <label className={labelCls}>Leave Type</label>
             <select value={form.leave_type}
@@ -333,15 +339,35 @@ export default function LeaveAndTIL() {
                       className={`${inputCls} resize-none`} rows={2} />
           </div>
           {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
-          <button type="submit" disabled={loading} className={`${btnPrimary} w-full h-12`}>
-            {loading ? 'Submitting…' : 'Submit Request'}
-          </button>
+          {/* Cancel sits beside Submit Request at the bottom of the form per
+              brand directive so the action pair is together. Cancel is the
+              dark-grey "neutralise" button; Submit is the lime CTA. */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => { setShowForm(false); setErr('') }}
+              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              className={`${btnSecondary} flex-1 h-12`}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ backgroundColor: '#D7E363', color: '#141414' }}
+              className={`${btnPrimary} flex-1 h-12`}
+            >
+              {loading ? 'Submitting…' : 'Submit Request'}
+            </button>
+          </div>
         </form>
       )}
 
-      {/* History — clickable rows open the detail dialog */}
+      {/* History — clickable rows open the detail dialog. Hidden while the
+          request form is open so the form gets full attention. */}
+      {!showForm && (
       <div className="space-y-3">
-        {requests.length === 0 && <p className="text-center text-muted py-8">No leave requests yet</p>}
+        {requests.length === 0 && <p className="text-center text-muted py-8">No Leave Requests Yet</p>}
         {requests.map(r => (
           <button key={r.id} onClick={() => { setOpenReq(r); setErr('') }}
                   className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
@@ -363,6 +389,7 @@ export default function LeaveAndTIL() {
           </button>
         ))}
       </div>
+      )}
 
       {detailDialog}
     </div>

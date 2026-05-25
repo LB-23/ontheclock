@@ -75,7 +75,7 @@ export default function Dashboard() {
           </button>
         </div>
         {activeEntries.length === 0 ? (
-          <p className="px-5 py-6 text-center text-muted">No one clocked in</p>
+          <p className="px-5 py-6 text-center text-muted">No One Clocked In</p>
         ) : (
           <div className="divide-y divide-page">
             {activeEntries.map(e => {

@@ -40,6 +40,87 @@ export default function LeaveManagement() {
   const [editBusy, setEditBusy] = useState(false)
   const [editErr, setEditErr] = useState('')
 
+  // Admin-creates-leave-on-behalf-of-employee dialog state
+  const [showAddLeave, setShowAddLeave] = useState(false)
+  const [addForm, setAddForm] = useState({
+    employee_id: '',
+    leave_type:  'annual' as LeaveType,
+    start_date:  '',
+    start_time:  '07:00',
+    end_date:    '',
+    end_time:    '15:00',
+    reason:      '',
+  })
+  const [addBusy, setAddBusy] = useState(false)
+  const [addErr,  setAddErr]  = useState('')
+
+  const openAddLeave = () => {
+    setAddForm({ employee_id: '', leave_type: 'annual', start_date: '', start_time: '07:00', end_date: '', end_time: '15:00', reason: '' })
+    setAddErr('')
+    setShowAddLeave(true)
+  }
+
+  const submitAddLeave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!addForm.employee_id) { setAddErr('Pick an employee.'); return }
+    if (!addForm.start_date || !addForm.end_date) { setAddErr('Pick start and end dates.'); return }
+    // Compute total_hours: full working days between start and end times.
+    // Mirrors the employee-side calc: span_days × per_day_hours where per_day
+    // is the difference between start_time and end_time on a single day.
+    const dayMs = 86_400_000
+    const startMs = new Date(`${addForm.start_date}T${addForm.start_time}:00`).getTime()
+    const endMs   = new Date(`${addForm.end_date}T${addForm.end_time}:00`).getTime()
+    if (endMs <= startMs) { setAddErr('End must be after start.'); return }
+    const days = Math.max(1, Math.round((new Date(addForm.end_date).getTime() - new Date(addForm.start_date).getTime()) / dayMs) + 1)
+    const [sh, sm] = addForm.start_time.split(':').map(Number)
+    const [eh, em] = addForm.end_time.split(':').map(Number)
+    const perDayMin = (eh * 60 + em) - (sh * 60 + sm)
+    const totalHours = Math.max(0, (perDayMin / 60) * days)
+
+    setAddBusy(true); setAddErr('')
+    const { error } = await supabase.from('leave_requests').insert({
+      employee_id: addForm.employee_id,
+      leave_type:  addForm.leave_type,
+      start_date:  addForm.start_date,
+      start_time:  addForm.start_time + ':00',
+      end_date:    addForm.end_date,
+      end_time:    addForm.end_time   + ':00',
+      total_hours: totalHours,
+      reason:      addForm.reason || null,
+      status:      'approved',  // admin-created leave is immediately approved
+      admin_notes: 'Added by admin',
+      decided_by:  (await supabase.auth.getUser()).data.user?.id ?? null,
+    })
+    setAddBusy(false)
+    if (error) { setAddErr(error.message); return }
+
+    // Decrement the matching balance just like the approval flow does, so the
+    // admin-created leave actually deducts from the employee's bank.
+    const fieldMap: Record<string, string> = {
+      annual:       'annual_leave_balance',
+      personal:     'personal_leave_balance',
+      time_in_lieu: 'accrued_til_hours',
+    }
+    const col = fieldMap[addForm.leave_type]
+    if (col) {
+      const { data: prof } = await supabase.from('profiles').select(col).eq('id', addForm.employee_id).single()
+      if (prof) {
+        const current = (prof as unknown as Record<string, number>)[col] ?? 0
+        await supabase.from('profiles').update({ [col]: Math.max(0, current - totalHours) }).eq('id', addForm.employee_id)
+        if (addForm.leave_type === 'time_in_lieu') {
+          await supabase.from('til_ledger').insert({
+            employee_id: addForm.employee_id, date: new Date().toISOString().split('T')[0],
+            hours_delta: -totalHours, source: 'leave_used',
+            note: `Admin-created TIL leave ${addForm.start_date}–${addForm.end_date}`,
+          })
+        }
+      }
+    }
+
+    setShowAddLeave(false)
+    load()
+  }
+
   const openEdit = (r: LeaveRequest) => {
     setOpenReq(r)
     setEditForm({
@@ -154,7 +235,16 @@ export default function LeaveManagement() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
+        <button
+          onClick={openAddLeave}
+          style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+          className={btnPrimary}
+        >
+          + Add Leave For Employee
+        </button>
+      </div>
 
       <div className="flex gap-2 flex-wrap">
         {(['calendar', 'pending', 'approved', 'all', 'balances'] as const).map(t => (
@@ -171,7 +261,7 @@ export default function LeaveManagement() {
 
       {tab === 'pending' && (
         <div className="space-y-4">
-          {requests.length === 0 && <p className="text-center text-muted py-10">No pending requests</p>}
+          {requests.length === 0 && <p className="text-center text-muted py-10">No Pending Requests</p>}
           {requests.map(r => (
             <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3 hover:border-sky/40 transition-colors">
               <button type="button" onClick={() => openEdit(r)} className="w-full text-left">
@@ -191,8 +281,22 @@ export default function LeaveManagement() {
                 <input value={adminNote} onChange={e => setAdminNote(e.target.value)} className={inputCls} placeholder="Reason for decision…" />
               </div>
               <div className="flex gap-3">
-                <button onClick={() => decide(r, 'approved')} disabled={deciding === r.id} className={`${btnPrimary} flex-1 h-11`}>Approve</button>
-                <button onClick={() => decide(r, 'declined')} disabled={deciding === r.id} className={`${btnDanger} flex-1 h-11`}>Reject</button>
+                <button
+                  onClick={() => decide(r, 'approved')}
+                  disabled={deciding === r.id}
+                  style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                  className={`${btnPrimary} flex-1 h-11`}
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => decide(r, 'declined')}
+                  disabled={deciding === r.id}
+                  style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+                  className={`${btnDanger} flex-1 h-11`}
+                >
+                  Reject
+                </button>
               </div>
             </div>
           ))}
@@ -201,7 +305,7 @@ export default function LeaveManagement() {
 
       {tab === 'approved' && (
         <div className="space-y-3">
-          {approved.length === 0 && <p className="text-center text-muted py-10">No approved leave</p>}
+          {approved.length === 0 && <p className="text-center text-muted py-10">No Approved Leave</p>}
           {approved.map(r => (
             <button key={r.id} onClick={() => openEdit(r)}
                     className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">
@@ -222,7 +326,7 @@ export default function LeaveManagement() {
 
       {tab === 'all' && (
         <div className="space-y-3">
-          {allRequests.length === 0 && <p className="text-center text-muted py-10">No leave requests yet</p>}
+          {allRequests.length === 0 && <p className="text-center text-muted py-10">No Leave Requests Yet</p>}
           {allRequests.map(r => {
             const status = r.status
             const style: React.CSSProperties =
@@ -255,16 +359,15 @@ export default function LeaveManagement() {
 
       {tab === 'balances' && (
         <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
-          {employees.length === 0 && <p className="p-6 text-center text-muted">No employees yet</p>}
+          {employees.length === 0 && <p className="p-6 text-center text-muted">No Employees Yet</p>}
           {employees.length > 0 && (
             <table className="w-full text-sm">
               <thead className="bg-page">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted">
                   <th className="px-4 py-3">Employee</th>
-                  <th className="px-4 py-3 text-right">Annual</th>
-                  <th className="px-4 py-3 text-right">Personal/Sick</th>
+                  <th className="px-4 py-3 text-right">Annual Leave</th>
+                  <th className="px-4 py-3 text-right">Personal/Sick Leave</th>
                   <th className="px-4 py-3 text-right">TIL</th>
-                  <th className="px-4 py-3 text-right">Total Hrs</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-page">
@@ -275,10 +378,12 @@ export default function LeaveManagement() {
                   return (
                     <tr key={emp.id} className="hover:bg-page transition-colors">
                       <td className="px-4 py-3 font-medium text-ink">{emp.full_name}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(a)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(p)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums">{fmtHours(t)}</td>
-                      <td className="px-4 py-3 text-right font-semibold font-clock tabular-nums text-sky">{fmtHours(a + p + t)}</td>
+                      {/* `normal-case` pairs with font-clock to render the
+                          lowercase "h"/"m" suffix from fmtHours (font-clock
+                          uppercases by default). */}
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(a)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(p)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(t)}</td>
                     </tr>
                   )
                 })}
@@ -359,12 +464,28 @@ export default function LeaveManagement() {
             </div>
             {editErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{editErr}</p>}
             <div className="flex gap-3 pt-2">
-              <button onClick={saveEdit} disabled={editBusy} className={`${btnPrimary} flex-1 h-11`}>
+              <button
+                onClick={saveEdit}
+                disabled={editBusy}
+                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                className={`${btnPrimary} flex-1 h-11`}
+              >
                 {editBusy ? 'Saving…' : 'Save Changes'}
               </button>
-              <button onClick={() => setOpenReq(null)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+              <button
+                onClick={() => setOpenReq(null)}
+                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                className={`${btnSecondary} flex-1 h-11`}
+              >
+                Cancel
+              </button>
             </div>
-            <button onClick={deleteRequest} disabled={editBusy} className={`${btnDanger} w-full h-11`}>
+            <button
+              onClick={deleteRequest}
+              disabled={editBusy}
+              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              className={`${btnDanger} w-full h-11`}
+            >
               Delete Request
             </button>
             {openReq.status === 'approved' && (
@@ -401,7 +522,7 @@ export default function LeaveManagement() {
                 const inCurrentWeek = day >= monday && day <= sunday
                 const phName = holidayFor(day)
                 return (
-                  <div key={day.toISOString()} className="min-h-[52px] rounded-lg p-1 text-center bg-page">
+                  <div key={day.toISOString()} className="min-h-[96px] sm:min-h-[112px] p-1.5 text-center bg-page">
                     <p className="text-xs font-medium" style={{ color: inCurrentWeek ? '#1c9fda' : undefined }}>{format(day, 'd')}</p>
                   {phName && (
                     <div
@@ -453,6 +574,107 @@ export default function LeaveManagement() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Admin-creates-leave-for-employee dialog */}
+      {showAddLeave && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6"
+             onClick={() => setShowAddLeave(false)}>
+          <form onSubmit={submitAddLeave}
+                className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-lg">Add Leave For Employee</p>
+              <button type="button" onClick={() => setShowAddLeave(false)} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-xs text-muted">Creates an immediately-approved leave entry; it appears on the calendar and the employee's balance is debited.</p>
+
+            <div>
+              <label className={labelCls}>Employee</label>
+              <select value={addForm.employee_id}
+                      onChange={e => setAddForm(f => ({ ...f, employee_id: e.target.value }))}
+                      className={inputCls} required>
+                <option value="">— Pick An Employee —</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>Leave Type</label>
+              <select value={addForm.leave_type}
+                      onChange={e => setAddForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
+                      className={inputCls}>
+                {Object.entries(leaveLabels).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="min-w-0 overflow-hidden">
+                <span className={labelCls}>Start Date</span>
+                <input type="date" value={addForm.start_date}
+                       onChange={e => setAddForm(f => ({ ...f, start_date: e.target.value }))}
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                       className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                       required />
+              </label>
+              <label className="min-w-0 overflow-hidden">
+                <span className={labelCls}>Start Time</span>
+                <input type="time" value={addForm.start_time}
+                       onChange={e => setAddForm(f => ({ ...f, start_time: e.target.value }))}
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                       className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="min-w-0 overflow-hidden">
+                <span className={labelCls}>End Date</span>
+                <input type="date" value={addForm.end_date}
+                       onChange={e => setAddForm(f => ({ ...f, end_date: e.target.value }))}
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                       className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
+                       required />
+              </label>
+              <label className="min-w-0 overflow-hidden">
+                <span className={labelCls}>End Time</span>
+                <input type="time" value={addForm.end_time}
+                       onChange={e => setAddForm(f => ({ ...f, end_time: e.target.value }))}
+                       style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
+                       className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
+              </label>
+            </div>
+
+            <div>
+              <label className={labelCls}>Reason (Optional)</label>
+              <textarea value={addForm.reason}
+                        onChange={e => setAddForm(f => ({ ...f, reason: e.target.value }))}
+                        className={`${inputCls} resize-none`} rows={2} />
+            </div>
+
+            {addErr && <p className="text-sm text-red-600 bg-red-50 px-3 py-2">{addErr}</p>}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAddLeave(false)}
+                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                className={`${btnSecondary} flex-1 h-11`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={addBusy}
+                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                className={`${btnPrimary} flex-1 h-11`}
+              >
+                {addBusy ? 'Adding…' : 'Add Leave'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

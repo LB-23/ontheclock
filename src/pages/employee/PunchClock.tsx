@@ -3,7 +3,7 @@ import Select from 'react-select'
 import { format } from 'date-fns'
 import { supabase, type JobAddress, type Stage, type TimeEntry } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { getGPS, getWeekStart, calcHours, applyAutoBreak, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { getGPS, getWeekStart, calcHours, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 
 export default function PunchClock() {
   const { profile } = useProfile()
@@ -94,8 +94,9 @@ export default function PunchClock() {
     setLoading(true)
     const gps = await getGPS()
     const clockOut = new Date().toISOString()
-    const raw = calcHours(activeEntry.clock_in, clockOut)
-    const { total } = applyAutoBreak(raw)
+    // Auto-lunch deduction removed per brand directive — total_hours is now
+    // the raw clock-in → clock-out duration, no break subtraction.
+    const total = calcHours(activeEntry.clock_in, clockOut)
     const isOvertime = total > profile.weekly_hours_category / 5
 
     await supabase.from('time_entries').update({
@@ -210,9 +211,10 @@ export default function PunchClock() {
           <button
             onClick={handleClockIn}
             disabled={!selectedJob || loading}
+            style={{ backgroundColor: '#D7E363', color: '#141414' }}
             className={`${btnPrimary} w-full h-14 text-base`}
           >
-            {loading ? 'Clocking in…' : 'Clock-In'}
+            {loading ? 'Clocking In…' : 'Clock-In'}
           </button>
         </div>
       )}
@@ -222,16 +224,12 @@ export default function PunchClock() {
         <button
           onClick={openClockOut}
           disabled={loading}
-          className="inline-flex items-center justify-center w-full h-14 text-base rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#FF3131' }}
+          className="inline-flex items-center justify-center w-full h-14 text-base font-semibold active:scale-95 transition-all disabled:opacity-50"
+          style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
         >
           Clock-Out
         </button>
       )}
-
-      <p className="text-xs text-center text-muted">
-        30-min paid lunch auto-included for shifts over 6 hours
-      </p>
 
       {/* Clock-out notes dialog (notes are required) */}
       {showOutDialog && (
@@ -261,15 +259,21 @@ export default function PunchClock() {
 
             <div className="flex gap-3">
               <button
+                type="button"
+                onClick={() => setShowOutDialog(false)}
+                disabled={loading}
+                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                className={`${btnSecondary} flex-1 h-12`}
+              >
+                Cancel
+              </button>
+              <button
                 type="submit"
                 disabled={loading || !outNotes.trim()}
-                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-white font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                style={{ backgroundColor: '#FF3131' }}
+                style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+                className="inline-flex items-center justify-center flex-1 h-12 font-semibold active:scale-95 transition-all disabled:opacity-50"
               >
-                {loading ? 'Clocking out…' : 'Confirm Clock-Out'}
-              </button>
-              <button type="button" onClick={() => setShowOutDialog(false)} disabled={loading} className={`${btnSecondary} flex-1 h-12`}>
-                Cancel
+                {loading ? 'Clocking Out…' : 'Confirm Clock-Out'}
               </button>
             </div>
           </form>

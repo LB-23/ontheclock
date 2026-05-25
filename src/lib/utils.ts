@@ -43,12 +43,6 @@ export function calcHours(clockIn: string, clockOut: string): number {
   return Math.round((ms / 3_600_000) * 100) / 100
 }
 
-/** Auto break: deduct 0.5h if worked > 6h */
-export function applyAutoBreak(rawHours: number): { total: number; lunchIncluded: boolean } {
-  if (rawHours > 6) return { total: rawHours, lunchIncluded: true }
-  return { total: rawHours, lunchIncluded: false }
-}
-
 /** Working days between two date strings (inclusive) */
 export function workdaysBetween(start: string, end: string): number {
   return differenceInCalendarDays(parseISO(end), parseISO(start)) + 1
@@ -155,17 +149,34 @@ export function fmtHours(h: number): string {
   return `${hrs}h ${mins}m`
 }
 
-/** Tailwind class helpers — LB sky-blue primary button */
+/** Tailwind class helpers — neutral palette (May 2026 brand refresh).
+ *  Specific colours per page are applied inline; these helpers are now
+ *  primarily SHAPE + interaction holders so individual button
+ *  background/text colours can ride on top via the `style` prop. */
 export const btnPrimary =
-  'inline-flex items-center justify-center rounded-xl bg-sky px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-skyDeep active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center bg-[#737373] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
 
 export const btnSecondary =
-  'inline-flex items-center justify-center rounded-xl border border-page bg-surface px-5 py-3 text-sm font-semibold text-ink shadow-sm hover:bg-page active:scale-95 transition-all disabled:opacity-50'
+  'inline-flex items-center justify-center border border-page bg-[#A4A3A3] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
 
 export const btnDanger =
-  'inline-flex items-center justify-center rounded-xl bg-red-500 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50'
+  'inline-flex items-center justify-center bg-[#737373] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
+
+/** Brand button colour tokens — referenced by inline style on per-page
+ *  buttons so the colour intent is explicit at the call site. */
+export const BTN = {
+  actionBg:   '#D7E363', // lime — primary positive action (Save, Submit, Clock-in)
+  actionFg:   '#141414',
+  mutedBg:    '#A4A3A3', // light-grey — secondary action (Add, Cancel, Export)
+  mutedFg:    '#FAFAFA',
+  mutedFgDk:  '#141414', // for light-grey buttons that pair with dark text
+  darkBg:     '#737373', // dark-grey — destructive / clock-out / disable push
+  darkFg:     '#FAFAFA',
+  charcoalBg: '#595858', // charcoal — admin delete actions
+  charcoalFg: '#E8E8E8',
+} as const
 
 export const inputCls =
-  'block w-full min-w-0 rounded-xl border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
+  'block w-full min-w-0 border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
 
 export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'

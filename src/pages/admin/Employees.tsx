@@ -163,11 +163,22 @@ export default function Employees() {
           <p className="font-semibold text-lg">{viewing.full_name}</p>
           <button onClick={() => setViewing(null)} className="text-muted hover:text-ink">✕</button>
         </div>
+        {(() => {
+          // Push status: 'On' only if the user hasn't muted AND has registered
+          // at least one Web Push subscription (i.e. tapped Enable Push at
+          // least once). Mirrors the gate the send-reminders edge fn uses.
+          const subs = (viewing.push_subscriptions ?? []) as unknown[]
+          const hasSubs = Array.isArray(subs) && subs.length > 0
+          const enabled = viewing.notifications_enabled !== false && hasSubs
+          const pushLabel = enabled ? `On (${subs.length} device${subs.length === 1 ? '' : 's'})` : 'Off'
+          const pushColor = enabled ? '#1C9FDA' : '#666666'
+          return (
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between"><dt className="text-muted">Email</dt><dd className="text-ink">{viewing.email ?? '—'}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Mobile</dt><dd className="text-ink">{viewing.mobile_number || '—'}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Job Role</dt><dd className="text-ink">{viewing.job_role || '—'}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">App Role</dt><dd className="text-ink capitalize">{viewing.app_role}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Push Notifications</dt><dd style={{ color: pushColor }} className="font-semibold">{pushLabel}</dd></div>
           {viewing.app_role !== 'admin' && (
             <>
               <div className="flex justify-between"><dt className="text-muted">Required Hours P/W</dt><dd className="text-ink">{viewing.weekly_hours_category}h</dd></div>
@@ -179,9 +190,24 @@ export default function Employees() {
             </>
           )}
         </dl>
+          )
+        })()}
         <div className="flex gap-3 pt-2">
-          <button onClick={() => { const v = viewing; setViewing(null); openEdit(v) }} className={`${btnPrimary} flex-1 h-11`}>✎ Edit</button>
-          <button onClick={() => removeEmployee(viewing)} disabled={viewing.id === me?.id} className={`${btnDanger} flex-1 h-11`}>Delete</button>
+          <button
+            onClick={() => { const v = viewing; setViewing(null); openEdit(v) }}
+            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            className={`${btnPrimary} flex-1 h-11`}
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => removeEmployee(viewing)}
+            disabled={viewing.id === me?.id}
+            style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+            className={`${btnDanger} flex-1 h-11`}
+          >
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -193,7 +219,13 @@ export default function Employees() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink">Team</h1>
-        <button onClick={openAdd} className={btnPrimary}>+ Add Employee</button>
+        <button
+          onClick={openAdd}
+          style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+          className={btnPrimary}
+        >
+          + Add New Employee
+        </button>
       </div>
 
       {showForm && (
@@ -294,8 +326,22 @@ export default function Employees() {
 
           {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
           <div className="flex gap-3">
-            <button type="submit" disabled={saving} className={`${btnPrimary} h-11`}>{saving ? 'Saving…' : 'Save'}</button>
-            <button type="button" onClick={() => setShowForm(false)} className={`${btnSecondary} h-11`}>Cancel</button>
+            <button
+              type="submit"
+              disabled={saving}
+              style={{ backgroundColor: '#D7E363', color: '#141414' }}
+              className={`${btnPrimary} h-11`}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+              className={`${btnSecondary} h-11`}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       )}
@@ -320,10 +366,9 @@ export default function Employees() {
                 <div>
                   <p className="text-sm font-semibold text-ink group-hover:text-sky">{emp.full_name || '—'}</p>
                   <p className="text-xs text-muted">
-                    {emp.job_role || 'No role'}
                     {emp.app_role === 'admin'
-                      ? ' · Admin'
-                      : ` · ${emp.weekly_hours_category}h/wk`}
+                      ? 'Admin'
+                      : `${emp.job_role || 'No Role'} · ${emp.weekly_hours_category}h/wk`}
                   </p>
                 </div>
                 <span className="text-xs text-muted group-hover:text-sky">View →</span>

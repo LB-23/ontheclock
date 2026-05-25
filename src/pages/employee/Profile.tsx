@@ -109,8 +109,13 @@ export default function EmployeeProfile() {
             placeholder="04XX XXX XXX"
           />
         </div>
-        <button type="submit" disabled={saving} className={`${btnPrimary} w-full h-12`}>
-          {saved ? '✓ Saved!' : saving ? 'Saving…' : 'Save Changes'}
+        <button
+          type="submit"
+          disabled={saving}
+          style={{ backgroundColor: '#D7E363', color: '#141414' }}
+          className={`${btnPrimary} w-full h-12`}
+        >
+          {saved ? 'Saved!' : saving ? 'Saving…' : 'Save Changes'}
         </button>
       </form>
 
@@ -143,14 +148,20 @@ export default function EmployeeProfile() {
               </button>
             </div>
             {!subscribed ? (
-              <button type="button" onClick={handleEnablePush} disabled={pushBusy} className={`${btnPrimary} w-full h-11`}>
+              <button
+                type="button"
+                onClick={handleEnablePush}
+                disabled={pushBusy}
+                style={{ backgroundColor: '#A4A3A3', color: '#141414' }}
+                className={`${btnPrimary} w-full h-11`}
+              >
                 {pushBusy ? 'Enabling…' : 'Enable Push Reminders'}
               </button>
             ) : (
               <button
                 type="button" onClick={handleDisablePush} disabled={pushBusy}
-                style={{ backgroundColor: '#747474', color: '#FFFFFF' }}
-                className="inline-flex items-center justify-center w-full h-11 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+                className="inline-flex items-center justify-center w-full h-11 text-sm font-semibold active:scale-95 transition-all disabled:opacity-50"
               >
                 {pushBusy ? 'Disabling…' : 'Disable Push Reminders'}
               </button>

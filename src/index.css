@@ -44,3 +44,12 @@ body {
 /* Safe area for PWA on notched phones */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* Brand directive: every button label across the app renders ALL CAPS.
+ * Letter-spacing tightens it so the uppercase doesn't look stretched.
+ * Symbols (✕, →, ↓) are unaffected. Inputs and other form elements are
+ * left alone. */
+button {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
