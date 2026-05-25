@@ -48,6 +48,32 @@ export default {
         clock:   ['Barlow', '"Familjen Grotesk"', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
       },
     },
+    // ── Brand directive (May 2026): fully square + no shadows ──────────────
+    // Every rounded-* and shadow-* utility resolves to 0 / none so the entire
+    // app shares a crisp rectangular silhouette without per-component edits.
+    // `rounded-full` intentionally stays a circle so the push-mute toggle and
+    // status pills still render as ovals; everything else is square.
+    borderRadius: {
+      none:     '0',
+      sm:       '0',
+      DEFAULT:  '0',
+      md:       '0',
+      lg:       '0',
+      xl:       '0',
+      '2xl':    '0',
+      '3xl':    '0',
+      full:     '9999px',
+    },
+    boxShadow: {
+      none:     'none',
+      sm:       'none',
+      DEFAULT:  'none',
+      md:       'none',
+      lg:       'none',
+      xl:       'none',
+      '2xl':    'none',
+      inner:    'none',
+    },
   },
   plugins: [],
 } satisfies Config

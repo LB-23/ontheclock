@@ -662,15 +662,31 @@ export default function MyTimesheets() {
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
 
         <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={saving || deleting} className={`${btnPrimary} flex-1 h-11`}>
-            {saving ? 'Saving…' : 'Save Edit'}
-          </button>
-          <button type="button" onClick={() => { setEditing(null); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>
+          <button
+            type="button"
+            onClick={() => { setEditing(null); setErr('') }}
+            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            className={`${btnSecondary} flex-1 h-11`}
+          >
             Cancel
           </button>
+          <button
+            type="submit"
+            disabled={saving || deleting}
+            style={{ backgroundColor: '#D7E363', color: '#141414' }}
+            className={`${btnPrimary} flex-1 h-11`}
+          >
+            {saving ? 'Saving…' : 'Save Edit'}
+          </button>
         </div>
-        <button type="button" onClick={deleteEntry} disabled={saving || deleting} className={`${btnDanger} w-full h-11 mt-2`}>
-          {deleting ? 'Deleting…' : 'Delete this entry'}
+        <button
+          type="button"
+          onClick={deleteEntry}
+          disabled={saving || deleting}
+          style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+          className={`${btnDanger} w-full h-11 mt-2`}
+        >
+          {deleting ? 'Deleting…' : 'Delete This Entry'}
         </button>
       </form>
     </div>
@@ -719,11 +735,21 @@ export default function MyTimesheets() {
         </div>
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
         <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={manualSaving} className={`${btnPrimary} flex-1 h-11`}>
-            {manualSaving ? 'Adding…' : 'Add Entry'}
-          </button>
-          <button type="button" onClick={() => { setShowManualForm(false); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>
+          <button
+            type="button"
+            onClick={() => { setShowManualForm(false); setErr('') }}
+            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            className={`${btnSecondary} flex-1 h-11`}
+          >
             Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={manualSaving}
+            style={{ backgroundColor: '#D7E363', color: '#141414' }}
+            className={`${btnPrimary} flex-1 h-11`}
+          >
+            {manualSaving ? 'Adding…' : 'Add Entry'}
           </button>
         </div>
       </form>
@@ -747,6 +773,7 @@ export default function MyTimesheets() {
           {selected.status === 'draft' && (
             <button
               onClick={() => { setShowManualForm(true); setErr('') }}
+              style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
               className={`${btnPrimary} w-full h-11`}
             >
               + Add Manual Entry
@@ -755,7 +782,7 @@ export default function MyTimesheets() {
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
             {entries.length === 0 && (
-              <p className="p-6 text-center text-muted">No entries this week</p>
+              <p className="p-6 text-center text-muted">No Entries This Week</p>
             )}
             {entries.map(e => {
               const isSystem  = e.entry_type && e.entry_type !== 'regular'
@@ -792,14 +819,14 @@ export default function MyTimesheets() {
                           )
                         })()}
                         {e.status === 'edited' && (
-                          <span className="inline-flex items-center text-[10px] uppercase font-semibold text-blue-600 mt-1">edited</span>
+                          <span className="inline-flex items-center text-[10px] uppercase font-semibold mt-1" style={{ color: '#1C9FDA' }}>Edited</span>
                         )}
                       </>
                     )}
                   </div>
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                    {e.is_overtime && !isSystem && <span className="text-xs text-orange-600 font-medium">OT</span>}
+                    {e.is_overtime && !isSystem && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>OT</span>}
                     {selected.status === 'draft' && !isSystem && (
                       <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
                         Edit
@@ -813,11 +840,11 @@ export default function MyTimesheets() {
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-muted">Regular hours</span>
+              <span className="text-muted">Regular Hours</span>
               <span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between text-sm mb-4">
-              <span className="text-muted">Overtime hours</span>
+              <span className="text-muted">Overtime Hours</span>
               <span className="font-semibold" style={{ color: '#FF2828' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
@@ -826,15 +853,23 @@ export default function MyTimesheets() {
             </div>
           </div>
 
-          {selected.status === 'draft' && entries.length > 0 && (
-            <button
-              onClick={submitTimesheet}
-              disabled={submitting || entries.some(e => !e.clock_out)}
-              className={`${btnPrimary} w-full h-12`}
-            >
-              {submitting ? 'Submitting…' : entries.some(e => !e.clock_out) ? 'Clock out of all entries first' : 'Submit for Approval'}
-            </button>
-          )}
+          {selected.status === 'draft' && entries.length > 0 && (() => {
+            const needClockOut = entries.some(e => !e.clock_out)
+            // While any entry is still active the button switches to the
+            // "Clock-Out Of All Entries First" prompt with its own light-grey
+            // colour; once everything's closed it becomes the dark-grey Submit.
+            const bg = needClockOut ? '#A4A3A3' : '#737373'
+            return (
+              <button
+                onClick={submitTimesheet}
+                disabled={submitting || needClockOut}
+                style={{ backgroundColor: bg, color: '#FAFAFA' }}
+                className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all disabled:opacity-60"
+              >
+                {submitting ? 'Submitting…' : needClockOut ? 'Clock-Out Of All Entries First' : 'Submit For Approval'}
+              </button>
+            )
+          })()}
           {selected.status === 'rejected' && (
             <button
               onClick={async () => {
@@ -861,8 +896,8 @@ export default function MyTimesheets() {
               setSelected(null)
               loadTimesheets()
             }}
-            style={{ backgroundColor: '#FF2828', color: '#FFFFFF' }}
-            className="inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all"
+            style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+            className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all"
           >
             Delete Timesheet
           </button>
@@ -882,13 +917,14 @@ export default function MyTimesheets() {
               // happens to fall in the default window.
               setExpFrom(''); setExpTo(''); setShowExport(true); setErr('')
             }}
+            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
             className={`${btnSecondary} w-full h-11`}
           >
             ↓ Export Timesheets
           </button>
 
           {timesheets.length === 0 && (
-            <div className="text-center py-16 text-muted">No timesheets yet — clock in once to start one.</div>
+            <div className="text-center py-16 text-muted">No Timesheets Yet — Clock In Once To Start One.</div>
           )}
           <div className="space-y-3">
             {timesheets.map(ts => (
@@ -948,13 +984,29 @@ export default function MyTimesheets() {
             </div>
             {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
             <div className="flex gap-3 pt-2">
-              <button onClick={exportPdf} disabled={exporting} className={`${btnPrimary} flex-1 h-11`}>
+              <button
+                onClick={() => { setShowExport(false); setErr('') }}
+                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                className={`${btnSecondary} flex-1 h-11`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={exportPdf}
+                disabled={exporting}
+                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                className={`${btnPrimary} flex-1 h-11`}
+              >
                 {exporting ? 'Generating…' : 'PDF'}
               </button>
-              <button onClick={exportXlsx} disabled={exporting} className={`${btnPrimary} flex-1 h-11`}>
+              <button
+                onClick={exportXlsx}
+                disabled={exporting}
+                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                className={`${btnPrimary} flex-1 h-11`}
+              >
                 {exporting ? 'Generating…' : 'Excel'}
               </button>
-              <button onClick={() => { setShowExport(false); setErr('') }} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
             </div>
           </div>
         </div>

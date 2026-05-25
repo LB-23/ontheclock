@@ -88,7 +88,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             onClick={handleSignOut}
             className="w-full rounded-xl border border-page px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink"
           >
-            Sign out
+            Sign Out
           </button>
         </div>
       </aside>
@@ -100,7 +100,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
             <span className="text-base font-bold text-sky">OnTheClock</span>
           </div>
-          <button onClick={handleSignOut} className="text-xs text-muted">Sign out</button>
+          <button onClick={handleSignOut} className="text-xs text-muted">Sign Out</button>
         </header>
         <div className="p-4 md:p-8 max-w-5xl mx-auto">
           {children}

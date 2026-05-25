@@ -123,7 +123,7 @@ export default function TimesheetReview() {
           </div>
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
-            {entries.length === 0 && <p className="p-6 text-center text-muted">No entries</p>}
+            {entries.length === 0 && <p className="p-6 text-center text-muted">No Entries</p>}
             {entries.map(e => {
               const entryEdits = edits[e.id] ?? []
               const hasEdits = entryEdits.length > 0
@@ -257,7 +257,7 @@ export default function TimesheetReview() {
 
           {loading && <p className="text-center text-muted">Loading…</p>}
           {!loading && timesheets.length === 0 && (
-            <p className="text-center text-muted py-10">No timesheets match this filter.</p>
+            <p className="text-center text-muted py-10">No Timesheets Match This Filter.</p>
           )}
 
           <div className="space-y-3">
