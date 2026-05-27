@@ -22,6 +22,10 @@ export default function LeaveManagement() {
   const [approved, setApproved] = useState<LeaveRequest[]>([])
   const [allRequests, setAllRequests] = useState<LeaveRequest[]>([])
   const [employees, setEmployees] = useState<Profile[]>([])
+  /** All active users (admins + employees). Used by the Add-Leave dropdown so
+   *  the admin can record leave for themselves or another admin as well as
+   *  for any employee. Balances tab still uses `employees` (employees only). */
+  const [allUsers, setAllUsers] = useState<Profile[]>([])
   const [calMonth, setCalMonth] = useState(new Date())
   const [tab, setTab] = useState<'calendar' | 'pending' | 'approved' | 'all' | 'balances'>('calendar')
   const [adminNote, setAdminNote] = useState('')
@@ -62,7 +66,7 @@ export default function LeaveManagement() {
 
   const submitAddLeave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!addForm.employee_id) { setAddErr('Pick an employee.'); return }
+    if (!addForm.employee_id) { setAddErr('Pick a user.'); return }
     if (!addForm.start_date || !addForm.end_date) { setAddErr('Pick start and end dates.'); return }
     // Compute total_hours: full working days between start and end times.
     // Mirrors the employee-side calc: span_days × per_day_hours where per_day
@@ -170,19 +174,27 @@ export default function LeaveManagement() {
   }
 
   const load = async () => {
-    const [{ data: pending }, { data: appr }, { data: all }, { data: emps }] = await Promise.all([
+    const [{ data: pending }, { data: appr }, { data: all }, { data: emps }, { data: everyone }] = await Promise.all([
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false }),
+      // Balances tab — employees only
       supabase.from('profiles')
         .select('id, full_name, app_role, annual_leave_balance, personal_leave_balance, accrued_til_hours, weekly_hours_category')
         .eq('app_role', 'employee')
+        .order('full_name'),
+      // Add-leave dropdown — every active user (admins + employees)
+      supabase.from('profiles')
+        .select('id, full_name, app_role')
+        .eq('is_active', true)
+        .order('app_role')        // admins first, employees second (alphabetical within)
         .order('full_name'),
     ])
     setRequests((pending as LeaveRequest[]) ?? [])
     setApproved((appr as LeaveRequest[]) ?? [])
     setAllRequests((all as LeaveRequest[]) ?? [])
     setEmployees((emps as Profile[]) ?? [])
+    setAllUsers((everyone as Profile[]) ?? [])
   }
 
   useEffect(() => { load() }, [])
@@ -239,10 +251,10 @@ export default function LeaveManagement() {
         <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
         <button
           onClick={openAddLeave}
-          style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+          style={{ backgroundColor: '#B4B3B3', color: '#FFFFFF' }}
           className={btnPrimary}
         >
-          + Add Leave For Employee
+          + Add Leave For User
         </button>
       </div>
 
@@ -585,19 +597,24 @@ export default function LeaveManagement() {
                 className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <p className="font-semibold text-lg">Add Leave For Employee</p>
+              <p className="font-semibold text-lg">Add Leave For User</p>
               <button type="button" onClick={() => setShowAddLeave(false)} className="text-muted hover:text-ink">✕</button>
             </div>
-            <p className="text-xs text-muted">Creates an immediately-approved leave entry; it appears on the calendar and the employee's balance is debited.</p>
+            <p className="text-xs text-muted">Creates an immediately-approved leave entry; it appears on the calendar and the user's balance is debited.</p>
 
             <div>
-              <label className={labelCls}>Employee</label>
+              <label className={labelCls}>User</label>
+              {/* Admin or Employee — every active user can have admin-added leave.
+                  Each option carries a "(Admin)" / "(Employee)" tag so the row's
+                  permission is unambiguous. */}
               <select value={addForm.employee_id}
                       onChange={e => setAddForm(f => ({ ...f, employee_id: e.target.value }))}
                       className={inputCls} required>
-                <option value="">— Pick An Employee —</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                <option value="">— Pick A User —</option>
+                {allUsers.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name} ({u.app_role === 'admin' ? 'Admin' : 'Employee'})
+                  </option>
                 ))}
               </select>
             </div>

@@ -11,30 +11,35 @@ type WeeklyVariant = 'simple' | 'detailed'
 type EmployeeSort = 'employee' | 'date' | 'site' | 'stage'
 type Row = Record<string, unknown>
 
-/** Render a Row[] as a branded PDF (#1B89BB header, 9pt Calibri-ish body, AM/PM times). */
+/** Render a Row[] as a branded PDF — Familjen Grotesk body, AM/PM-ish times. */
 async function reportRowsToPdf(title: string, rows: Row[], filename: string, groupBy?: string) {
   if (rows.length === 0) return
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
   let bodyFont = 'helvetica'
-  const BARLOW_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlow'
+  // Single typeface across the app — fetch Familjen Grotesk and register it
+  // with jsPDF so the PDF body matches the on-screen UI.
+  const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk'
   try {
     const [reg, bold] = await Promise.all([
-      fetch(`${BARLOW_BASE}/Barlow-Regular.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
-      fetch(`${BARLOW_BASE}/Barlow-SemiBold.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+      fetch(`${FG_BASE}/FamiljenGrotesk%5Bwght%5D.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
+      fetch(`${FG_BASE}/FamiljenGrotesk-Italic%5Bwght%5D.ttf`).then(() => null), // italics not needed
     ])
-    if (reg && bold) {
+    if (reg) {
       const b64 = (buf: ArrayBuffer) => {
         const bytes = new Uint8Array(buf)
         let bin = ''
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
         return btoa(bin)
       }
-      pdf.addFileToVFS('Barlow-Regular.ttf', b64(reg))
-      pdf.addFont('Barlow-Regular.ttf', 'Barlow', 'normal')
-      pdf.addFileToVFS('Barlow-SemiBold.ttf', b64(bold))
-      pdf.addFont('Barlow-SemiBold.ttf', 'Barlow', 'bold')
-      bodyFont = 'Barlow'
+      pdf.addFileToVFS('FamiljenGrotesk.ttf', b64(reg))
+      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'normal')
+      // Bold is the same variable font with axis weight — jsPDF can't honour
+      // variable axes so re-register the same file for the bold slot; visual
+      // weight difference is faint but the layout/metrics line up.
+      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'bold')
+      bodyFont = 'FamiljenGrotesk'
     }
+    void bold
   } catch { /* fall back to Helvetica */ }
 
   pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
