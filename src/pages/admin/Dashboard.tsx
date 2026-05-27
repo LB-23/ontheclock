@@ -30,10 +30,12 @@ export default function Dashboard() {
 
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
 
+  // May 2026 design-system dashboard tile palette — light-to-deep sky ramp,
+  // black text on every tile so values read crisply.
   const stats = [
-    { label: 'On Site Now',          value: activeEntries.length,    bg: '#15739d', to: '#on-site-now' },
-    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#0e4d69', to: '/timesheets' },
-    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#0a3142', to: '/leave' },
+    { label: 'On Site Now',          value: activeEntries.length,    bg: '#9ADBED', to: '#on-site-now' },
+    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#5DC4E3', to: '/timesheets' },
+    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#0096C7', to: '/leave' },
   ]
 
   const goTo = (to: string) => {
@@ -57,11 +59,11 @@ export default function Dashboard() {
           <button
             key={s.label}
             onClick={() => goTo(s.to)}
-            style={{ backgroundColor: s.bg, color: '#FAFAFA' }}
-            className="text-left rounded-2xl p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30 overflow-hidden"
+            style={{ backgroundColor: s.bg, color: '#000000' }}
+            className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30 overflow-hidden"
           >
             <p className="text-3xl sm:text-4xl font-clock font-bold tabular-nums">{s.value}</p>
-            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight mt-1 opacity-90 whitespace-nowrap">{s.label}</p>
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight mt-1 whitespace-nowrap">{s.label}</p>
           </button>
         ))}
       </div>

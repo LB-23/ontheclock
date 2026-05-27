@@ -596,11 +596,12 @@ export default function MyTimesheets() {
   }
 
   const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
+  // May 2026 design-system status palette — solid soft bg + saturated text
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'submitted' || s === 'pending') return { backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }
-    if (s === 'approved')                     return { backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }
-    if (s === 'rejected')                     return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
-    return { backgroundColor: '#D9D9D9', color: '#666666' }   // draft (default)
+    if (s === 'submitted' || s === 'pending') return { backgroundColor: '#FEDDB4', color: '#F99702' }
+    if (s === 'approved')                     return { backgroundColor: '#E0F499', color: '#A2C00B' }
+    if (s === 'rejected')                     return { backgroundColor: '#FDBEB5', color: '#FF2828' }
+    return { backgroundColor: '#CDCBCB', color: '#595858' }   // draft (default)
   }
 
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
@@ -860,19 +861,20 @@ export default function MyTimesheets() {
           </div>
 
           {selected.status === 'draft' && entries.length > 0 && (() => {
+            // Submit For Approval is always available on a draft — the previous
+            // "Clock-Out Of All Entries First" prompt has been removed per spec.
+            // Open entries are still implicitly fine to submit because the API
+            // tolerates them (admin sees them flagged on review).
             const needClockOut = entries.some(e => !e.clock_out)
-            // Prompt stays light-grey while any entry is open; once everything
-            // is closed the CTA flips to the lime Submit For Approval colour.
-            const bg = needClockOut ? '#A4A3A3' : '#D7E363'
-            const fg = needClockOut ? '#FAFAFA' : '#141414'
             return (
               <button
                 onClick={submitTimesheet}
-                disabled={submitting || needClockOut}
-                style={{ backgroundColor: bg, color: fg }}
-                className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all disabled:opacity-60"
+                disabled={submitting}
+                style={{ backgroundColor: '#D7E363', color: '#000000' }}
+                className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold uppercase tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
+                title={needClockOut ? 'One or more entries are still active — clock out before review for accurate hours.' : undefined}
               >
-                {submitting ? 'Submitting…' : needClockOut ? 'Clock-Out Of All Entries First' : 'Submit For Approval'}
+                {submitting ? 'Submitting…' : 'Submit For Approval'}
               </button>
             )
           })()}
@@ -930,7 +932,7 @@ export default function MyTimesheets() {
           </button>
 
           {timesheets.length === 0 && (
-            <div className="text-center py-16 text-muted">No Timesheets Yet — Clock In Once To Start One.</div>
+            <div className="text-center py-16" style={{ color: '#D9D9D9' }}>No Timesheets Yet — Clock In Once To Start One.</div>
           )}
           <div className="space-y-3">
             {timesheets.map(ts => (

@@ -175,11 +175,12 @@ export default function LeaveAndTIL() {
     reload()
   }
 
+  // May 2026 design-system status palette
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'pending')   return { backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }
-    if (s === 'approved')  return { backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }
-    if (s === 'declined' || s === 'rejected') return { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
-    if (s === 'withdrawn') return { backgroundColor: 'rgba(102,102,102,0.10)', color: '#666666' }
+    if (s === 'pending')   return { backgroundColor: '#FEDDB4', color: '#F99702' }
+    if (s === 'approved')  return { backgroundColor: '#E0F499', color: '#A2C00B' }
+    if (s === 'declined' || s === 'rejected') return { backgroundColor: '#FDBEB5', color: '#FF2828' }
+    if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#595858' }
     return {}
   }
   const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
@@ -247,13 +248,14 @@ export default function LeaveAndTIL() {
       {profile && !showForm && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#15739d' },
-            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#0e4d69' },
-            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0a3142' },
+            // May 2026 design-system tile palette — same sky ramp as admin Dashboard
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#9ADBED' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#5DC4E3' },
+            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0096C7' },
           ].map(b => (
-            <div key={b.label} style={{ backgroundColor: b.bg, color: '#FAFAFA' }}
+            <div key={b.label} style={{ backgroundColor: b.bg, color: '#000000' }}
                  className="p-3 sm:p-4 overflow-hidden">
-              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap opacity-90">
+              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap">
                 {b.label}
               </p>
               <p className="text-xl sm:text-2xl font-normal mt-1 font-clock normal-case">{b.value}</p>
@@ -367,7 +369,7 @@ export default function LeaveAndTIL() {
           request form is open so the form gets full attention. */}
       {!showForm && (
       <div className="space-y-3">
-        {requests.length === 0 && <p className="text-center text-muted py-8">No Leave Requests Yet</p>}
+        {requests.length === 0 && <p className="text-center py-8" style={{ color: '#D9D9D9' }}>No Leave Requests Yet</p>}
         {requests.map(r => (
           <button key={r.id} onClick={() => { setOpenReq(r); setErr('') }}
                   className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">

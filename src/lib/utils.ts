@@ -149,34 +149,41 @@ export function fmtHours(h: number): string {
   return `${hrs}h ${mins}m`
 }
 
-/** Tailwind class helpers — neutral palette (May 2026 brand refresh).
- *  Specific colours per page are applied inline; these helpers are now
- *  primarily SHAPE + interaction holders so individual button
+/** Tailwind class helpers — May 2026 design system button buckets.
+ *  Three roles, every label uppercase with 0.02em tracking:
+ *    primary    #D7E363 / #000000 — save, submit for approval, save changes,
+ *                                    clock-in, save edit, add entry
+ *    secondary  #B4B3B3 / #FFFFFF — cancel, export, add manual entry,
+ *                                    enable push reminders
+ *    danger     #666666 / #FFFFFF — clock-out, delete, disable push, exit
+ *  Per-page overrides via inline `style` still win when needed (e.g. a few
  *  background/text colours can ride on top via the `style` prop. */
 export const btnPrimary =
-  'inline-flex items-center justify-center bg-[#737373] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center bg-[#D7E363] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-black hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
 
 export const btnSecondary =
-  'inline-flex items-center justify-center border border-page bg-[#A4A3A3] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
+  'inline-flex items-center justify-center bg-[#B4B3B3] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
 
 export const btnDanger =
-  'inline-flex items-center justify-center bg-[#737373] px-5 py-3 text-sm font-semibold text-[#FAFAFA] hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
+  'inline-flex items-center justify-center bg-[#666666] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-50'
 
 /** Brand button colour tokens — referenced by inline style on per-page
  *  buttons so the colour intent is explicit at the call site. */
 export const BTN = {
-  actionBg:   '#D7E363', // lime — primary positive action (Save, Submit, Clock-in)
-  actionFg:   '#141414',
-  mutedBg:    '#A4A3A3', // light-grey — secondary action (Add, Cancel, Export)
-  mutedFg:    '#FAFAFA',
-  mutedFgDk:  '#141414', // for light-grey buttons that pair with dark text
-  darkBg:     '#737373', // dark-grey — destructive / clock-out / disable push
-  darkFg:     '#FAFAFA',
-  charcoalBg: '#595858', // charcoal — admin delete actions
-  charcoalFg: '#E8E8E8',
+  actionBg:   '#D7E363', // lime — primary positive (Save, Submit, Clock-in)
+  actionFg:   '#000000',
+  mutedBg:    '#B4B3B3', // light-grey — secondary / neutral (Cancel, Export, Add Manual)
+  mutedFg:    '#FFFFFF',
+  mutedFgDk:  '#000000', // for the rare light-grey button paired with dark text
+  darkBg:     '#666666', // mid-grey — destructive / exit (Clock-out, Delete, Disable push)
+  darkFg:     '#FFFFFF',
+  charcoalBg: '#666666', // admin delete actions — same bucket as `darkBg`
+  charcoalFg: '#FFFFFF',
 } as const
 
+/** Text inputs / selects / textareas — square, 2px border, sky focus,
+ *  faint placeholder so an empty field doesn't read as data. */
 export const inputCls =
-  'block w-full min-w-0 border border-page bg-surface px-4 py-3 text-sm text-ink placeholder-muted focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20'
+  'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink placeholder:text-[#D9D9D9] focus:border-sky focus:outline-none'
 
 export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
