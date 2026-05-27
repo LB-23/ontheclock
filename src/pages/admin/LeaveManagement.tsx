@@ -261,7 +261,7 @@ export default function LeaveManagement() {
 
       {tab === 'pending' && (
         <div className="space-y-4">
-          {requests.length === 0 && <p className="text-center text-muted py-10">No Pending Requests</p>}
+          {requests.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Pending Requests</p>}
           {requests.map(r => (
             <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3 hover:border-sky/40 transition-colors">
               <button type="button" onClick={() => openEdit(r)} className="w-full text-left normal-case">
@@ -305,7 +305,7 @@ export default function LeaveManagement() {
 
       {tab === 'approved' && (
         <div className="space-y-3">
-          {approved.length === 0 && <p className="text-center text-muted py-10">No Approved Leave</p>}
+          {approved.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Approved Leave</p>}
           {approved.map(r => (
             <button key={r.id} onClick={() => openEdit(r)}
                     className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
@@ -326,14 +326,14 @@ export default function LeaveManagement() {
 
       {tab === 'all' && (
         <div className="space-y-3">
-          {allRequests.length === 0 && <p className="text-center text-muted py-10">No Leave Requests Yet</p>}
+          {allRequests.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Leave Requests Yet</p>}
           {allRequests.map(r => {
             const status = r.status
             const style: React.CSSProperties =
-              status === 'pending'   ? { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
-              : status === 'approved'  ? { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
-              : status === 'withdrawn' ? { backgroundColor: 'rgba(102,102,102,0.15)', color: '#666666' }
-              : { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
+              status === 'pending'   ? { backgroundColor: '#FEDDB4', color: '#F99702' }
+              : status === 'approved'  ? { backgroundColor: '#E0F499', color: '#A2C00B' }
+              : status === 'withdrawn' ? { backgroundColor: '#CDCBCB', color: '#595858' }
+              : { backgroundColor: '#FDBEB5', color: '#FF2828' }
             return (
               <button key={r.id} onClick={() => openEdit(r)}
                       className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
@@ -359,7 +359,7 @@ export default function LeaveManagement() {
 
       {tab === 'balances' && (
         <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
-          {employees.length === 0 && <p className="p-6 text-center text-muted">No Employees Yet</p>}
+          {employees.length === 0 && <p className="p-6 text-center" style={{ color: '#D9D9D9' }}>No Employees Yet</p>}
           {employees.length > 0 && (
             <table className="w-full text-sm">
               <thead className="bg-page">

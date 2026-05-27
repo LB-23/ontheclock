@@ -275,7 +275,7 @@ export default function TimesheetReview() {
 
           {loading && <p className="text-center text-muted">Loading…</p>}
           {!loading && timesheets.length === 0 && (
-            <p className="text-center text-muted py-10">No Timesheets Match This Filter.</p>
+            <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Timesheets Match This Filter.</p>
           )}
 
           <div className="space-y-3">
@@ -290,10 +290,10 @@ export default function TimesheetReview() {
                   <span
                     className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1"
                     style={
-                      ts.status === 'submitted' ? { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' }
-                      : ts.status === 'approved' ? { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' }
-                      : ts.status === 'rejected' ? { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }
-                      : { backgroundColor: '#D9D9D9', color: '#666666' }
+                      ts.status === 'submitted' ? { backgroundColor: '#FEDDB4', color: '#F99702' }
+                      : ts.status === 'approved' ? { backgroundColor: '#E0F499', color: '#A2C00B' }
+                      : ts.status === 'rejected' ? { backgroundColor: '#FDBEB5', color: '#FF2828' }
+                      : { backgroundColor: '#CDCBCB', color: '#595858' }
                     }
                   >{ts.status}</span>
                 </div>

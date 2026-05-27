@@ -3,13 +3,14 @@
 @tailwind utilities;
 
 :root {
+  /* May 2026 brand palette — see tailwind.config.ts for role notes */
   --ink:        #000000;
-  --link:       #0000EE;
-  --action:     #3B82F6;
-  --action-deep:#116DFF;
+  --link:       #00698B;
+  --action:     #00698B;
+  --action-deep:#00698B;
   --sky:        #1C9FDA;
-  --sky-deep:   #3078BE;
-  --muted:      #666666;
+  --sky-deep:   #00698B;
+  --muted:      #191919;
   --page:       #E8E8E8;
   --surface:    #FAFAFA;
 }
@@ -22,7 +23,10 @@ html, body {
 
 body {
   color: var(--ink);
-  font-family: 'Familjen Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Brand body face is Familjen Grotesk; Calibri is the OS-native fallback
+     (Windows + Office), then system-ui for everything else. Helvetica/Arial
+     intentionally removed per design system. */
+  font-family: 'Familjen Grotesk', Calibri, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "ss01" on, "cv11" on;
 }
@@ -34,7 +38,7 @@ body {
  * can override the text-transform on a case-by-case basis. */
 @layer components {
   .font-clock {
-    font-family: 'Barlow', 'Familjen Grotesk', system-ui, sans-serif;
+    font-family: 'Be Vietnam Pro', 'Familjen Grotesk', Calibri, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;

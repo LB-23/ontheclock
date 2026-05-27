@@ -5,25 +5,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── LB brand palette (per spec) ──────────────
-        // role hints in the spec:
-        //   #000000  text, shadow
-        //   #0000EE  text, border        (link emphasis)
-        //   #FFFFFF  text, border        (on-dark surfaces)
-        //   #E8E8E8  background, text, border  (page bg, subtle border)
-        //   #3B82F6  background, border  (CTA bg)
-        //   #1C9FDA  border, text        (LB sky brand text/accent)
-        //   #666666  text, border        (muted text)
-        //   #116DFF  text, border        (hover, deep accent)
-        //   #FAFAFA  background          (card surface)
-        //   #3078BE  border              (strong border)
+        // ── LB brand palette (May 2026 design system) ──────────────
+        //   #000000  primary text + status badge text on light bg
+        //   #00698B  link emphasis · stronger border accent · react-select selection bg
+        //   #FFFFFF  text/border on dark/accent surfaces
+        //   #E8E8E8  page background · all borders · dividers · hover states
+        //   #1C9FDA  LB logo · active nav · focus ring · OT/edited label · section action links
+        //   #00698B  deep accent (skyDeep)
+        //   #191919  secondary text + dashboard timesheet hours (muted)
+        //   #FAFAFA  card / panel / input / modal / nav surfaces
         ink:        '#000000',
-        link:       '#0000EE',
-        action:     '#3B82F6',
-        actionDeep: '#116DFF',
-        sky:        '#1C9FDA',   // LB primary brand text/accent
-        skyDeep:    '#3078BE',
-        muted:      '#666666',
+        link:       '#00698B',
+        action:     '#00698B',
+        actionDeep: '#00698B',
+        sky:        '#1C9FDA',
+        skyDeep:    '#00698B',
+        muted:      '#191919',
         page:       '#E8E8E8',
         surface:    '#FAFAFA',
 
@@ -43,9 +40,12 @@ export default {
         },
       },
       fontFamily: {
-        sans:    ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
-        grotesk: ['"Familjen Grotesk"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
-        clock:   ['Barlow', '"Familjen Grotesk"', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
+        // Body face is Familjen Grotesk; Calibri is the OS-native fallback
+        // (Windows + Office), then system-ui. Helvetica/Arial intentionally
+        // removed per design system. Clock/widget face is Be Vietnam Pro.
+        sans:    ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
+        grotesk: ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
+        clock:   ['"Be Vietnam Pro"', '"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
       },
     },
     // ── Brand directive (May 2026): fully square + no shadows ──────────────
@@ -65,11 +65,14 @@ export default {
       full:     '9999px',
     },
     boxShadow: {
+      // Spec: shadows off by default, with documented exceptions —
+      //   • shadow-md kept so Dashboard tile :hover still lifts
+      //   • shadow-lg kept so modal panels still float above the page
       none:     'none',
       sm:       'none',
       DEFAULT:  'none',
-      md:       'none',
-      lg:       'none',
+      md:       '0 4px 6px -1px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.10)',
+      lg:       '0 10px 15px -3px rgba(0, 0, 0, 0.10), 0 4px 6px -4px rgba(0, 0, 0, 0.10)',
       xl:       'none',
       '2xl':    'none',
       inner:    'none',
