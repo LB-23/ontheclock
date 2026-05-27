@@ -31,14 +31,14 @@ body {
   font-feature-settings: "ss01" on, "cv11" on;
 }
 
-/* Brand headings + widget typography — Barlow Semi Bold (weight 600).
- * Body text uses Familjen Grotesk; this class is reserved for headings,
+/* Brand headings + widget typography — Familjen Grotesk Semi Bold (weight 600).
+ * Single typeface across the whole app; this class is reserved for headings,
  * widget values, stat tiles and similar punchier copy. ALL CAPS by default.
  * Declared inside @layer components so Tailwind utilities like `normal-case`
  * can override the text-transform on a case-by-case basis. */
 @layer components {
   .font-clock {
-    font-family: 'Be Vietnam Pro', 'Familjen Grotesk', Calibri, system-ui, sans-serif;
+    font-family: 'Familjen Grotesk', Calibri, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;

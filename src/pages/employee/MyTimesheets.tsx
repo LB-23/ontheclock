@@ -169,25 +169,25 @@ export default function MyTimesheets() {
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
 
-    // Embed Barlow (Semi Bold variant) from jsdelivr's Google Fonts mirror.
-    // Falls back to Helvetica if the fetch fails (offline / CORS).
+    // Embed Familjen Grotesk from jsdelivr's Google Fonts mirror so the PDF
+    // body matches the on-screen UI. The variable font ships as one file; we
+    // register it for normal/bold/italic slots so jsPDF's `setFont(name, weight)`
+    // calls don't crash even though the glyphs look identical.
     let bodyFont = 'helvetica'
-    const BARLOW_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/barlow'
-    const [barlowReg, barlowBold, barlowIt] = await Promise.all([
-      fetchTtfBase64(`${BARLOW_BASE}/Barlow-Regular.ttf`),
-      fetchTtfBase64(`${BARLOW_BASE}/Barlow-SemiBold.ttf`),
-      fetchTtfBase64(`${BARLOW_BASE}/Barlow-Italic.ttf`),
+    const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk'
+    const [fgReg, fgIt] = await Promise.all([
+      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk%5Bwght%5D.ttf`),
+      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Italic%5Bwght%5D.ttf`),
     ])
-    if (barlowReg && barlowBold) {
-      pdf.addFileToVFS('Barlow-Regular.ttf', barlowReg)
-      pdf.addFont('Barlow-Regular.ttf', 'Barlow', 'normal')
-      pdf.addFileToVFS('Barlow-SemiBold.ttf', barlowBold)
-      pdf.addFont('Barlow-SemiBold.ttf', 'Barlow', 'bold')
-      if (barlowIt) {
-        pdf.addFileToVFS('Barlow-Italic.ttf', barlowIt)
-        pdf.addFont('Barlow-Italic.ttf', 'Barlow', 'italic')
+    if (fgReg) {
+      pdf.addFileToVFS('FamiljenGrotesk.ttf', fgReg)
+      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'normal')
+      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'bold')
+      if (fgIt) {
+        pdf.addFileToVFS('FamiljenGrotesk-Italic.ttf', fgIt)
+        pdf.addFont('FamiljenGrotesk-Italic.ttf', 'FamiljenGrotesk', 'italic')
       }
-      bodyFont = 'Barlow'
+      bodyFont = 'FamiljenGrotesk'
     }
 
     // Greys per user spec
@@ -365,7 +365,7 @@ export default function MyTimesheets() {
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Barlow', size: 9, bold: true, color: { argb: 'FF000000' } }
+      c.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FF000000' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
@@ -379,12 +379,12 @@ export default function MyTimesheets() {
         const r = ws.addRow(row)
         const colour = opts.isLeave ? 'FF1C8DBF' : 'FF000000'
         r.eachCell((c, colNumber) => {
-          c.font = { name: 'Barlow', size: 9, color: { argb: colour } }
+          c.font = { name: 'Familjen Grotesk', size: 9, color: { argb: colour } }
           c.alignment = { vertical: 'middle', horizontal: 'left' }
           // Notes column auto-flag: Auto-closed / Added manually -> red italic
           const colKey = (ws.columns[colNumber - 1] as { key?: string }).key
           if (colKey === 'notes' && opts.flaggedCol === 'notes') {
-            c.font = { name: 'Barlow', size: 9, italic: true, color: { argb: 'FFFF2828' } }
+            c.font = { name: 'Familjen Grotesk', size: 9, italic: true, color: { argb: 'FFFF2828' } }
           }
         })
       }
@@ -432,10 +432,10 @@ export default function MyTimesheets() {
       const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
         const hoursStr = `${h}h ${m}m`
         const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
-        r.getCell('out').font = { name: 'Barlow', size: 9, bold, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FFFFFFFF' } }
         r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
-        r.getCell('hours').font = { name: 'Barlow', size: 9, bold, color: { argb: 'FF000000' } }
+        r.getCell('hours').font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FF000000' } }
       }
       addSummary('Regular',     reg.h, reg.m, 'FF7F7F7F', false)
       addSummary('Overtime',    ot.h,  ot.m,  'FF595959', false)
