@@ -341,11 +341,12 @@ export default function LeaveManagement() {
           {allRequests.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Leave Requests Yet</p>}
           {allRequests.map(r => {
             const status = r.status
+            // Status palette — every fg darkened to clear WCAG AA 4.5:1
             const style: React.CSSProperties =
-              status === 'pending'   ? { backgroundColor: '#FEDDB4', color: '#F99702' }
-              : status === 'approved'  ? { backgroundColor: '#E0F499', color: '#A2C00B' }
-              : status === 'withdrawn' ? { backgroundColor: '#CDCBCB', color: '#595858' }
-              : { backgroundColor: '#FDBEB5', color: '#FF2828' }
+              status === 'pending'   ? { backgroundColor: '#FEDDB4', color: '#8A5402' }
+              : status === 'approved'  ? { backgroundColor: '#E0F499', color: '#5E7000' }
+              : status === 'withdrawn' ? { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
+              : { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
             return (
               <button key={r.id} onClick={() => openEdit(r)}
                       className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">

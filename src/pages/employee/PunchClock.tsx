@@ -121,19 +121,25 @@ export default function PunchClock() {
   const jobOptions = jobAddresses.map(j => ({ value: j.id, label: j.address }))
   const stageOptions = stages.map(s => ({ value: s.id, label: s.name }))
 
+  // Brought in-line with the squared design system + brand palette:
+  //   • borderRadius: 0  (was 0.75rem — out-of-system)
+  //   • borderWidth:  2  (matches inputCls 2px border)
+  //   • selected option bg: #116DFF action (was #3B82F6 — pre-refresh token).
+  //     White-on-#116DFF measures ~5.5:1 — passes WCAG AA.
   const selectStyles = {
     control: (base: object) => ({
       ...base,
-      borderRadius: '0.75rem',
-      borderColor: '#E8E8E8',          // page
-      backgroundColor: '#FAFAFA',       // surface
+      borderRadius: 0,
+      borderWidth: 2,
+      borderColor: '#E8E8E8',
+      backgroundColor: '#FAFAFA',
       padding: '2px 4px',
       boxShadow: 'none',
-      '&:hover': { borderColor: '#1C9FDA' }, // sky
+      '&:hover': { borderColor: '#1C9FDA' },
     }),
     option: (base: object, state: { isSelected: boolean; isFocused: boolean }) => ({
       ...base,
-      backgroundColor: state.isSelected ? '#3B82F6' : state.isFocused ? '#E8E8E8' : '#FAFAFA',
+      backgroundColor: state.isSelected ? '#116DFF' : state.isFocused ? '#E8E8E8' : '#FAFAFA',
       color: state.isSelected ? '#FFFFFF' : '#000000',
     }),
   }

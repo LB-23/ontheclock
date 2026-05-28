@@ -169,20 +169,20 @@ export default function MyTimesheets() {
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
 
-    // Embed Familjen Grotesk from jsdelivr's Google Fonts mirror so the PDF
-    // body matches the on-screen UI. The variable font ships as one file; we
-    // register it for normal/bold/italic slots so jsPDF's `setFont(name, weight)`
-    // calls don't crash even though the glyphs look identical.
+    // Self-hosted Familjen Grotesk TTFs live under /public/fonts/. Same-origin
+    // fetch — no CDN dependency, no CORS, works offline once the SW has cached
+    // the assets. Registers regular + semibold + italic for jsPDF's slots.
     let bodyFont = 'helvetica'
-    const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk'
-    const [fgReg, fgIt] = await Promise.all([
-      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk%5Bwght%5D.ttf`),
-      fetchTtfBase64(`${FG_BASE}/FamiljenGrotesk-Italic%5Bwght%5D.ttf`),
+    const [fgReg, fgBold, fgIt] = await Promise.all([
+      fetchTtfBase64('/fonts/FamiljenGrotesk-Regular.ttf'),
+      fetchTtfBase64('/fonts/FamiljenGrotesk-SemiBold.ttf'),
+      fetchTtfBase64('/fonts/FamiljenGrotesk-Italic.ttf'),
     ])
-    if (fgReg) {
-      pdf.addFileToVFS('FamiljenGrotesk.ttf', fgReg)
-      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'normal')
-      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'bold')
+    if (fgReg && fgBold) {
+      pdf.addFileToVFS('FamiljenGrotesk-Regular.ttf', fgReg)
+      pdf.addFont('FamiljenGrotesk-Regular.ttf', 'FamiljenGrotesk', 'normal')
+      pdf.addFileToVFS('FamiljenGrotesk-SemiBold.ttf', fgBold)
+      pdf.addFont('FamiljenGrotesk-SemiBold.ttf', 'FamiljenGrotesk', 'bold')
       if (fgIt) {
         pdf.addFileToVFS('FamiljenGrotesk-Italic.ttf', fgIt)
         pdf.addFont('FamiljenGrotesk-Italic.ttf', 'FamiljenGrotesk', 'italic')
@@ -596,12 +596,14 @@ export default function MyTimesheets() {
   }
 
   const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
-  // May 2026 design-system status palette — solid soft bg + saturated text
+  // Status palette — soft pastel bg + deeply-toned text. Foregrounds darkened
+  // so every pair clears WCAG AA 4.5:1 against its own bg (the earlier
+  // saturated text colours were ~2.5–2.8:1, all failing).
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'submitted' || s === 'pending') return { backgroundColor: '#FEDDB4', color: '#F99702' }
-    if (s === 'approved')                     return { backgroundColor: '#E0F499', color: '#A2C00B' }
-    if (s === 'rejected')                     return { backgroundColor: '#FDBEB5', color: '#FF2828' }
-    return { backgroundColor: '#CDCBCB', color: '#595858' }   // draft (default)
+    if (s === 'submitted' || s === 'pending') return { backgroundColor: '#FEDDB4', color: '#8A5402' }
+    if (s === 'approved')                     return { backgroundColor: '#E0F499', color: '#5E7000' }
+    if (s === 'rejected')                     return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
+    return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }   // draft (default)
   }
 
   if (loading) return <div className="text-center py-16 text-muted">Loading…</div>

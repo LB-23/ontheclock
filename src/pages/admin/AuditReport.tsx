@@ -24,13 +24,15 @@ type AuditRow = {
   audit_flag: AuditFlag
 }
 
+// Audit flag palette mirrors the system-wide status badge palette — soft
+// pastel bg + deeply-toned text, each pair clearing WCAG AA 4.5:1.
 const flagLabel: Record<AuditFlag, { text: string; style: React.CSSProperties }> = {
-  ok:                { text: 'OK',                       style: { backgroundColor: 'rgba(174,224,1,0.20)', color: '#AEE001' } },
-  clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' } },
-  clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' } },
-  no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' } },
-  no_clock_out_gps:  { text: 'No clock-out GPS',         style: { backgroundColor: 'rgba(249,151,2,0.20)', color: '#F99702' } },
-  site_not_geocoded: { text: 'Site not geocoded',        style: { backgroundColor: '#E8E8E8',              color: '#666666' } },
+  ok:                { text: 'OK',                       style: { backgroundColor: '#E0F499', color: '#5E7000' } },
+  clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: '#FDBEB5', color: '#9C0F0F' } },
+  clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: '#FDBEB5', color: '#9C0F0F' } },
+  no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: '#FEDDB4', color: '#8A5402' } },
+  no_clock_out_gps:  { text: 'No clock-out GPS',         style: { backgroundColor: '#FEDDB4', color: '#8A5402' } },
+  site_not_geocoded: { text: 'Site not geocoded',        style: { backgroundColor: '#CDCBCB', color: '#3E3E3E' } },
 }
 
 export default function AuditReport() {

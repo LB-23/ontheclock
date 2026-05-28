@@ -2,15 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Familjen Grotesk — self-hosted ───────────────────────────────────────
+ * TTFs live under /public/fonts/. font-display: swap so first paint uses
+ * the OS fallback (Calibri/system-ui) while the brand face loads, then
+ * swaps in without a layout reflow.                                       */
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-Italic.ttf') format('truetype');
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-MediumItalic.ttf') format('truetype');
+  font-weight: 500; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Familjen Grotesk';
+  src: url('/fonts/FamiljenGrotesk-BoldItalic.ttf') format('truetype');
+  font-weight: 700; font-style: italic; font-display: swap;
+}
+
 :root {
-  /* May 2026 brand palette — see tailwind.config.ts for role notes */
+  /* LBG brand palette — CSS-Peeper extracted from the source-of-truth swatch.
+   * 9 values, mathematically restrained:
+   *   greys:   #000000 ink · #333333 deepMuted · #666666 muted
+   *   surface: #E8E8E8 page · #FAFAFA surface · #FFFFFF white
+   *   accent:  #1C9FDA sky · #116DFF action(deep) · #0000EE link            */
   --ink:        #000000;
-  --link:       #00698B;
-  --action:     #00698B;
-  --action-deep:#00698B;
+  --link:       #0000EE;
+  --action:     #116DFF;
+  --action-deep:#116DFF;
   --sky:        #1C9FDA;
-  --sky-deep:   #00698B;
-  --muted:      #191919;
+  --sky-deep:   #116DFF;
+  --muted:      #666666;
+  --deep-muted: #333333;
   --page:       #E8E8E8;
   --surface:    #FAFAFA;
 }

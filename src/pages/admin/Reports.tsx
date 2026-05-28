@@ -16,30 +16,27 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
   if (rows.length === 0) return
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
   let bodyFont = 'helvetica'
-  // Single typeface across the app — fetch Familjen Grotesk and register it
-  // with jsPDF so the PDF body matches the on-screen UI.
-  const FG_BASE = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/familjengrotesk'
+  // Self-hosted Familjen Grotesk TTFs live under /public/fonts/. Same-origin
+  // fetch — no CDN dependency, no CORS, works offline once the SW has cached
+  // the assets. Registers regular + semibold for jsPDF's normal/bold slots.
   try {
     const [reg, bold] = await Promise.all([
-      fetch(`${FG_BASE}/FamiljenGrotesk%5Bwght%5D.ttf`).then(r => r.ok ? r.arrayBuffer() : null),
-      fetch(`${FG_BASE}/FamiljenGrotesk-Italic%5Bwght%5D.ttf`).then(() => null), // italics not needed
+      fetch('/fonts/FamiljenGrotesk-Regular.ttf').then(r => r.ok ? r.arrayBuffer() : null),
+      fetch('/fonts/FamiljenGrotesk-SemiBold.ttf').then(r => r.ok ? r.arrayBuffer() : null),
     ])
-    if (reg) {
+    if (reg && bold) {
       const b64 = (buf: ArrayBuffer) => {
         const bytes = new Uint8Array(buf)
         let bin = ''
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
         return btoa(bin)
       }
-      pdf.addFileToVFS('FamiljenGrotesk.ttf', b64(reg))
-      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'normal')
-      // Bold is the same variable font with axis weight — jsPDF can't honour
-      // variable axes so re-register the same file for the bold slot; visual
-      // weight difference is faint but the layout/metrics line up.
-      pdf.addFont('FamiljenGrotesk.ttf', 'FamiljenGrotesk', 'bold')
+      pdf.addFileToVFS('FamiljenGrotesk-Regular.ttf', b64(reg))
+      pdf.addFont('FamiljenGrotesk-Regular.ttf', 'FamiljenGrotesk', 'normal')
+      pdf.addFileToVFS('FamiljenGrotesk-SemiBold.ttf', b64(bold))
+      pdf.addFont('FamiljenGrotesk-SemiBold.ttf', 'FamiljenGrotesk', 'bold')
       bodyFont = 'FamiljenGrotesk'
     }
-    void bold
   } catch { /* fall back to Helvetica */ }
 
   pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
