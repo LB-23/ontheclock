@@ -1,6 +1,13 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v14'
-const SHELL = ['/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png']
+const CACHE = 'ontheclock-v15'
+const SHELL = [
+  '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
+  // Brand typeface — self-hosted, precached so first paint after install has
+  // the real font (no FOUT through Calibri fallback)
+  '/fonts/FamiljenGrotesk-Regular.ttf',
+  '/fonts/FamiljenGrotesk-SemiBold.ttf',
+  '/fonts/FamiljenGrotesk-Bold.ttf',
+]
 
 self.addEventListener('install', e => {
   // Activate the new SW immediately on install

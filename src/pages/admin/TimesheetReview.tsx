@@ -290,10 +290,10 @@ export default function TimesheetReview() {
                   <span
                     className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1"
                     style={
-                      ts.status === 'submitted' ? { backgroundColor: '#FEDDB4', color: '#F99702' }
-                      : ts.status === 'approved' ? { backgroundColor: '#E0F499', color: '#A2C00B' }
-                      : ts.status === 'rejected' ? { backgroundColor: '#FDBEB5', color: '#FF2828' }
-                      : { backgroundColor: '#CDCBCB', color: '#595858' }
+                      ts.status === 'submitted' ? { backgroundColor: '#FEDDB4', color: '#8A5402' }
+                      : ts.status === 'approved' ? { backgroundColor: '#E0F499', color: '#5E7000' }
+                      : ts.status === 'rejected' ? { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
+                      : { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
                     }
                   >{ts.status}</span>
                 </div>

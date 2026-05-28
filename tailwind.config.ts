@@ -5,22 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ── LB brand palette (May 2026 design system) ──────────────
-        //   #000000  primary text + status badge text on light bg
-        //   #00698B  link emphasis · stronger border accent · react-select selection bg
-        //   #FFFFFF  text/border on dark/accent surfaces
-        //   #E8E8E8  page background · all borders · dividers · hover states
-        //   #1C9FDA  LB logo · active nav · focus ring · OT/edited label · section action links
-        //   #00698B  deep accent (skyDeep)
-        //   #191919  secondary text + dashboard timesheet hours (muted)
-        //   #FAFAFA  card / panel / input / modal / nav surfaces
+        // ── LBG brand palette (CSS-Peeper, source-of-truth swatch) ──────────
+        //   #000000  ink   — primary text
+        //   #333333  deepMuted — secondary heading / strong meta
+        //   #666666  muted — body meta, placeholders, secondary text
+        //   #E8E8E8  page  — page bg + every border / divider / hover state
+        //   #FAFAFA  surface — cards / inputs / modal / nav surfaces
+        //   #FFFFFF  white — on-dark text
+        //   #1C9FDA  sky   — brand logo, active nav, focus ring, OT/edited badge
+        //   #116DFF  action / actionDeep / skyDeep — saturated CTA + selected option
+        //   #0000EE  link  — link emphasis
         ink:        '#000000',
-        link:       '#00698B',
-        action:     '#00698B',
-        actionDeep: '#00698B',
+        deepMuted:  '#333333',
+        link:       '#0000EE',
+        action:     '#116DFF',
+        actionDeep: '#116DFF',
         sky:        '#1C9FDA',
-        skyDeep:    '#00698B',
-        muted:      '#191919',
+        skyDeep:    '#116DFF',
+        muted:      '#666666',
         page:       '#E8E8E8',
         surface:    '#FAFAFA',
 

@@ -86,7 +86,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <p className="text-xs text-muted truncate mb-2">{profile?.email ?? profile?.full_name}</p>
           <button
             onClick={handleSignOut}
-            className="w-full rounded-xl border border-page px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink"
+            className="w-full border border-page px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
           >
             Sign Out
           </button>
@@ -100,7 +100,14 @@ export default function Layout({ children }: { children: ReactNode }) {
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
             <span className="text-base font-bold text-sky">OnTheClock</span>
           </div>
-          <button onClick={handleSignOut} className="text-xs text-muted">Sign Out</button>
+          {/* Real tap-target — was a 12px text link, well below 44pt minimum */}
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="inline-flex items-center justify-center min-h-11 px-3 py-2 text-sm font-semibold text-muted hover:text-ink border border-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+          >
+            Sign Out
+          </button>
         </header>
         <div className="p-4 md:p-8 max-w-5xl mx-auto">
           {children}
