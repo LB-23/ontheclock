@@ -3,6 +3,7 @@ import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../..
 import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
+import AdminNoteBanner from '../../components/AdminNoteBanner'
 
 const leaveLabels: Record<string, string> = {
   annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
@@ -199,6 +200,21 @@ export default function LeaveManagement() {
 
   useEffect(() => { load() }, [])
 
+  /* Esc dismisses whichever modal is open (edit-leave first, then add-leave).
+   * Apple HIG + Material both treat Esc as the canonical "close" gesture, and
+   * keyboard users currently have no way to leave a modal without tabbing
+   * around to the X button. Listener stays mounted for the page lifecycle —
+   * cheap, and any open-modal state is read fresh each press.            */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (openReq) { setOpenReq(null); return }
+      if (showAddLeave) { setShowAddLeave(false); return }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openReq, showAddLeave])
+
   const decide = async (r: LeaveRequest, status: 'approved' | 'declined') => {
     setDeciding(r.id)
     await supabase.from('leave_requests').update({ status, admin_notes: adminNote || null }).eq('id', r.id)
@@ -327,7 +343,7 @@ export default function LeaveManagement() {
                   <p className="text-sm text-muted mt-0.5">
                     {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''}
                   </p>
-                  {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
+                  {r.admin_notes && <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>}
                 </div>
                 <p className="text-sm font-bold font-clock text-ink normal-case">{fmtHours(r.total_hours ?? 0)}</p>
               </div>
@@ -357,7 +373,7 @@ export default function LeaveManagement() {
                       {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
-                    {r.admin_notes && <p className="text-xs text-blue-600 mt-1">💬 {r.admin_notes}</p>}
+                    {r.admin_notes && <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>}
                     {r.withdrawal_reason && <p className="text-xs text-muted mt-1">Withdrawn: {r.withdrawal_reason}</p>}
                   </div>
                   <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
@@ -502,7 +518,7 @@ export default function LeaveManagement() {
               Delete Request
             </button>
             {openReq.status === 'approved' && (
-              <p className="text-[11px] text-center text-muted">
+              <p className="text-tag text-center text-muted">
                 Deleting will return {fmtHours(Number(openReq.total_hours ?? 0))} to the employee's {leaveLabels[openReq.leave_type]} balance.
               </p>
             )}
@@ -539,7 +555,7 @@ export default function LeaveManagement() {
                     <p className="text-xs font-medium" style={{ color: inCurrentWeek ? '#1c9fda' : undefined }}>{format(day, 'd')}</p>
                   {phName && (
                     <div
-                      className="text-[10px] leading-tight rounded px-0.5 mt-0.5 truncate font-semibold"
+                      className="text-micro leading-tight rounded px-0.5 mt-0.5 truncate font-semibold"
                       style={{ backgroundColor: '#B4B3B3', color: '#595858' }}
                       title={phName}
                     >
@@ -555,7 +571,7 @@ export default function LeaveManagement() {
                     return (
                       <div
                         key={l.id}
-                        className="text-[10px] leading-tight rounded px-0.5 mt-0.5 truncate text-ink"
+                        className="text-micro leading-tight rounded px-0.5 mt-0.5 truncate text-ink"
                         style={{ backgroundColor: empColour(l.employee_id) }}
                         title={fullName}
                       >
@@ -571,7 +587,7 @@ export default function LeaveManagement() {
           {/* Legend */}
           {approved.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
-              <span className="text-[11px] rounded-full px-2 py-0.5 font-semibold"
+              <span className="text-tag rounded-full px-2 py-0.5 font-semibold"
                     style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
                 P/H — VIC Public Holiday
               </span>
@@ -579,7 +595,7 @@ export default function LeaveManagement() {
                 const parts = fullName.trim().split(/\s+/)
                 const display = parts.length >= 2 ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}` : parts[0] ?? ''
                 return (
-                  <span key={eid} className="text-[11px] rounded-full px-2 py-0.5 text-ink"
+                  <span key={eid} className="text-tag rounded-full px-2 py-0.5 text-ink"
                         style={{ backgroundColor: empColour(eid) }}>
                     {display}
                   </span>

@@ -301,7 +301,7 @@ export default function Employees() {
                            className={inputCls} />
                   </div>
                 </div>
-                <p className="text-[11px] text-muted mt-2">Auto-populated from Required Hours — override here if needed.</p>
+                <p className="text-tag text-muted mt-2">Auto-populated from Required Hours — override here if needed.</p>
               </div>
             </>
           )}
@@ -313,13 +313,13 @@ export default function Employees() {
                 <label className={labelCls}>Clock-in reminder</label>
                 <input type="time" value={form.clock_in_reminder}
                        onChange={e => set('clock_in_reminder', e.target.value)} className={inputCls} />
-                <p className="text-[11px] text-muted mt-1">Leave blank to disable</p>
+                <p className="text-tag text-muted mt-1">Leave blank to disable</p>
               </div>
               <div>
                 <label className={labelCls}>Clock-out reminder</label>
                 <input type="time" value={form.clock_out_reminder}
                        onChange={e => set('clock_out_reminder', e.target.value)} className={inputCls} />
-                <p className="text-[11px] text-muted mt-1">Leave blank to disable</p>
+                <p className="text-tag text-muted mt-1">Leave blank to disable</p>
               </div>
             </div>
           )}

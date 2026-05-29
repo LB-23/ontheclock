@@ -67,6 +67,19 @@
 
 * { -webkit-tap-highlight-color: transparent; }
 
+/* Respect users who've asked the OS to dial down motion (vestibular
+ * disorders, motion sickness, focus-by-distraction). Cuts every animation
+ * and transition to a single frame — the UI still changes state, just
+ * without movement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html, body {
   background-color: var(--page);
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { fmtDate, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import AdminNoteBanner from '../../components/AdminNoteBanner'
 
 const leaveLabels: Record<LeaveType, string> = {
   annual:       'Annual Leave',
@@ -205,7 +206,10 @@ export default function LeaveAndTIL() {
             <div><dt className="text-muted">Reason</dt><dd className="mt-0.5">{openReq.reason}</dd></div>
           )}
           {openReq.admin_notes && (
-            <div><dt className="text-muted">Admin Note</dt><dd className="mt-0.5 text-blue-600">{openReq.admin_notes}</dd></div>
+            <div>
+              <dt className="text-muted">Admin Note</dt>
+              <dd className="mt-0.5"><AdminNoteBanner>{openReq.admin_notes}</AdminNoteBanner></dd>
+            </div>
           )}
           {openReq.withdrawal_reason && (
             <div><dt className="text-muted">Withdrawal Reason</dt><dd className="mt-0.5">{openReq.withdrawal_reason}</dd></div>
@@ -256,7 +260,7 @@ export default function LeaveAndTIL() {
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#000000' }}
                  className="p-3 sm:p-4 overflow-hidden">
-              <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight whitespace-nowrap">
+              <p className="text-micro sm:text-micro font-semibold uppercase tracking-tight whitespace-nowrap">
                 {b.label}
               </p>
               <p className="text-xl sm:text-2xl font-normal mt-1 font-clock normal-case">{b.value}</p>

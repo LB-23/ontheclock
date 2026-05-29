@@ -148,11 +148,9 @@ export default function PunchClock() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      {/* Clock display */}
-      <div
-        className="rounded-2xl p-6 text-center shadow-md border border-page text-ink"
-        style={{ backgroundColor: '#FAFAFA' }}
-      >
+      {/* Clock display — surface token so the background tracks the theme.
+          shadow-md retained as documented exception for the headline tile. */}
+      <div className="bg-surface p-6 text-center shadow-md border border-page text-ink">
         {isClockedIn ? (
           <>
             <p className="text-sm mb-1 text-ink">
@@ -180,8 +178,11 @@ export default function PunchClock() {
       </div>
 
       {gpsWarning && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
-          ⚠️ Location unavailable — punched in without GPS. Enable location access for full tracking.
+        /* GPS warning — amber palette per the design system. Emoji removed
+         * (renders inconsistently across iOS/Android and breaks the single-
+         * typeface brand voice); the bold lead-in carries the severity. */
+        <div className="bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+          <strong>Location unavailable —</strong> punched in without GPS. Enable location access for full tracking.
         </div>
       )}
 
@@ -243,7 +244,7 @@ export default function PunchClock() {
           <form onSubmit={handleClockOut}
                 className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
             <div>
-              <p className="font-semibold text-ink">Add notes for this shift</p>
+              <h2 className="font-semibold text-ink">Add notes for this shift</h2>
               <p className="text-xs text-muted mt-0.5">Required — describe the work you completed today.</p>
             </div>
 

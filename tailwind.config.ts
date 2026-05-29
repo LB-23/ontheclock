@@ -50,6 +50,15 @@ export default {
         grotesk: ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
         clock:   ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
       },
+      // Off-scale size tokens — adds 10 / 11 / 13 px slots so call-sites stop
+      // reaching for inline arbitrary values like text-[10px]. Tailwind's stock
+      // text-xs (12px) and text-sm (14px) handle everything between; these
+      // three exist for nav labels, stat captions, and micro annotations.
+      fontSize: {
+        'micro':   ['0.625rem', { lineHeight: '0.875rem' }], // 10px / 14px
+        'tag':     ['0.6875rem',{ lineHeight: '0.9375rem' }], // 11px / 15px
+        'caption': ['0.8125rem',{ lineHeight: '1.125rem'  }], // 13px / 18px
+      },
     },
     // ── Brand directive (May 2026): fully square + no shadows ──────────────
     // Every rounded-* and shadow-* utility resolves to 0 / none so the entire

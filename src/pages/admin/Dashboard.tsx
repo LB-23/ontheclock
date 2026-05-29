@@ -60,10 +60,13 @@ export default function Dashboard() {
             key={s.label}
             onClick={() => goTo(s.to)}
             style={{ backgroundColor: s.bg, color: '#000000' }}
-            className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink/30 overflow-hidden"
+            /* Hover affordance is movement + sky ring instead of shadow-md so
+             * we stay inside the "no-shadow surface" rule. shadow-md is
+             * reserved for functional depth (modals, sheets), not hover. */
+            className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
           >
             <p className="text-3xl sm:text-4xl font-clock font-bold tabular-nums">{s.value}</p>
-            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-tight mt-1 whitespace-nowrap">{s.label}</p>
+            <p className="text-micro sm:text-micro font-semibold uppercase tracking-tight mt-1 whitespace-nowrap">{s.label}</p>
           </button>
         ))}
       </div>
