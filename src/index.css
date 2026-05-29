@@ -108,20 +108,6 @@ body {
   }
 }
 
-/* PunchClock hero — staggered rise reveal. Each child uses a different
- * delay class so the label, numeral and address arrive a beat after each
- * other. Respects prefers-reduced-motion via the global override above
- * (animation-duration collapses to 0.01ms when the user has dialled motion
- * down). One choreographed moment per session, not scattered fidgets.    */
-@keyframes ontheclock-rise {
-  0%   { opacity: 0; transform: translateY(0.5rem); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.animate-rise         { animation: ontheclock-rise 420ms 0ms   cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-rise-delay-1 { animation: ontheclock-rise 420ms 80ms  cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-rise-delay-2 { animation: ontheclock-rise 420ms 160ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-rise-delay-3 { animation: ontheclock-rise 420ms 240ms cubic-bezier(0.16, 1, 0.3, 1) both; }
-
 /* Safe area for PWA on notched phones */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }

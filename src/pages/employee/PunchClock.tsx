@@ -148,91 +148,34 @@ export default function PunchClock() {
 
   return (
     <div className="max-w-md mx-auto space-y-6">
-      {/* ── PunchClock Hero ──────────────────────────────────────────────
-       *  The live clock IS the page — no card chrome, no shadow, no
-       *  centred tile. Editorial scale + tracked-tight typography so the
-       *  time numeral reads from across a job site. Address breaks into
-       *  two lines on the comma for impact. Staggered fade/rise on first
-       *  paint (respects prefers-reduced-motion via the global reset).
-       *  ──────────────────────────────────────────────────────────────── */}
-      <header className="text-ink pt-2 pb-4">
+      {/* Clock display — surface token so the background tracks the theme.
+          shadow-md retained as documented exception for the headline tile. */}
+      <div className="bg-surface p-6 text-center shadow-md border border-page text-ink">
         {isClockedIn ? (
           <>
-            <p className="font-clock text-micro text-muted animate-rise">
-              Clocked in at {format(new Date(activeEntry.clock_in), 'h:mm aaa')}
+            <p className="text-sm mb-1 text-ink">
+              <span className="text-muted font-medium">Clocked-In:</span>{' '}
+              <span className="font-clock tracking-wider">{format(new Date(activeEntry.clock_in), 'h:mm aaa')}</span>
             </p>
-            <p
-              className="font-clock font-bold tabular-nums leading-none mt-2 animate-rise-delay-1"
-              style={{ fontSize: 'clamp(4.5rem, 22vw, 11rem)', letterSpacing: '-0.04em' }}
-              aria-live="polite"
-              aria-label={`Clocked in for ${elapsed}`}
-            >
-              {elapsed || '00:00:00'}
+            <p className="text-7xl font-clock my-3 tracking-wider tabular-nums text-ink">{elapsed}</p>
+            <p className="text-sm text-muted">
+              {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
             </p>
-            <div className="mt-6 animate-rise-delay-2">
-              {(() => {
-                const full = (activeEntry.job_addresses as JobAddress)?.address ?? '—'
-                /* "18 Alfred St, Prahran VIC" → ["18 Alfred St", "Prahran VIC"]
-                   so the address reads in two editorial lines instead of one
-                   crammed row. Fallback to single line if no comma present. */
-                const parts = full.split(/,\s*/)
-                const [street, ...rest] = parts
-                const tail = rest.join(', ')
-                return (
-                  <>
-                    <p
-                      className="font-clock font-bold leading-[1.05]"
-                      style={{ fontSize: 'clamp(1.375rem, 6vw, 2.5rem)', letterSpacing: '-0.02em' }}
-                    >
-                      {street}
-                    </p>
-                    {tail && (
-                      <p
-                        className="font-clock font-bold leading-[1.05] text-muted"
-                        style={{ fontSize: 'clamp(1.375rem, 6vw, 2.5rem)', letterSpacing: '-0.02em' }}
-                      >
-                        {tail}
-                      </p>
-                    )}
-                  </>
-                )
-              })()}
-              {(activeEntry.stages as Stage)?.name && (
-                <p className="text-tag font-semibold uppercase text-muted mt-3" style={{ letterSpacing: '0.2em' }}>
-                  {(activeEntry.stages as Stage).name}
-                </p>
-              )}
-            </div>
+            {(activeEntry.stages as Stage)?.name && (
+              <p className="text-sm text-muted">{(activeEntry.stages as Stage).name}</p>
+            )}
           </>
         ) : (
           <>
-            <p className="font-clock text-micro text-muted animate-rise">
-              Ready to Clock-In
+            <p className="text-6xl font-clock text-ink tracking-wider tabular-nums">
+              {format(new Date(), 'h:mm aaa')}
             </p>
-            <p
-              className="font-clock font-bold tabular-nums leading-none mt-2 animate-rise-delay-1"
-              style={{ fontSize: 'clamp(4.5rem, 22vw, 11rem)', letterSpacing: '-0.04em' }}
-            >
-              {format(new Date(), 'h:mm')}
-              <span className="text-muted">{format(new Date(), ' aaa')}</span>
+            <p className="text-sm text-muted mt-2">
+              {format(new Date(), 'EEEE, d MMMM yyyy')}
             </p>
-            <div className="mt-6 animate-rise-delay-2">
-              <p
-                className="font-clock font-bold leading-[1.05]"
-                style={{ fontSize: 'clamp(1.375rem, 6vw, 2.5rem)', letterSpacing: '-0.02em' }}
-              >
-                {format(new Date(), 'EEEE')}
-              </p>
-              <p
-                className="font-clock font-bold leading-[1.05] text-muted"
-                style={{ fontSize: 'clamp(1.375rem, 6vw, 2.5rem)', letterSpacing: '-0.02em' }}
-              >
-                {format(new Date(), 'd MMMM yyyy')}
-              </p>
-            </div>
           </>
         )}
-      </header>
+      </div>
 
       {gpsWarning && (
         /* GPS warning — amber palette per the design system. Emoji removed
@@ -243,11 +186,9 @@ export default function PunchClock() {
         </div>
       )}
 
-      {/* Clock-in form — surface card. rounded/shadow utilities removed (they
-          collapse to 0/none via the global override and were misleading in
-          source). Sits below the hero so the time numeral leads the page. */}
+      {/* Clock-in form */}
       {!isClockedIn && (
-        <div className="bg-surface border border-page p-5 space-y-4 animate-rise-delay-3">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">
               Job Site *
