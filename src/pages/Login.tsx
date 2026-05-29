@@ -21,8 +21,9 @@ export default function Login() {
     navigate('/')
   }
 
+  // Wrapper has no bg — body's hatched page atmosphere shows through here.
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo already carries the brand name (alt + visual). Dropping the
             "Larkin Building Group" subtitle removes a redundant line. */}
