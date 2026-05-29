@@ -69,11 +69,14 @@ export default function Layout({ children }: { children: ReactNode }) {
             <NavLink
               key={item.to}
               to={item.to}
+              /* Active state used to lean only on bg-sky/10 (low-contrast on
+               * the light sidebar). Added a 2px sky left rail so the active
+               * item reads at a glance regardless of theme/brightness. */
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors border-l-2 ${
                   isActive
-                    ? 'bg-sky/10 text-sky'
-                    : 'text-muted hover:bg-page hover:text-ink'
+                    ? 'bg-sky/10 text-sky border-sky'
+                    : 'text-muted hover:bg-page hover:text-ink border-transparent'
                 }`
               }
             >
@@ -83,7 +86,14 @@ export default function Layout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="border-t border-page p-4">
-          <p className="text-xs text-muted truncate mb-2">{profile?.email ?? profile?.full_name}</p>
+          {/* Title attr surfaces the full email/name to sighted users on hover
+             and to assistive tech, so the silent truncate doesn't hide info. */}
+          <p
+            className="text-xs text-muted truncate mb-2"
+            title={profile?.email ?? profile?.full_name ?? undefined}
+          >
+            {profile?.email ?? profile?.full_name}
+          </p>
           <button
             onClick={handleSignOut}
             className="w-full border border-page px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
@@ -95,7 +105,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 md:ml-56 pb-20 md:pb-0">
-        <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page shadow-sm safe-top">
+        <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page safe-top">
           <div className="flex items-center gap-2">
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
             <span className="text-base font-bold text-sky">OnTheClock</span>
@@ -109,19 +119,24 @@ export default function Layout({ children }: { children: ReactNode }) {
             Sign Out
           </button>
         </header>
-        <div className="p-4 md:p-8 max-w-5xl mx-auto">
+        {/* p-3 on the smallest viewport (≤320px) gives 12px gutters so the
+            content doesn't crowd the screen edge; sm:p-4 / md:p-8 restores
+            the normal scale on regular phones and desktop. */}
+        <div className="p-3 sm:p-4 md:p-8 max-w-5xl mx-auto">
           {children}
         </div>
       </main>
 
-      {/* Bottom nav — mobile only */}
+      {/* Bottom nav — mobile only.
+       *  min-h-[56px] per Material bottom-nav guidance so each tap target
+       *  reads ≥48dp even after the safe-area inset eats into the height. */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-10 flex bg-surface border-t border-page shadow-lg safe-bottom">
         {nav.slice(0, 5).map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center justify-center py-2 text-[10px] font-medium transition-colors ${
+              `flex flex-1 flex-col items-center justify-center min-h-[56px] py-2 text-micro font-medium transition-colors ${
                 isActive ? 'text-sky' : 'text-muted'
               }`
             }

@@ -5,6 +5,7 @@ import autoTable from 'jspdf-autotable'
 import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import AdminNoteBanner from '../../components/AdminNoteBanner'
 
 /** Maps an entry_type to the label shown in the Notes column for leave rows */
 function leaveLabel(t: TimeEntry['entry_type']): string {
@@ -613,7 +614,7 @@ export default function MyTimesheets() {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
       <form onSubmit={saveEdit} className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="font-semibold">Edit Time Entry</p>
+          <h2 className="font-semibold">Edit Time Entry</h2>
           <button type="button" onClick={() => { setEditing(null); setErr('') }} className="text-muted hover:text-muted">✕</button>
         </div>
         <p className="text-xs text-muted">{fmtDate(editing.entry.clock_in)} · {(editing.entry.job_addresses as { address: string })?.address}</p>
@@ -659,7 +660,7 @@ export default function MyTimesheets() {
             rows={3}
             placeholder="Forgot to clock out at end of day…"
           />
-          <p className="text-[11px] text-muted mt-1">Required when changing clock-in/out times.</p>
+          <p className="text-tag text-muted mt-1">Required when changing clock-in/out times.</p>
         </div>
 
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
@@ -700,10 +701,10 @@ export default function MyTimesheets() {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
       <form onSubmit={submitManualEntry} className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="font-semibold">Add Manual Time Entry</p>
+          <h2 className="font-semibold">Add Manual Time Entry</h2>
           <button type="button" onClick={() => { setShowManualForm(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
         </div>
-        <p className="text-[11px] italic" style={{ color: '#FF2828' }}>
+        <p className="text-tag italic" style={{ color: '#FF2828' }}>
           This entry will be flagged "Added manually" on your timesheet for admin visibility.
         </p>
         <div>
@@ -820,7 +821,7 @@ export default function MyTimesheets() {
                           const isRedItalic = isAuto || isManual
                           return (
                             <p
-                              className={`text-[11px] mt-1 ${isRedItalic ? 'italic' : ''}`}
+                              className={`text-tag mt-1 ${isRedItalic ? 'italic' : ''}`}
                               style={{ color: isRedItalic ? '#FF2828' : '#000000' }}
                             >
                               {e.notes}
@@ -828,7 +829,7 @@ export default function MyTimesheets() {
                           )
                         })()}
                         {e.status === 'edited' && (
-                          <span className="inline-flex items-center text-[10px] uppercase font-semibold mt-1" style={{ color: '#1C9FDA' }}>Edited</span>
+                          <span className="inline-flex items-center text-micro uppercase font-semibold mt-1" style={{ color: '#1C9FDA' }}>Edited</span>
                         )}
                       </>
                     )}
@@ -913,9 +914,7 @@ export default function MyTimesheets() {
           </button>
 
           {selected.admin_notes && (
-            <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-700">
-              💬 Admin note: {selected.admin_notes}
-            </div>
+            <AdminNoteBanner className="mt-1">{selected.admin_notes}</AdminNoteBanner>
           )}
         </div>
       ) : (
@@ -964,7 +963,7 @@ export default function MyTimesheets() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
           <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="font-semibold">Export Timesheets</p>
+              <h2 className="font-semibold">Export Timesheets</h2>
               <button onClick={() => { setShowExport(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
             </div>
             <p className="text-xs text-muted">Select a date range for export.</p>

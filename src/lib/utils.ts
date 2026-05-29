@@ -163,16 +163,16 @@ export function fmtHours(h: number): string {
 const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky'
 
 export const btnPrimary =
-  `inline-flex items-center justify-center bg-[#D7E363] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50 disabled:cursor-not-allowed`
+  `inline-flex items-center justify-center bg-[#D7E363] px-5 py-3 text-sm font-semibold uppercase tracking-[0.04em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50 disabled:cursor-not-allowed`
 
 /* btnSecondary text flipped white → black: the previous #B4B3B3 + #FFFFFF
  * pair was ~2:1 (failing WCAG AA). Black on #B4B3B3 is ~9:1 — safe at any
  * brightness, including outdoor / job-site use.                            */
 export const btnSecondary =
-  `inline-flex items-center justify-center bg-[#B4B3B3] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
+  `inline-flex items-center justify-center bg-[#B4B3B3] px-5 py-3 text-sm font-semibold uppercase tracking-[0.04em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
 
 export const btnDanger =
-  `inline-flex items-center justify-center bg-[#666666] px-5 py-3 text-sm font-semibold uppercase tracking-[0.02em] text-white hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
+  `inline-flex items-center justify-center bg-[#666666] px-5 py-3 text-sm font-semibold uppercase tracking-[0.04em] text-white hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
 
 /** Brand button colour tokens — referenced by inline style on per-page
  *  buttons so the colour intent is explicit at the call site. */
@@ -188,9 +188,11 @@ export const BTN = {
   charcoalFg: '#FFFFFF',
 } as const
 
-/** Text inputs / selects / textareas — square, 2px border, sky focus,
- *  faint placeholder so an empty field doesn't read as data. */
+/** Text inputs / selects / textareas — square, 2px border, sky focus ring,
+ *  faint placeholder so an empty field doesn't read as data. Focus uses an
+ *  outline (not just border colour) so hue-only colour-blind users still see
+ *  a perceptible state change. */
 export const inputCls =
-  'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink placeholder:text-[#D9D9D9] focus:border-sky focus:outline-none'
+  'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink placeholder:text-[#D9D9D9] focus:border-sky focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-sky'
 
 export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'

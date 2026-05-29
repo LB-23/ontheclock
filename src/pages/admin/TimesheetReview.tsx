@@ -160,7 +160,7 @@ export default function TimesheetReview() {
                             const isRed = e.notes.includes('Auto-closed') || e.notes.includes('Added manually')
                             return (
                               <p
-                                className={`text-[11px] mt-1 ${isRed ? 'italic' : ''}`}
+                                className={`text-tag mt-1 ${isRed ? 'italic' : ''}`}
                                 style={{ color: isRed ? '#FF2828' : '#000000' }}
                               >
                                 {e.notes}
@@ -186,7 +186,7 @@ export default function TimesheetReview() {
                   {hasEdits && openEdits[e.id] && (
                     <div className="mt-3 space-y-2 border-t border-page pt-3">
                       {entryEdits.map(ed => (
-                        <div key={ed.id} className="rounded-lg bg-blue-50 p-2 text-[11px] text-blue-900">
+                        <div key={ed.id} className="rounded-lg bg-blue-50 p-2 text-tag text-blue-900">
                           <p className="font-semibold">{fmtEditTime(ed.edited_at)}</p>
                           {ed.field_changed !== 'clock_out' && ed.new_clock_in && (
                             <p>Clock-in: {fmtEditTime(ed.old_clock_in)} → {fmtEditTime(ed.new_clock_in)}</p>

@@ -22,15 +22,16 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#E8E8E8] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-page px-4">
       <div className="w-full max-w-sm">
+        {/* Logo already carries the brand name (alt + visual). Dropping the
+            "Larkin Building Group" subtitle removes a redundant line. */}
         <div className="text-center mb-8">
           <img src="/lb-full.svg" alt="Larkin Building Group" className="w-56 mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-ink">OnTheClock</h1>
-          <p className="text-sm text-muted mt-1">Larkin Building Group</p>
         </div>
 
-        <div className="bg-surface rounded-2xl shadow-sm border border-page p-6">
+        <div className="bg-surface border border-page p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={labelCls}>Email</label>
@@ -57,7 +58,7 @@ export default function Login() {
               />
             </div>
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 border border-red-200">{error}</p>
             )}
             <button type="submit" disabled={loading} className={`${btnPrimary} w-full h-12`}>
               {loading ? 'Signing in…' : 'Sign in'}

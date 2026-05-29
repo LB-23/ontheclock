@@ -95,7 +95,7 @@ export default function JobAddresses() {
 
       {/* Add new */}
       <form onSubmit={add} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
-        <p className="text-sm font-semibold text-ink">Add New Job Site</p>
+        <h2 className="text-sm font-semibold text-ink">Add New Job Site</h2>
         <div>
           <label className={labelCls}>Address</label>
           <input
@@ -118,7 +118,7 @@ export default function JobAddresses() {
         <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-ink">{missingCount} site{missingCount === 1 ? '' : 's'} missing GPS</p>
+              <h2 className="text-sm font-semibold text-ink">{missingCount} site{missingCount === 1 ? '' : 's'} missing GPS</h2>
               <p className="text-xs text-muted">These won't appear correctly in the Location Audit until geocoded.</p>
             </div>
             <button onClick={backfillMissing} disabled={backfillBusy} className={`${btnSecondary} h-10 shrink-0`}>
@@ -151,7 +151,7 @@ export default function JobAddresses() {
               <div className="min-w-0">
                 <p className="text-sm text-ink truncate">{a.address}</p>
                 {a.lat == null || a.lng == null ? (
-                  <p className="text-[11px] text-amber-600">⚠ No GPS — won't be audited</p>
+                  <p className="text-tag text-amber-600">⚠ No GPS — won't be audited</p>
                 ) : null}
               </div>
               <button onClick={() => toggle(a)} className="text-xs text-red-500 hover:underline shrink-0">
