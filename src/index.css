@@ -80,25 +80,8 @@
   }
 }
 
-/* ── Page atmosphere ──────────────────────────────────────────────────────
- * 1px sky-tinted hairlines on a 24px pitch, ⊿135° — a faint architectural-
- * drafting hatch over the neutral page. Reads as construction-adjacent
- * texture (think site-plan paper, hazard-tape rhythm) without competing
- * with foreground content. Cards (bg-surface #FAFAFA) sit opaque on top,
- * so the hatch only shows in the negative space between blocks.
- * 8% opacity is the threshold where the lines are just-detectable on
- * #E8E8E8 — present enough to feel the brand, faint enough that the eye
- * stops noticing them after a second.                                     */
 html, body {
   background-color: var(--page);
-  background-image: repeating-linear-gradient(
-    135deg,
-    transparent 0,
-    transparent 23px,
-    rgba(28, 159, 218, 0.08) 23px,
-    rgba(28, 159, 218, 0.08) 24px
-  );
-  background-attachment: fixed;  /* scroll doesn't ripple the hatch */
 }
 
 body {
