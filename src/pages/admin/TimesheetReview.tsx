@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase, type Timesheet, type TimeEntry, type Profile } from '../../lib/supabase'
 import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import { format } from 'date-fns'
+import Skeleton from '../../components/Skeleton'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 type EntryEdit = {
   id: string
@@ -26,6 +28,65 @@ export default function TimesheetReview() {
   const [filterStatus, setFilterStatus] = useState('submitted')
   const [adminNote, setAdminNote] = useState('')
   const [loading, setLoading] = useState(true)
+
+  // Admin entry-edit state — populated when the admin clicks "Edit" on a
+  // single time-entry row inside a submitted timesheet. Saving inserts an
+  // audit row into time_entry_edits and updates the time_entries row;
+  // recalculate_timesheet trigger picks it up.
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
+  const [editForm, setEditForm] = useState({ newClockIn: '', newClockOut: '', reason: '' })
+  const [editBusy, setEditBusy] = useState(false)
+  const [editErr,  setEditErr]  = useState('')
+  useEscapeKey(!!editingEntry, () => { setEditingEntry(null); setEditErr('') })
+
+  const openEntryEdit = (e: TimeEntry) => {
+    setEditingEntry(e)
+    setEditForm({
+      newClockIn:  e.clock_in  ? format(new Date(e.clock_in),  "yyyy-MM-dd'T'HH:mm") : '',
+      newClockOut: e.clock_out ? format(new Date(e.clock_out), "yyyy-MM-dd'T'HH:mm") : '',
+      reason: '',
+    })
+    setEditErr('')
+  }
+
+  const saveEntryEdit = async () => {
+    if (!editingEntry) return
+    if (!editForm.reason.trim()) { setEditErr('Reason is required for an admin edit.'); return }
+    setEditBusy(true); setEditErr('')
+    const newIn  = editForm.newClockIn  ? new Date(editForm.newClockIn).toISOString()  : null
+    const newOut = editForm.newClockOut ? new Date(editForm.newClockOut).toISOString() : null
+    const oldIn  = editingEntry.clock_in
+    const oldOut = editingEntry.clock_out
+    const inChanged  = newIn  !== oldIn
+    const outChanged = newOut !== oldOut
+    if (!inChanged && !outChanged) { setEditErr('No change to save.'); setEditBusy(false); return }
+
+    const field_changed: 'clock_in' | 'clock_out' | 'both' =
+      inChanged && outChanged ? 'both' : inChanged ? 'clock_in' : 'clock_out'
+
+    // Audit row first so the trail is preserved even if the update fails
+    const { data: userRes } = await supabase.auth.getUser()
+    await supabase.from('time_entry_edits').insert({
+      time_entry_id: editingEntry.id,
+      field_changed,
+      old_clock_in:  inChanged  ? oldIn  : null,
+      new_clock_in:  inChanged  ? newIn  : null,
+      old_clock_out: outChanged ? oldOut : null,
+      new_clock_out: outChanged ? newOut : null,
+      reason: editForm.reason.trim(),
+      edited_by: userRes.user?.id ?? null,
+    })
+
+    const { error } = await supabase.from('time_entries').update({
+      clock_in:  newIn,
+      clock_out: newOut,
+    }).eq('id', editingEntry.id)
+
+    setEditBusy(false)
+    if (error) { setEditErr(error.message); return }
+    setEditingEntry(null)
+    if (selected) openTimesheet(selected)  // refresh entries + edits map
+  }
 
   const load = async () => {
     // Compute today's Friday LBG-week-start in local time so we hide any
@@ -171,14 +232,26 @@ export default function TimesheetReview() {
                       )}
                     </div>
                     <div className="text-right ml-3">
-                      <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                      {e.is_overtime && <span className="text-xs text-orange-600">OT</span>}
+                      <p className="text-sm font-bold tabular-nums">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                      {e.is_overtime && <span className="text-xs text-orange-600">+HRS</span>}
                       {hasEdits && (
                         <button
                           onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}
                           className="block mt-1 text-xs text-blue-600 hover:underline"
                         >
                           ✎ {entryEdits.length} edit{entryEdits.length > 1 ? 's' : ''}
+                        </button>
+                      )}
+                      {/* Admin can edit clock_in/out on a submitted timesheet
+                          BEFORE approval. System entries (leave shadows,
+                          public holidays) are sourced from leave_requests, so
+                          editing them here would desync — disable. */}
+                      {selected.status === 'submitted' && !isSystem && (
+                        <button
+                          onClick={() => openEntryEdit(e)}
+                          className="block mt-1 text-xs text-sky hover:underline"
+                        >
+                          ✎ Edit
                         </button>
                       )}
                     </div>
@@ -205,9 +278,9 @@ export default function TimesheetReview() {
           </div>
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted">Overtime</span><span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
-            <div className="flex justify-between font-bold border-t pt-3"><span>Total</span><span>{fmtHours(selected.total_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold tabular-nums">{fmtHours(selected.regular_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Additional Hours</span><span className="font-semibold tabular-nums text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
+            <div className="flex justify-between font-bold border-t pt-3"><span>Total</span><span className="tabular-nums">{fmtHours(selected.total_hours ?? 0)}</span></div>
           </div>
 
           <div>
@@ -255,6 +328,53 @@ export default function TimesheetReview() {
           >
             Delete this timesheet
           </button>
+
+          {/* Admin entry-edit modal — opens when admin clicks ✎ Edit on a
+              time-entry row inside a submitted (not yet approved) timesheet. */}
+          {editingEntry && (
+            <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6"
+                 onClick={() => setEditingEntry(null)}>
+              <div className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-lg"
+                   onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-lg">Edit Time Entry</h2>
+                  <button type="button" onClick={() => setEditingEntry(null)} className="text-muted hover:text-ink">✕</button>
+                </div>
+                <p className="text-xs text-muted">
+                  Edits are audit-logged with the admin's name + reason. The timesheet totals recalculate automatically.
+                </p>
+
+                <div>
+                  <label className={labelCls}>Clock-in</label>
+                  <input type="datetime-local" value={editForm.newClockIn}
+                         onChange={e => setEditForm(f => ({ ...f, newClockIn: e.target.value }))}
+                         className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Clock-out</label>
+                  <input type="datetime-local" value={editForm.newClockOut}
+                         onChange={e => setEditForm(f => ({ ...f, newClockOut: e.target.value }))}
+                         className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Reason <span className="text-red-500">*</span></label>
+                  <textarea value={editForm.reason}
+                            onChange={e => setEditForm(f => ({ ...f, reason: e.target.value }))}
+                            className={`${inputCls} resize-none`} rows={2}
+                            placeholder="e.g. employee forgot to clock out, fixed retroactively" />
+                </div>
+
+                {editErr && <p className="text-sm text-red-600 bg-red-50 px-3 py-2">{editErr}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button onClick={saveEntryEdit} disabled={editBusy} className={`${btnPrimary} flex-1 h-11`}>
+                    {editBusy ? 'Saving…' : 'Save Edit'}
+                  </button>
+                  <button onClick={() => setEditingEntry(null)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -273,9 +393,12 @@ export default function TimesheetReview() {
             </select>
           </div>
 
-          {loading && <p className="text-center text-muted">Loading…</p>}
+          {loading && <Skeleton count={4} />}
           {!loading && timesheets.length === 0 && (
-            <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Timesheets Match This Filter.</p>
+            <div className="text-center py-10" style={{ color: '#D9D9D9' }}>
+              <p>No Timesheets Match This Filter.</p>
+              <p className="text-xs mt-1">Try a wider date range or a different status.</p>
+            </div>
           )}
 
           <div className="space-y-3">
@@ -297,7 +420,7 @@ export default function TimesheetReview() {
                     }
                   >{ts.status}</span>
                 </div>
-                <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>
             ))}
           </div>

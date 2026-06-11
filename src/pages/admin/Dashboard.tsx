@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, type TimeEntry, type Timesheet, type LeaveRequest } from '../../lib/supabase'
 import { fmtTime, fmtHours, fmtWeekRangeLong } from '../../lib/utils'
 import { format } from 'date-fns'
+import Skeleton from '../../components/Skeleton'
 
 export default function Dashboard() {
   const nav = useNavigate()
@@ -28,7 +29,7 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
+  if (loading) return <div className="space-y-6"><Skeleton count={4} /></div>
 
   // May 2026 design-system dashboard tile palette — light-to-deep sky ramp,
   // black text on every tile so values read crisply.
@@ -137,7 +138,7 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold">{(ts.profiles as { full_name: string })?.full_name}</p>
                   <p className="text-xs text-muted">Week of {fmtWeekRangeLong(ts.week_start)}</p>
                 </div>
-                <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>
             ))}
           </div>

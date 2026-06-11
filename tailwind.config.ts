@@ -42,13 +42,14 @@ export default {
         },
       },
       fontFamily: {
-        // One typeface, one stack. Familjen Grotesk for everything — body,
-        // headings, clock/widget face — with Calibri as the OS-native fallback
-        // (Windows + Office), then system-ui. Helvetica/Arial intentionally
-        // removed per design system.
-        sans:    ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
-        grotesk: ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
-        clock:   ['"Familjen Grotesk"', 'Calibri', 'system-ui', 'sans-serif'],
+        // Two faces, each with its own role:
+        //   Calps Sans      — body, headings, all lettering
+        //   Cerebri Sans Pro — numerals only (.font-clock + clock family)
+        // Calibri is the OS-native fallback (Windows + Office), then
+        // system-ui. Helvetica/Arial intentionally absent.
+        sans:    ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        grotesk: ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        clock:   ['"Cerebri Sans Pro"', '"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
       },
       // Off-scale size tokens — adds 10 / 11 / 13 px slots so call-sites stop
       // reaching for inline arbitrary values like text-[10px]. Tailwind's stock

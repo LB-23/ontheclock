@@ -3,6 +3,7 @@ import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { fmtDate, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 const leaveLabels: Record<LeaveType, string> = {
   annual:       'Annual Leave',
@@ -46,6 +47,9 @@ export default function LeaveAndTIL() {
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawReason, setWithdrawReason] = useState('')
   const [err, setErr] = useState('')
+
+  // Esc closes the detail dialog (and clears the inline withdraw form state)
+  useEscapeKey(!!openReq, () => { setOpenReq(null); setWithdrawReason(''); setErr('') })
 
   const reload = () => {
     if (!profile) return
@@ -201,7 +205,7 @@ export default function LeaveAndTIL() {
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between"><dt className="text-muted">Start</dt><dd>{fmtDate(openReq.start_date)}{openReq.start_time ? ` · ${openReq.start_time.slice(0, 5)}` : ''}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">End</dt><dd>{fmtDate(openReq.end_date)}{openReq.end_time ? ` · ${openReq.end_time.slice(0, 5)}` : ''}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted">Total Hours</dt><dd className="font-bold">{fmtHours(openReq.total_hours ?? 0)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Total Hours</dt><dd className="font-bold tabular-nums">{fmtHours(openReq.total_hours ?? 0)}</dd></div>
           {openReq.reason && (
             <div><dt className="text-muted">Reason</dt><dd className="mt-0.5">{openReq.reason}</dd></div>
           )}
@@ -374,7 +378,12 @@ export default function LeaveAndTIL() {
           request form is open so the form gets full attention. */}
       {!showForm && (
       <div className="space-y-3">
-        {requests.length === 0 && <p className="text-center py-8" style={{ color: '#D9D9D9' }}>No Leave Requests Yet</p>}
+        {requests.length === 0 && (
+          <div className="text-center py-8" style={{ color: '#D9D9D9' }}>
+            <p>No Leave Requests Yet</p>
+            <p className="text-xs mt-1">Request leave when you need time off.</p>
+          </div>
+        )}
         {requests.map(r => (
           <button key={r.id} onClick={() => { setOpenReq(r); setErr('') }}
                   className="w-full text-left bg-surface rounded-2xl border border-page shadow-sm px-5 py-4 hover:border-sky/40 transition-colors">

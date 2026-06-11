@@ -4,18 +4,28 @@ import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, label
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 const leaveLabels: Record<string, string> = {
   annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
 }
 
-/** Stable per-employee calendar colour drawn from the brand-approved palette. */
-const EMP_COLOURS = ['#FFEACD', '#F0F9CC', '#CEF0F2', '#E7D0ED', '#F8CDE9'] as const
-function empColour(uuid: string): string {
-  // Simple deterministic hash of the UUID -> palette index
-  let h = 0
-  for (let i = 0; i < uuid.length; i++) h = (h * 31 + uuid.charCodeAt(i)) >>> 0
-  return EMP_COLOURS[h % EMP_COLOURS.length]
+/** Calendar entries are coloured by leave TYPE (not employee) so the kind of
+ *  leave is the at-a-glance signal. Matches the brand-approved swatch. */
+const LEAVE_TYPE_COLOURS: Record<string, string> = {
+  annual:       '#D7B8F4', // soft lavender
+  personal:     '#FFBFEB', // soft pink
+  time_in_lieu: '#FFD7A8', // soft peach
+  unpaid:       '#FFF89F', // soft cream
+}
+const LEAVE_TYPE_LABELS: Record<string, string> = {
+  annual:       'Annual Leave',
+  personal:     'Personal / Sick Leave',
+  time_in_lieu: 'Time In Lieu',
+  unpaid:       'Unpaid Leave',
+}
+function leaveTypeColour(t: string): string {
+  return LEAVE_TYPE_COLOURS[t] ?? '#E8E8E8'
 }
 
 export default function LeaveManagement() {
@@ -58,6 +68,10 @@ export default function LeaveManagement() {
   })
   const [addBusy, setAddBusy] = useState(false)
   const [addErr,  setAddErr]  = useState('')
+
+  // Esc closes whichever modal is currently open
+  useEscapeKey(!!openReq,      () => setOpenReq(null))
+  useEscapeKey(showAddLeave,   () => setShowAddLeave(false))
 
   const openAddLeave = () => {
     setAddForm({ employee_id: '', leave_type: 'annual', start_date: '', start_time: '07:00', end_date: '', end_time: '15:00', reason: '' })
@@ -176,7 +190,9 @@ export default function LeaveManagement() {
 
   const load = async () => {
     const [{ data: pending }, { data: appr }, { data: all }, { data: emps }, { data: everyone }] = await Promise.all([
-      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('start_date'),
+      // Pending pulls extra balance fields so admin can see what the employee
+      // has left when deciding whether to approve a request.
+      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name, annual_leave_balance, personal_leave_balance, accrued_til_hours)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false }),
       // Balances tab — employees only
@@ -289,15 +305,40 @@ export default function LeaveManagement() {
 
       {tab === 'pending' && (
         <div className="space-y-4">
-          {requests.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Pending Requests</p>}
-          {requests.map(r => (
+          {requests.length === 0 && (
+            <div className="text-center py-10" style={{ color: '#D9D9D9' }}>
+              <p>No Pending Requests</p>
+              <p className="text-xs mt-1">All caught up.</p>
+            </div>
+          )}
+          {requests.map(r => {
+            // Look up the matching balance for the leave type being requested
+            // so the admin can see what's available without leaving the row.
+            // Unpaid leave doesn't deduct from a balance — show '—' instead.
+            const prof = r.profiles as Profile | undefined
+            const balanceFor = (t: string): number | null =>
+                t === 'annual'       ? Number(prof?.annual_leave_balance   ?? 0)
+              : t === 'personal'     ? Number(prof?.personal_leave_balance ?? 0)
+              : t === 'time_in_lieu' ? Number(prof?.accrued_til_hours      ?? 0)
+              : null
+            const avail = balanceFor(r.leave_type)
+            const reqHrs = Number(r.total_hours ?? 0)
+            const wouldOverdraw = avail !== null && reqHrs > avail
+            return (
             <div key={r.id} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3 hover:border-sky/40 transition-colors">
               <button type="button" onClick={() => openEdit(r)} className="w-full text-left normal-case">
                 <div className="flex justify-between">
                   <div>
-                    <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
+                    <p className="font-semibold">{prof?.full_name}</p>
                     <p className="text-sm text-muted">
-                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
+                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(reqHrs)})
+                    </p>
+                    {/* Available-balance line — red when the request would
+                        overdraw the bank so admin sees the conflict at a glance. */}
+                    <p className="text-xs mt-1" style={{ color: wouldOverdraw ? '#9C0F0F' : '#666666' }}>
+                      {avail === null
+                        ? 'Unpaid leave — no balance deduction'
+                        : <>Available: <span className="font-semibold tabular-nums">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                   </div>
@@ -327,13 +368,19 @@ export default function LeaveManagement() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {tab === 'approved' && (
         <div className="space-y-3">
-          {approved.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Approved Leave</p>}
+          {approved.length === 0 && (
+            <div className="text-center py-10" style={{ color: '#D9D9D9' }}>
+              <p>No Approved Leave</p>
+              <p className="text-xs mt-1">Nothing scheduled yet.</p>
+            </div>
+          )}
           {approved.map(r => (
             <button key={r.id} onClick={() => openEdit(r)}
                     className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
@@ -354,7 +401,12 @@ export default function LeaveManagement() {
 
       {tab === 'all' && (
         <div className="space-y-3">
-          {allRequests.length === 0 && <p className="text-center py-10" style={{ color: '#D9D9D9' }}>No Leave Requests Yet</p>}
+          {allRequests.length === 0 && (
+            <div className="text-center py-10" style={{ color: '#D9D9D9' }}>
+              <p>No Leave Requests Yet</p>
+              <p className="text-xs mt-1">Approved and pending requests will appear here.</p>
+            </div>
+          )}
           {allRequests.map(r => {
             const status = r.status
             // Status palette — every fg darkened to clear WCAG AA 4.5:1
@@ -563,17 +615,21 @@ export default function LeaveManagement() {
                     </div>
                   )}
                   {leaves.map(l => {
+                    // Calendar block: bg colour = leave TYPE, label = "FirstName L"
+                    // (first name + last initial). Hover tooltip surfaces the
+                    // full employee name + the leave-type label for context.
                     const fullName = (l.profiles as Profile)?.full_name ?? ''
                     const parts = fullName.trim().split(/\s+/)
                     const display = parts.length >= 2
                       ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}`
                       : parts[0] ?? ''
+                    const typeLabel = LEAVE_TYPE_LABELS[l.leave_type] ?? l.leave_type
                     return (
                       <div
                         key={l.id}
                         className="text-micro leading-tight rounded px-0.5 mt-0.5 truncate text-ink"
-                        style={{ backgroundColor: empColour(l.employee_id) }}
-                        title={fullName}
+                        style={{ backgroundColor: leaveTypeColour(l.leave_type) }}
+                        title={`${fullName} — ${typeLabel}`}
                       >
                         {display}
                       </div>
@@ -584,25 +640,22 @@ export default function LeaveManagement() {
               })
             })()}
           </div>
-          {/* Legend */}
-          {approved.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
-              <span className="text-tag rounded-full px-2 py-0.5 font-semibold"
-                    style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
-                P/H — VIC Public Holiday
+          {/* Legend — one chip per leave type used in this view, plus a P/H
+              chip for VIC public holidays. Always visible (not gated on
+              approved.length) so admins know what each colour means even on
+              an empty month. */}
+          <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
+            <span className="text-tag rounded-full px-2 py-0.5 font-semibold"
+                  style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
+              P/H — VIC Public Holiday
+            </span>
+            {(['annual', 'personal', 'time_in_lieu', 'unpaid'] as const).map(t => (
+              <span key={t} className="text-tag rounded-full px-2 py-0.5 text-ink"
+                    style={{ backgroundColor: leaveTypeColour(t) }}>
+                {LEAVE_TYPE_LABELS[t]}
               </span>
-              {Array.from(new Map(approved.map(l => [l.employee_id, (l.profiles as Profile)?.full_name ?? ''])).entries()).map(([eid, fullName]) => {
-                const parts = fullName.trim().split(/\s+/)
-                const display = parts.length >= 2 ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}` : parts[0] ?? ''
-                return (
-                  <span key={eid} className="text-tag rounded-full px-2 py-0.5 text-ink"
-                        style={{ backgroundColor: empColour(eid) }}>
-                    {display}
-                  </span>
-                )
-              })}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 

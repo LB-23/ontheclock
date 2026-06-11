@@ -21,6 +21,10 @@ const adminNav: NavItem[] = [
   { to: '/audit',        label: 'Audit',      icon: 'audit' },
   { to: '/job-addresses',label: 'Sites',      icon: 'sites' },
   { to: '/stages',       label: 'Stages',     icon: 'stages' },
+  // Admin self-service: mobile number + push notification opt-in. Same
+  // EmployeeProfile component is re-used at /profile for admins (route in
+  // App.tsx). Sidebar-only — bottom nav still caps at the 5 most-used.
+  { to: '/profile',      label: 'Profile',    icon: 'profile' },
 ]
 
 /** Renders the brand SVG icons with CSS mask so they inherit currentColor for tinting. */

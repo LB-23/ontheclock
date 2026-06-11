@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase, type Profile, type WeeklyHours, type AppRole } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
+import Skeleton from '../../components/Skeleton'
 
 type FormState = {
   full_name: string
@@ -53,6 +55,9 @@ export default function Employees() {
 
   // For viewing an individual employee profile
   const [viewing, setViewing] = useState<Profile | null>(null)
+
+  // Esc dismisses the profile detail dialog
+  useEscapeKey(!!viewing, () => setViewing(null))
 
   const load = async () => {
     // admin_list_employees RPC joins auth.users.email so the admin always
@@ -182,9 +187,9 @@ export default function Employees() {
           {viewing.app_role !== 'admin' && (
             <>
               <div className="flex justify-between"><dt className="text-muted">Required Hours P/W</dt><dd className="text-ink">{viewing.weekly_hours_category}h</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
               <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
             </>
@@ -346,7 +351,7 @@ export default function Employees() {
         </form>
       )}
 
-      {loading && <p className="text-center text-muted">Loading…</p>}
+      {loading && <Skeleton count={5} />}
 
       {/* Hide the team list while a profile dialog is open */}
       {!viewing && (() => {

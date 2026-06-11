@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { supabase, type Profile } from '../../lib/supabase'
 import { exportXLSX, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import Skeleton from '../../components/Skeleton'
 
 type AuditFlag = 'ok' | 'no_clock_in_gps' | 'no_clock_out_gps' | 'site_not_geocoded' | 'clock_in_far' | 'clock_out_far'
 
@@ -175,7 +176,7 @@ export default function AuditReport() {
 
       {/* Results table */}
       {loading ? (
-        <p className="text-center text-muted py-10">Loading…</p>
+        <Skeleton count={5} />
       ) : rows.length === 0 ? (
         <div className="bg-surface rounded-2xl border border-page shadow-sm p-10 text-center text-muted">
           🎉 No flagged entries in this range. Everyone clocked on/off where they should.

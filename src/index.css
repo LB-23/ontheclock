@@ -2,49 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Familjen Grotesk — self-hosted ───────────────────────────────────────
- * TTFs live under /public/fonts/. font-display: swap so first paint uses
- * the OS fallback (Calibri/system-ui) while the brand face loads, then
- * swaps in without a layout reflow.                                       */
+/* ── Brand typography — self-hosted ───────────────────────────────────────
+ *  Two faces, each with its own role:
+ *
+ *    Calps Sans     — body, headings, all lettering. Humanist sans with
+ *                     soft terminals; warm, on-brand voice.
+ *    Cerebri Sans Pro — numerals only (.font-clock). Tabular, geometric,
+ *                     reads tightly at large sizes for clock + count displays.
+ *
+ *  font-display: swap so first paint uses the OS fallback while the brand
+ *  files load, then swaps in without a layout reflow.                       */
+
+/* Calps Sans — lettering */
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-Regular.ttf') format('truetype');
+  font-family: 'Calps Sans';
+  src: url('/fonts/fonnts.com-calpssans-semilight.otf') format('opentype');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Calps Sans';
+  src: url('/fonts/fonnts.com-calpssans-regular.otf') format('opentype');
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-Italic.ttf') format('truetype');
+  font-family: 'Calps Sans';
+  src: url('/fonts/fonnts.com-calpssans-italic.otf') format('opentype');
   font-weight: 400; font-style: italic; font-display: swap;
 }
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-Medium.ttf') format('truetype');
+  font-family: 'Calps Sans';
+  src: url('/fonts/fonnts.com-calpssans-medium.otf') format('opentype');
   font-weight: 500; font-style: normal; font-display: swap;
 }
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-MediumItalic.ttf') format('truetype');
-  font-weight: 500; font-style: italic; font-display: swap;
+  font-family: 'Calps Sans';
+  src: url('/fonts/fonnts.com-calpssans-bold.otf') format('opentype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* Cerebri Sans Pro — numerals (.font-clock) */
+@font-face {
+  font-family: 'Cerebri Sans Pro';
+  src: url('/fonts/CerebriSansPro-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-SemiBold.ttf') format('truetype');
+  font-family: 'Cerebri Sans Pro';
+  src: url('/fonts/CerebriSansPro-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cerebri Sans Pro';
+  src: url('/fonts/CerebriSansPro-SemiBold.ttf') format('truetype');
   font-weight: 600; font-style: normal; font-display: swap;
 }
 @font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-SemiBoldItalic.ttf') format('truetype');
-  font-weight: 600; font-style: italic; font-display: swap;
-}
-@font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-Bold.ttf') format('truetype');
+  font-family: 'Cerebri Sans Pro';
+  src: url('/fonts/CerebriSansPro-Bold.ttf') format('truetype');
   font-weight: 700; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Familjen Grotesk';
-  src: url('/fonts/FamiljenGrotesk-BoldItalic.ttf') format('truetype');
-  font-weight: 700; font-style: italic; font-display: swap;
 }
 
 :root {
@@ -86,26 +101,42 @@ html, body {
 
 body {
   color: var(--ink);
-  /* Brand body face is Familjen Grotesk; Calibri is the OS-native fallback
-     (Windows + Office), then system-ui for everything else. Helvetica/Arial
-     intentionally removed per design system. */
-  font-family: 'Familjen Grotesk', Calibri, system-ui, sans-serif;
+  /* Lettering face — Calps Sans. Calibri is the OS-native fallback
+     (Windows + Office), then system-ui. */
+  font-family: 'Calps Sans', Calibri, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "ss01" on, "cv11" on;
 }
 
-/* Brand headings + widget typography — Familjen Grotesk Semi Bold (weight 600).
- * Single typeface across the whole app; this class is reserved for headings,
- * widget values, stat tiles and similar punchier copy. ALL CAPS by default.
- * Declared inside @layer components so Tailwind utilities like `normal-case`
- * can override the text-transform on a case-by-case basis. */
+/* Numeral / widget typography — Cerebri Sans Pro Semi Bold (weight 600).
+ * Reserved for clock displays, stat-tile values, hour totals, and any
+ * other "punchy number" surface. ALL CAPS by default. Declared inside
+ * @layer components so Tailwind utilities like `normal-case` and
+ * `tabular-nums` still win on individual call-sites. */
 @layer components {
   .font-clock {
-    font-family: 'Familjen Grotesk', Calibri, system-ui, sans-serif;
+    font-family: 'Cerebri Sans Pro', 'Calps Sans', Calibri, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
   }
+}
+
+/* Skeleton shimmer — used by <Skeleton /> placeholder rows while lists
+ * load. Two-stop gradient that sweeps left→right. Global motion preference
+ * is already honoured via the prefers-reduced-motion reset above. */
+@keyframes skeleton-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+    var(--page) 0%,
+    rgba(232, 232, 232, 0.4) 50%,
+    var(--page) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
 }
 
 /* Safe area for PWA on notched phones */
