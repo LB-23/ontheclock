@@ -6,6 +6,8 @@ import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../..
 import { useProfile } from '../../hooks/useProfile'
 import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
+import Skeleton from '../../components/Skeleton'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 /** Maps an entry_type to the label shown in the Notes column for leave rows */
 function leaveLabel(t: TimeEntry['entry_type']): string {
@@ -45,8 +47,15 @@ export default function MyTimesheets() {
   const [expTo,   setExpTo]   = useState('')
   const [exporting, setExporting] = useState(false)
 
+  // Esc closes whichever of the three transient surfaces is open. The
+  // manual-form hook is added below the state declaration so the reference
+  // resolves; React still runs them all in order.
+  useEscapeKey(!!editing,       () => setEditing(null))
+  useEscapeKey(showExport,      () => { setShowExport(false); setErr('') })
+
   // Manual entry form
   const [showManualForm, setShowManualForm] = useState(false)
+  useEscapeKey(showManualForm,  () => setShowManualForm(false))
   const [manualSaving, setManualSaving] = useState(false)
   const [manual, setManual] = useState({
     date: '',
@@ -170,25 +179,25 @@ export default function MyTimesheets() {
 
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
 
-    // Self-hosted Familjen Grotesk TTFs live under /public/fonts/. Same-origin
-    // fetch — no CDN dependency, no CORS, works offline once the SW has cached
-    // the assets. Registers regular + semibold + italic for jsPDF's slots.
+    // Self-hosted Cerebri Sans Pro TTFs live under /public/fonts/. Cerebri is
+    // the brand numerals face — reads cleanly for table text too and ships
+    // as TTF (jsPDF doesn't accept OTF, so we don't try Calps Sans here).
+    // Italic slot: Cerebri's Bold Italic stand-in is fine for the few
+    // italic notes used by the auto-closed/added-manually flag.
     let bodyFont = 'helvetica'
-    const [fgReg, fgBold, fgIt] = await Promise.all([
-      fetchTtfBase64('/fonts/FamiljenGrotesk-Regular.ttf'),
-      fetchTtfBase64('/fonts/FamiljenGrotesk-SemiBold.ttf'),
-      fetchTtfBase64('/fonts/FamiljenGrotesk-Italic.ttf'),
+    const [cReg, cBold] = await Promise.all([
+      fetchTtfBase64('/fonts/CerebriSansPro-Regular.ttf'),
+      fetchTtfBase64('/fonts/CerebriSansPro-SemiBold.ttf'),
     ])
-    if (fgReg && fgBold) {
-      pdf.addFileToVFS('FamiljenGrotesk-Regular.ttf', fgReg)
-      pdf.addFont('FamiljenGrotesk-Regular.ttf', 'FamiljenGrotesk', 'normal')
-      pdf.addFileToVFS('FamiljenGrotesk-SemiBold.ttf', fgBold)
-      pdf.addFont('FamiljenGrotesk-SemiBold.ttf', 'FamiljenGrotesk', 'bold')
-      if (fgIt) {
-        pdf.addFileToVFS('FamiljenGrotesk-Italic.ttf', fgIt)
-        pdf.addFont('FamiljenGrotesk-Italic.ttf', 'FamiljenGrotesk', 'italic')
-      }
-      bodyFont = 'FamiljenGrotesk'
+    if (cReg && cBold) {
+      pdf.addFileToVFS('CerebriSansPro-Regular.ttf', cReg)
+      pdf.addFont('CerebriSansPro-Regular.ttf', 'Cerebri', 'normal')
+      pdf.addFileToVFS('CerebriSansPro-SemiBold.ttf', cBold)
+      pdf.addFont('CerebriSansPro-SemiBold.ttf', 'Cerebri', 'bold')
+      // Italic falls back to the regular weight at the same name — jsPDF
+      // matches font name + style and degrades gracefully when style is missing
+      pdf.addFont('CerebriSansPro-Regular.ttf', 'Cerebri', 'italic')
+      bodyFont = 'Cerebri'
     }
 
     // Greys per user spec
@@ -319,7 +328,7 @@ export default function MyTimesheets() {
       }
 
       drawSummaryRow(finalY,             'Regular',     reg.h, reg.m, SUM_1, false)
-      drawSummaryRow(finalY + ROW_H,     'Overtime',    ot.h,  ot.m,  SUM_2, false)
+      drawSummaryRow(finalY + ROW_H,     'Additional',  ot.h,  ot.m,  SUM_2, false)
       drawSummaryRow(finalY + ROW_H * 2, 'Total Hours', tot.h, tot.m, SUM_3, true)
 
       // Keep linter happy
@@ -366,7 +375,7 @@ export default function MyTimesheets() {
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Familjen Grotesk', size: 9, bold: true, color: { argb: 'FF000000' } }
+      c.font = { name: 'Cerebri Sans Pro', size: 9, bold: true, color: { argb: 'FF000000' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
@@ -380,12 +389,12 @@ export default function MyTimesheets() {
         const r = ws.addRow(row)
         const colour = opts.isLeave ? 'FF1C8DBF' : 'FF000000'
         r.eachCell((c, colNumber) => {
-          c.font = { name: 'Familjen Grotesk', size: 9, color: { argb: colour } }
+          c.font = { name: 'Cerebri Sans Pro', size: 9, color: { argb: colour } }
           c.alignment = { vertical: 'middle', horizontal: 'left' }
           // Notes column auto-flag: Auto-closed / Added manually -> red italic
           const colKey = (ws.columns[colNumber - 1] as { key?: string }).key
           if (colKey === 'notes' && opts.flaggedCol === 'notes') {
-            c.font = { name: 'Familjen Grotesk', size: 9, italic: true, color: { argb: 'FFFF2828' } }
+            c.font = { name: 'Cerebri Sans Pro', size: 9, italic: true, color: { argb: 'FFFF2828' } }
           }
         })
       }
@@ -433,13 +442,13 @@ export default function MyTimesheets() {
       const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
         const hoursStr = `${h}h ${m}m`
         const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
-        r.getCell('out').font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').font = { name: 'Cerebri Sans Pro', size: 9, bold, color: { argb: 'FFFFFFFF' } }
         r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
-        r.getCell('hours').font = { name: 'Familjen Grotesk', size: 9, bold, color: { argb: 'FF000000' } }
+        r.getCell('hours').font = { name: 'Cerebri Sans Pro', size: 9, bold, color: { argb: 'FF000000' } }
       }
       addSummary('Regular',     reg.h, reg.m, 'FF7F7F7F', false)
-      addSummary('Overtime',    ot.h,  ot.m,  'FF595959', false)
+      addSummary('Additional', ot.h,  ot.m,  'FF595959', false)
       addSummary('Total Hours', tot.h, tot.m, 'FF404040', true)
       ws.addRow({})  // blank separator
     })
@@ -607,7 +616,7 @@ export default function MyTimesheets() {
     return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }   // draft (default)
   }
 
-  if (loading) return <div className="text-center py-16 text-muted">Loading…</div>
+  if (loading) return <div className="space-y-6"><h1 className="text-2xl font-bold text-ink">My Timesheets</h1><Skeleton count={4} /></div>
 
   // Edit dialog
   const editDialog = editing && (
@@ -836,7 +845,7 @@ export default function MyTimesheets() {
                   </div>
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                    {e.is_overtime && !isSystem && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>OT</span>}
+                    {e.is_overtime && !isSystem && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>+HRS</span>}
                     {selected.status === 'draft' && !isSystem && (
                       <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
                         Edit
@@ -851,15 +860,15 @@ export default function MyTimesheets() {
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted">Regular Hours</span>
-              <span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span>
+              <span className="font-semibold tabular-nums">{fmtHours(selected.regular_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between text-sm mb-4">
-              <span className="text-muted">Overtime Hours</span>
-              <span className="font-semibold" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
+              <span className="text-muted">Additional Hours</span>
+              <span className="font-semibold tabular-nums" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
               <span>Total</span>
-              <span>{fmtHours(selected.total_hours ?? 0)}</span>
+              <span className="tabular-nums">{fmtHours(selected.total_hours ?? 0)}</span>
             </div>
           </div>
 
@@ -950,7 +959,7 @@ export default function MyTimesheets() {
                   <span className={badgeCls} style={statusStyle(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>
+                  <p className="text-sm font-bold text-ink tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>

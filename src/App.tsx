@@ -46,6 +46,9 @@ function AppRoutes() {
             <Route path="/leave" element={<LeaveManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/audit" element={<AuditReport />} />
+            {/* Admins use the same Profile page as employees — they can
+                set their mobile number and enable push notifications too. */}
+            <Route path="/profile" element={<EmployeeProfile />} />
           </>
         ) : (
           <>

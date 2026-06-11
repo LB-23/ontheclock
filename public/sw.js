@@ -1,12 +1,16 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v16'
+const CACHE = 'ontheclock-v17'
 const SHELL = [
   '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
-  // Brand typeface — self-hosted, precached so first paint after install has
-  // the real font (no FOUT through Calibri fallback)
-  '/fonts/FamiljenGrotesk-Regular.ttf',
-  '/fonts/FamiljenGrotesk-SemiBold.ttf',
-  '/fonts/FamiljenGrotesk-Bold.ttf',
+  // Brand typography — self-hosted, precached so first paint after install
+  // has the real fonts (no FOUT through Calibri fallback).
+  //   Calps Sans for lettering · Cerebri Sans Pro for numerals
+  '/fonts/fonnts.com-calpssans-regular.otf',
+  '/fonts/fonnts.com-calpssans-medium.otf',
+  '/fonts/fonnts.com-calpssans-bold.otf',
+  '/fonts/CerebriSansPro-Regular.ttf',
+  '/fonts/CerebriSansPro-SemiBold.ttf',
+  '/fonts/CerebriSansPro-Bold.ttf',
 ]
 
 self.addEventListener('install', e => {

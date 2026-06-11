@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { supabase, type JobAddress, type Stage, type TimeEntry } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { getGPS, getWeekStart, calcHours, btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 export default function PunchClock() {
   const { profile } = useProfile()
@@ -19,6 +20,9 @@ export default function PunchClock() {
   const [outNotes, setOutNotes] = useState('')
   const [outErr, setOutErr] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Esc closes the clock-out notes dialog
+  useEscapeKey(showOutDialog, () => setShowOutDialog(false))
 
   // Load job addresses + stages
   useEffect(() => {
@@ -244,12 +248,12 @@ export default function PunchClock() {
           <form onSubmit={handleClockOut}
                 className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
             <div>
-              <h2 className="font-semibold text-ink">Add notes for this shift</h2>
+              <h2 className="font-semibold text-ink">Description of works</h2>
               <p className="text-xs text-muted mt-0.5">Required — describe the work you completed today.</p>
             </div>
 
             <div>
-              <label className={labelCls}>Shift notes <span className="text-red-500">*</span></label>
+              <label className={labelCls}>Description of works <span className="text-red-500">*</span></label>
               <textarea
                 value={outNotes}
                 onChange={e => setOutNotes(e.target.value)}

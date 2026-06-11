@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, type JobAddress } from '../../lib/supabase'
 import { btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { geocodeAddress } from '../../lib/geocode'
+import Skeleton from '../../components/Skeleton'
 
 /** JobAddress + the lat/lng/geocoded_at columns the audit view depends on. */
 type JobAddressGeo = JobAddress & {
@@ -138,7 +139,7 @@ export default function JobAddresses() {
         placeholder="Search addresses…"
       />
 
-      {loading && <p className="text-center text-muted">Loading…</p>}
+      {loading && <Skeleton count={6} />}
 
       {/* Active */}
       <div className="bg-surface rounded-2xl border border-page shadow-sm">
