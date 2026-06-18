@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex md:w-56 md:flex-col md:fixed md:inset-y-0 bg-surface border-r border-page shadow-sm">
         <div className="flex h-16 items-center gap-2 px-6 border-b border-page">
           <img src="/lb-icon.svg" alt="LB" className="w-7 h-7" />
-          <span className="text-base font-condensed font-bold text-sky">OnTheClock</span>
+          <span className="text-[15px] font-condensed font-bold text-sky">OnTheClock</span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {nav.map(item => (
@@ -77,7 +77,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                * the light sidebar). Added a 2px sky left rail so the active
                * item reads at a glance regardless of theme/brightness. */
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors border-l-2 ${
+                `flex items-center gap-3 px-3 py-2.5 text-[13px] font-clock transition-colors border-l-2 ${
                   isActive
                     ? 'bg-sky/10 text-sky border-sky'
                     : 'text-muted hover:bg-page hover:text-ink border-transparent'
@@ -93,14 +93,15 @@ export default function Layout({ children }: { children: ReactNode }) {
           {/* Title attr surfaces the full email/name to sighted users on hover
              and to assistive tech, so the silent truncate doesn't hide info. */}
           <p
-            className="text-xs text-muted truncate mb-2"
+            className="text-tag font-medium text-muted truncate mb-2"
+            style={{ fontFamily: "'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif" }}
             title={profile?.email ?? profile?.full_name ?? undefined}
           >
             {profile?.email ?? profile?.full_name}
           </p>
           <button
             onClick={handleSignOut}
-            className="w-full border border-page px-3 py-2 text-sm font-forma text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+            className="w-[90px] border border-[#3A3A3A] px-3 py-2 text-[9px] font-semibold font-forma uppercase tracking-[0.04em] text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
           >
             Sign Out
           </button>
@@ -112,13 +113,13 @@ export default function Layout({ children }: { children: ReactNode }) {
         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page safe-top">
           <div className="flex items-center gap-2">
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
-            <span className="text-base font-condensed font-bold text-sky">OnTheClock</span>
+            <span className="text-[15px] font-condensed font-bold text-sky">OnTheClock</span>
           </div>
           {/* Real tap-target — was a 12px text link, well below 44pt minimum */}
           <button
             type="button"
             onClick={handleSignOut}
-            className="inline-flex items-center justify-center min-h-11 px-3 py-2 text-sm font-semibold font-forma text-muted hover:text-ink border border-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+            className="inline-flex items-center justify-center min-h-11 w-[90px] px-3 py-2 text-[9px] font-semibold font-forma uppercase tracking-[0.04em] text-muted hover:text-ink border border-[#3A3A3A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
           >
             Sign Out
           </button>
@@ -140,7 +141,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center justify-center min-h-[56px] py-2 text-micro font-medium transition-colors ${
+              `flex flex-1 flex-col items-center justify-center min-h-[56px] py-2 text-tag font-clock transition-colors ${
                 isActive ? 'text-sky' : 'text-muted'
               }`
             }

@@ -185,10 +185,11 @@ html, body {
 
 body {
   color: var(--ink);
-  /* Phase 1 global default — Barlow Semi Condensed, with system-ui/sans-serif
-     fallback so no glyph (incl. @) breaks. Per-screen gallery faces override
-     this where applied. */
-  font-family: 'Barlow Semi Condensed', system-ui, sans-serif;
+  /* Gallery body face — Calps Sans. Barlow Semi Condensed (Phase 1 baseline)
+     follows as a full-coverage fallback, then system-ui. Email / numeral /
+     date text uses Mona SemiCondensed per element (it carries @ and dashes,
+     which Calps renders as tofu). */
+  font-family: 'Calps Sans', 'Barlow Semi Condensed', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -204,8 +205,9 @@ body {
   .font-clock {
     font-family: 'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    /* No uppercase / wide tracking — the gallery shows dates ("10 Apr 2026"),
+       times ("7:00 am") and stat numbers in natural case with tight tracking.
+       Pure numerals are unaffected by casing. */
   }
 }
 
@@ -230,11 +232,8 @@ body {
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
 
-/* Brand directive: every button label across the app renders ALL CAPS.
- * Letter-spacing tightens it so the uppercase doesn't look stretched.
- * Symbols (✕, →, ↓) are unaffected. Inputs and other form elements are
- * left alone. */
-button {
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
+/* Casing (Jun 2026 gallery match): buttons are NO LONGER globally
+ * uppercased. The gallery uses natural case for nav links and most controls,
+ * reserving uppercase for true action buttons (Log In, Sign Out, Save, …) —
+ * those carry their own `uppercase` via the btn* helpers / per-button classes.
+ * Removing the blanket rule fixes the wrongly-capsed sidebar nav and tabs. */
