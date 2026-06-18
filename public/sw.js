@@ -1,16 +1,16 @@
 // Bump CACHE version when shipping new builds — forces refresh of cached shell
-const CACHE = 'ontheclock-v18'
+const CACHE = 'ontheclock-v19'
 const SHELL = [
   '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
-  // Brand typography — self-hosted, precached so first paint after install
-  // has the real fonts (no FOUT through Calibri fallback).
-  //   Calps Sans for lettering · Cerebri Sans Pro for numerals
-  '/fonts/fonnts.com-calpssans-regular.otf',
-  '/fonts/fonnts.com-calpssans-medium.otf',
-  '/fonts/fonnts.com-calpssans-bold.otf',
-  '/fonts/CerebriSansPro-Regular.ttf',
-  '/fonts/CerebriSansPro-SemiBold.ttf',
-  '/fonts/CerebriSansPro-Bold.ttf',
+  // Brand typography — self-hosted, precached so first paint after install has
+  // the real fonts. Three-face system: Mona Sans SemiCondensed (body/numerals),
+  // Mona Sans Condensed (wordmark), Forma DJR Text (buttons/labels).
+  '/fonts/MonaSans_SemiCondensed-Regular.ttf',
+  '/fonts/MonaSans_SemiCondensed-Medium.ttf',
+  '/fonts/MonaSans_SemiCondensed-SemiBold.ttf',
+  '/fonts/MonaSansCondensed-Bold.ttf',
+  '/fonts/FormaDJRText-Regular.ttf',
+  '/fonts/FormaDJRText-Medium.ttf',
 ]
 
 self.addEventListener('install', e => {

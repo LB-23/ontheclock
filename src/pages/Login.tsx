@@ -44,7 +44,6 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               className={`${inputCls} h-10`}
-              style={{ fontFamily: "'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif" }}
               placeholder="name@larkinbuildinggroup.com.au"
               required
               autoComplete="email"
@@ -57,7 +56,6 @@ export default function Login() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               className={`${inputCls} h-10`}
-              style={{ fontFamily: "'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif" }}
               placeholder="••••••••"
               required
               autoComplete="current-password"

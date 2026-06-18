@@ -94,7 +94,6 @@ export default function Layout({ children }: { children: ReactNode }) {
              and to assistive tech, so the silent truncate doesn't hide info. */}
           <p
             className="text-tag font-medium text-muted truncate mb-2"
-            style={{ fontFamily: "'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif" }}
             title={profile?.email ?? profile?.full_name ?? undefined}
           >
             {profile?.email ?? profile?.full_name}

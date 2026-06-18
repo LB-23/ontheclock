@@ -3,48 +3,22 @@
 @tailwind utilities;
 
 /* ── Brand typography — self-hosted ───────────────────────────────────────
- *  Four faces (updated May 2026 — was a two-face system of Calps + Cerebri):
+ *  Three-face system (Jun 2026). ONLY these faces are used in the UI, each
+ *  with a system-ui/sans-serif fallback:
  *
- *    Calps Sans     — body, headings, all lettering. Humanist sans with
- *                     soft terminals; warm, on-brand voice.
- *    Mona Sans SemiCondensed — numerals only (.font-clock). Replaces Cerebri
- *                     Sans Pro; proportional figures (NOT tabular) to match the
- *                     proportional lettering. Cerebri @font-face is kept below
- *                     only for the exported .xlsx report styling in utils.ts.
+ *    Mona Sans SemiCondensed — body / default / numerals (.font-clock).
+ *                     Carries @ and punctuation, so emails/dates render clean.
  *    Mona Sans Condensed — the "OnTheClock" wordmark lockup (font-condensed).
- *    Forma DJR Text — button labels (font-forma).
+ *    Forma DJR Text — button labels + small field labels (font-forma).
+ *
+ *  Calps Sans was removed. Cerebri Sans Pro @font-face is retained below ONLY
+ *  because the PDF/XLSX export code embeds those TTFs by name — it is not used
+ *  anywhere in the on-screen UI.
  *
  *  font-display: swap so first paint uses the OS fallback while the brand
  *  files load, then swaps in without a layout reflow.                       */
 
-/* Calps Sans — lettering */
-@font-face {
-  font-family: 'Calps Sans';
-  src: url('/fonts/fonnts.com-calpssans-semilight.otf') format('opentype');
-  font-weight: 300; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Calps Sans';
-  src: url('/fonts/fonnts.com-calpssans-regular.otf') format('opentype');
-  font-weight: 400; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Calps Sans';
-  src: url('/fonts/fonnts.com-calpssans-italic.otf') format('opentype');
-  font-weight: 400; font-style: italic; font-display: swap;
-}
-@font-face {
-  font-family: 'Calps Sans';
-  src: url('/fonts/fonnts.com-calpssans-medium.otf') format('opentype');
-  font-weight: 500; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Calps Sans';
-  src: url('/fonts/fonnts.com-calpssans-bold.otf') format('opentype');
-  font-weight: 700; font-style: normal; font-display: swap;
-}
-
-/* Cerebri Sans Pro — numerals (.font-clock) */
+/* Cerebri Sans Pro — retained for PDF/XLSX export embedding only (not UI) */
 @font-face {
   font-family: 'Cerebri Sans Pro';
   src: url('/fonts/CerebriSansPro-Regular.ttf') format('truetype');
@@ -122,29 +96,6 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
-/* Barlow Semi Condensed — Phase 1 global default face (Jun 2026). Self-hosted
- * from Google Fonts. Complete glyph coverage incl. @ and punctuation, so it
- * doubles as the safe baseline while per-screen gallery faces are applied. */
-@font-face {
-  font-family: 'Barlow Semi Condensed';
-  src: url('/fonts/BarlowSemiCondensed-Regular.ttf') format('truetype');
-  font-weight: 400; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Barlow Semi Condensed';
-  src: url('/fonts/BarlowSemiCondensed-Medium.ttf') format('truetype');
-  font-weight: 500; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Barlow Semi Condensed';
-  src: url('/fonts/BarlowSemiCondensed-SemiBold.ttf') format('truetype');
-  font-weight: 600; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'Barlow Semi Condensed';
-  src: url('/fonts/BarlowSemiCondensed-Bold.ttf') format('truetype');
-  font-weight: 700; font-style: normal; font-display: swap;
-}
 
 :root {
   /* LBG brand palette — CSS-Peeper extracted from the source-of-truth swatch.
@@ -185,11 +136,9 @@ html, body {
 
 body {
   color: var(--ink);
-  /* Gallery body face — Calps Sans. Barlow Semi Condensed (Phase 1 baseline)
-     follows as a full-coverage fallback, then system-ui. Email / numeral /
-     date text uses Mona SemiCondensed per element (it carries @ and dashes,
-     which Calps renders as tofu). */
-  font-family: 'Calps Sans', 'Barlow Semi Condensed', system-ui, sans-serif;
+  /* Body / default face — Mona Sans SemiCondensed (carries @ and punctuation,
+     so emails/dates render cleanly app-wide), then system-ui fallback. */
+  font-family: 'Mona Sans SemiCondensed', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -203,7 +152,7 @@ body {
  * the typography. */
 @layer components {
   .font-clock {
-    font-family: 'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif;
+    font-family: 'Mona Sans SemiCondensed', system-ui, sans-serif;
     font-weight: 600;
     /* No uppercase / wide tracking — the gallery shows dates ("10 Apr 2026"),
        times ("7:00 am") and stat numbers in natural case with tight tracking.
