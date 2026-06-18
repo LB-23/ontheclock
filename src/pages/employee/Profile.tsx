@@ -180,9 +180,9 @@ export default function EmployeeProfile() {
         <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Leave Balances</p>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted">Annual Leave</span><span className="font-semibold text-ink tabular-nums">{fmtHours(profile.annual_leave_balance)}</span></div>
-            <div className="flex justify-between"><span className="text-muted">Personal/Sick Leave</span><span className="font-semibold text-ink tabular-nums">{fmtHours(profile.personal_leave_balance)}</span></div>
-            <div className="flex justify-between"><span className="text-muted">Time in Lieu</span><span className="font-semibold text-ink tabular-nums">{fmtHours(profile.accrued_til_hours)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Annual Leave</span><span className="font-semibold text-ink">{fmtHours(profile.annual_leave_balance)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Personal/Sick Leave</span><span className="font-semibold text-ink">{fmtHours(profile.personal_leave_balance)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Time in Lieu</span><span className="font-semibold text-ink">{fmtHours(profile.accrued_til_hours)}</span></div>
           </div>
         </div>
       )}

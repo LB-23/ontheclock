@@ -187,11 +187,11 @@ export default function Employees() {
           {viewing.app_role !== 'admin' && (
             <>
               <div className="flex justify-between"><dt className="text-muted">Required Hours P/W</dt><dd className="text-ink">{viewing.weekly_hours_category}h</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink tabular-nums">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
-              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock tabular-nums normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink ">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink ">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink ">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
+              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
             </>
           )}
         </dl>
