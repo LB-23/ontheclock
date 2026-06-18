@@ -122,6 +122,30 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
+/* Barlow Semi Condensed — Phase 1 global default face (Jun 2026). Self-hosted
+ * from Google Fonts. Complete glyph coverage incl. @ and punctuation, so it
+ * doubles as the safe baseline while per-screen gallery faces are applied. */
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/BarlowSemiCondensed-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/BarlowSemiCondensed-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/BarlowSemiCondensed-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Semi Condensed';
+  src: url('/fonts/BarlowSemiCondensed-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
 :root {
   /* LBG brand palette — CSS-Peeper extracted from the source-of-truth swatch.
    * 9 values, mathematically restrained:
@@ -161,9 +185,10 @@ html, body {
 
 body {
   color: var(--ink);
-  /* Lettering face — Calps Sans. Calibri is the OS-native fallback
-     (Windows + Office), then system-ui. */
-  font-family: 'Calps Sans', Calibri, system-ui, sans-serif;
+  /* Phase 1 global default — Barlow Semi Condensed, with system-ui/sans-serif
+     fallback so no glyph (incl. @) breaks. Per-screen gallery faces override
+     this where applied. */
+  font-family: 'Barlow Semi Condensed', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

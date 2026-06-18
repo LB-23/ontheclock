@@ -49,8 +49,13 @@ export default {
         //   Forma DJR Text          — button labels
         // Calibri is the OS-native fallback (Windows + Office), then
         // system-ui. Helvetica/Arial intentionally absent.
-        sans:       ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        // Phase 1 baseline (Jun 2026): Barlow Semi Condensed is the global
+        // default so every unreached screen renders in it. Per-element gallery
+        // faces (clock/condensed/forma below, and Calps via the `calps` token)
+        // override it where specified.
+        sans:       ['"Barlow Semi Condensed"', 'system-ui', 'sans-serif'],
         grotesk:    ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        calps:      ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
         condensed:  ['"Mona Sans Condensed"', 'Calibri', 'system-ui', 'sans-serif'],
         clock:      ['"Mona Sans SemiCondensed"', '"Calps Sans"', 'system-ui', 'sans-serif'],
         forma:      ['"Forma DJR Text"', '"Calps Sans"', 'system-ui', 'sans-serif'],
