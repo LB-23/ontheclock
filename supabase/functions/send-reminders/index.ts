@@ -13,9 +13,12 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.1'
 import webpush from 'npm:web-push@3.6.7'
 
-const VAPID_PUBLIC  = '***REMOVED-VAPID-PUBLIC***'
-const VAPID_PRIVATE = '***REMOVED-VAPID-PRIVATE***'
-const VAPID_SUBJECT = 'mailto:laura.butera@larkinbuildinggroup.com.au'
+// VAPID keys are read from Supabase function secrets (env vars). Never hardcode
+// them — set them with `supabase secrets set` or in the dashboard:
+//   VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT
+const VAPID_PUBLIC  = Deno.env.get('VAPID_PUBLIC')!
+const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE')!
+const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:laura.butera@larkinbuildinggroup.com.au'
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
 
