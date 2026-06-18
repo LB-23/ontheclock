@@ -189,7 +189,7 @@ export default function LeaveAndTIL() {
     if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
     return {}
   }
-  const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
+  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize'
 
   // Detail dialog for a leave request
   const detailDialog = openReq && (
@@ -205,7 +205,7 @@ export default function LeaveAndTIL() {
         <dl className="space-y-2 text-sm">
           <div className="flex justify-between"><dt className="text-muted">Start</dt><dd>{fmtDate(openReq.start_date)}{openReq.start_time ? ` · ${openReq.start_time.slice(0, 5)}` : ''}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">End</dt><dd>{fmtDate(openReq.end_date)}{openReq.end_time ? ` · ${openReq.end_time.slice(0, 5)}` : ''}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted">Total Hours</dt><dd className="font-bold tabular-nums">{fmtHours(openReq.total_hours ?? 0)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Total Hours</dt><dd className="font-bold">{fmtHours(openReq.total_hours ?? 0)}</dd></div>
           {openReq.reason && (
             <div><dt className="text-muted">Reason</dt><dd className="mt-0.5">{openReq.reason}</dd></div>
           )}

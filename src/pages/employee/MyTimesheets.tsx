@@ -605,7 +605,7 @@ export default function MyTimesheets() {
     await reloadEntries()
   }
 
-  const badgeCls = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize'
+  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize'
   // Status palette — soft pastel bg + deeply-toned text. Foregrounds darkened
   // so every pair clears WCAG AA 4.5:1 against its own bg (the earlier
   // saturated text colours were ~2.5–2.8:1, all failing).
@@ -860,11 +860,11 @@ export default function MyTimesheets() {
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
             <div className="flex justify-between text-sm mb-2">
               <span className="text-muted">Regular Hours</span>
-              <span className="font-semibold tabular-nums">{fmtHours(selected.regular_hours ?? 0)}</span>
+              <span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between text-sm mb-4">
               <span className="text-muted">Additional Hours</span>
-              <span className="font-semibold tabular-nums" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
+              <span className="font-semibold" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span>
             </div>
             <div className="flex justify-between font-bold border-t pt-3">
               <span>Total</span>
@@ -959,7 +959,7 @@ export default function MyTimesheets() {
                   <span className={badgeCls} style={statusStyle(ts.status)}>{ts.status}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-ink tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
+                  <p className="text-sm font-bold text-ink">{fmtHours(ts.total_hours ?? 0)}</p>
                   <p className="text-xs text-muted">→</p>
                 </div>
               </button>

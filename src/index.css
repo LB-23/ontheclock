@@ -3,12 +3,16 @@
 @tailwind utilities;
 
 /* ── Brand typography — self-hosted ───────────────────────────────────────
- *  Two faces, each with its own role:
+ *  Four faces (updated May 2026 — was a two-face system of Calps + Cerebri):
  *
  *    Calps Sans     — body, headings, all lettering. Humanist sans with
  *                     soft terminals; warm, on-brand voice.
- *    Cerebri Sans Pro — numerals only (.font-clock). Tabular, geometric,
- *                     reads tightly at large sizes for clock + count displays.
+ *    Mona Sans SemiCondensed — numerals only (.font-clock). Replaces Cerebri
+ *                     Sans Pro; proportional figures (NOT tabular) to match the
+ *                     proportional lettering. Cerebri @font-face is kept below
+ *                     only for the exported .xlsx report styling in utils.ts.
+ *    Mona Sans Condensed — the "OnTheClock" wordmark lockup (font-condensed).
+ *    Forma DJR Text — button labels (font-forma).
  *
  *  font-display: swap so first paint uses the OS fallback while the brand
  *  files load, then swaps in without a layout reflow.                       */
@@ -62,6 +66,62 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
+/* Mona Sans Condensed — wordmark (weight 700, declared as 700 not 800) */
+@font-face {
+  font-family: 'Mona Sans Condensed';
+  src: url('/fonts/MonaSansCondensed-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans Condensed';
+  src: url('/fonts/MonaSansCondensed-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans Condensed';
+  src: url('/fonts/MonaSansCondensed-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans Condensed';
+  src: url('/fonts/MonaSansCondensed-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* Mona Sans SemiCondensed — numerals (.font-clock, replaces Cerebri) */
+@font-face {
+  font-family: 'Mona Sans SemiCondensed';
+  src: url('/fonts/MonaSans_SemiCondensed-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans SemiCondensed';
+  src: url('/fonts/MonaSans_SemiCondensed-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans SemiCondensed';
+  src: url('/fonts/MonaSans_SemiCondensed-SemiBold.ttf') format('truetype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+
+/* Forma DJR Text — button labels */
+@font-face {
+  font-family: 'Forma DJR Text';
+  src: url('/fonts/FormaDJRText-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Forma DJR Text';
+  src: url('/fonts/FormaDJRText-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Forma DJR Text';
+  src: url('/fonts/FormaDJRText-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
 :root {
   /* LBG brand palette — CSS-Peeper extracted from the source-of-truth swatch.
    * 9 values, mathematically restrained:
@@ -107,18 +167,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Numeral / widget typography — Cerebri Sans Pro Semi Bold (weight 600).
+/* Numeral / widget typography — Mona Sans SemiCondensed Semi Bold (weight 600).
  * Reserved for clock displays, stat-tile values, hour totals, and any
  * other "punchy number" surface. ALL CAPS by default. Declared inside
- * @layer components so Tailwind utilities like `normal-case` and
- * `tabular-nums` still win on individual call-sites. */
+ * @layer components so Tailwind utilities like `normal-case` still win
+ * on individual call-sites. tabular-nums removed — Mona Sans SemiCondensed's
+ * tabular figure set is a wide, slab-like design that looks wrong next to
+ * the proportional text. Default (proportional) figures match the rest of
+ * the typography. */
 @layer components {
   .font-clock {
-    font-family: 'Cerebri Sans Pro', 'Calps Sans', Calibri, system-ui, sans-serif;
+    font-family: 'Mona Sans SemiCondensed', 'Calps Sans', Calibri, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    font-variant-numeric: tabular-nums;
   }
 }
 

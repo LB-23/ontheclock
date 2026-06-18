@@ -232,7 +232,7 @@ export default function TimesheetReview() {
                       )}
                     </div>
                     <div className="text-right ml-3">
-                      <p className="text-sm font-bold tabular-nums">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
+                      <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
                       {e.is_overtime && <span className="text-xs text-orange-600">+HRS</span>}
                       {hasEdits && (
                         <button
@@ -278,8 +278,8 @@ export default function TimesheetReview() {
           </div>
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
-            <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold tabular-nums">{fmtHours(selected.regular_hours ?? 0)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted">Additional Hours</span><span className="font-semibold tabular-nums text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Additional Hours</span><span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
             <div className="flex justify-between font-bold border-t pt-3"><span>Total</span><span className="tabular-nums">{fmtHours(selected.total_hours ?? 0)}</span></div>
           </div>
 
@@ -411,7 +411,7 @@ export default function TimesheetReview() {
                   <p className="text-sm font-semibold">{(ts.profiles as Profile)?.full_name}</p>
                   <p className="text-xs text-muted">{fmtWeekRange(ts.week_start)}</p>
                   <span
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize mt-1"
+                    className="inline-flex items-center rounded-none px-2 py-0.5 text-xs font-semibold capitalize mt-1"
                     style={
                       ts.status === 'submitted' ? { backgroundColor: '#FEDDB4', color: '#8A5402' }
                       : ts.status === 'approved' ? { backgroundColor: '#E0F499', color: '#5E7000' }
@@ -420,7 +420,7 @@ export default function TimesheetReview() {
                     }
                   >{ts.status}</span>
                 </div>
-                <p className="text-sm font-bold tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>
             ))}
           </div>

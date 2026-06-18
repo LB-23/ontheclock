@@ -161,7 +161,7 @@ export default function PunchClock() {
               <span className="text-muted font-medium">Clocked-In:</span>{' '}
               <span className="font-clock tracking-wider">{format(new Date(activeEntry.clock_in), 'h:mm aaa')}</span>
             </p>
-            <p className="text-7xl font-clock my-3 tracking-wider tabular-nums text-ink">{elapsed}</p>
+            <p className="text-7xl font-clock my-3 tracking-wider text-ink">{elapsed}</p>
             <p className="text-sm text-muted">
               {(activeEntry.job_addresses as JobAddress)?.address ?? '—'}
             </p>
@@ -171,7 +171,7 @@ export default function PunchClock() {
           </>
         ) : (
           <>
-            <p className="text-6xl font-clock text-ink tracking-wider tabular-nums">
+            <p className="text-6xl font-clock text-ink tracking-wider">
               {format(new Date(), 'h:mm aaa')}
             </p>
             <p className="text-sm text-muted mt-2">
