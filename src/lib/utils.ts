@@ -195,4 +195,6 @@ export const BTN = {
 export const inputCls =
   'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink placeholder:text-[#D9D9D9] focus:border-sky focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-sky'
 
-export const labelCls = 'block text-xs font-semibold uppercase tracking-wide text-muted mb-1'
+/* Field labels (EMAIL / PASSWORD / form labels) — Forma DJR Text, 10px,
+ * uppercase, .04em tracking, muted grey. Matches the gallery exactly. */
+export const labelCls = 'block text-[10px] font-semibold font-forma uppercase tracking-[0.04em] text-muted mb-1'
