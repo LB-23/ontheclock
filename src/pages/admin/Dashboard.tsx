@@ -66,7 +66,7 @@ export default function Dashboard() {
              * reserved for functional depth (modals, sheets), not hover. */
             className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
           >
-            <p className="text-3xl sm:text-4xl font-clock font-bold tabular-nums">{s.value}</p>
+            <p className="text-3xl sm:text-4xl font-clock font-bold">{s.value}</p>
             <p className="text-micro sm:text-micro font-semibold uppercase tracking-tight mt-1 whitespace-nowrap">{s.label}</p>
           </button>
         ))}
@@ -109,7 +109,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-clock normal-case text-sky tracking-wider tabular-nums">{fmtHours(elapsed)}</p>
+                    <p className="text-xl font-clock normal-case text-sky tracking-wider">{fmtHours(elapsed)}</p>
                   </div>
                 </div>
               )
@@ -138,7 +138,7 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold">{(ts.profiles as { full_name: string })?.full_name}</p>
                   <p className="text-xs text-muted">Week of {fmtWeekRangeLong(ts.week_start)}</p>
                 </div>
-                <p className="text-sm font-bold tabular-nums">{fmtHours(ts.total_hours ?? 0)}</p>
+                <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>
             ))}
           </div>

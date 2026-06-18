@@ -42,14 +42,18 @@ export default {
         },
       },
       fontFamily: {
-        // Two faces, each with its own role:
-        //   Calps Sans      — body, headings, all lettering
-        //   Cerebri Sans Pro — numerals only (.font-clock + clock family)
+        // Three faces (updated May 2026):
+        //   Calps Sans              — body, headings, all lettering
+        //   Mona Sans SemiCondensed — numerals (.font-clock) replaces Cerebri Sans Pro
+        //   Mona Sans Condensed     — wordmark lockup
+        //   Forma DJR Text          — button labels
         // Calibri is the OS-native fallback (Windows + Office), then
         // system-ui. Helvetica/Arial intentionally absent.
-        sans:    ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
-        grotesk: ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
-        clock:   ['"Cerebri Sans Pro"', '"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        sans:       ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        grotesk:    ['"Calps Sans"', 'Calibri', 'system-ui', 'sans-serif'],
+        condensed:  ['"Mona Sans Condensed"', 'Calibri', 'system-ui', 'sans-serif'],
+        clock:      ['"Mona Sans SemiCondensed"', '"Calps Sans"', 'system-ui', 'sans-serif'],
+        forma:      ['"Forma DJR Text"', '"Calps Sans"', 'system-ui', 'sans-serif'],
       },
       // Off-scale size tokens — adds 10 / 11 / 13 px slots so call-sites stop
       // reaching for inline arbitrary values like text-[10px]. Tailwind's stock
@@ -64,8 +68,10 @@ export default {
     // ── Brand directive (May 2026): fully square + no shadows ──────────────
     // Every rounded-* and shadow-* utility resolves to 0 / none so the entire
     // app shares a crisp rectangular silhouette without per-component edits.
-    // `rounded-full` intentionally stays a circle so the push-mute toggle and
-    // status pills still render as ovals; everything else is square.
+    // `rounded-full` intentionally stays a circle for the push-mute toggle and
+    // the loading spinner. Status / leave-type badges were squared in the
+    // June 2026 gallery sync (rounded-full → rounded-none at their call sites);
+    // everything else is square.
     borderRadius: {
       none:     '0',
       sm:       '0',

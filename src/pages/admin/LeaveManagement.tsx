@@ -338,7 +338,7 @@ export default function LeaveManagement() {
                     <p className="text-xs mt-1" style={{ color: wouldOverdraw ? '#9C0F0F' : '#666666' }}>
                       {avail === null
                         ? 'Unpaid leave — no balance deduction'
-                        : <>Available: <span className="font-semibold tabular-nums">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
+                        : <>Available: <span className="font-semibold">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                   </div>
@@ -428,7 +428,7 @@ export default function LeaveManagement() {
                     {r.admin_notes && <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>}
                     {r.withdrawal_reason && <p className="text-xs text-muted mt-1">Withdrawn: {r.withdrawal_reason}</p>}
                   </div>
-                  <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
+                  <span className="inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
                     {status}
                   </span>
                 </div>
@@ -462,9 +462,9 @@ export default function LeaveManagement() {
                       {/* `normal-case` pairs with font-clock to render the
                           lowercase "h"/"m" suffix from fmtHours (font-clock
                           uppercases by default). */}
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(a)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(p)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock tabular-nums normal-case">{fmtHours(t)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(a)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(p)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(t)}</td>
                     </tr>
                   )
                 })}
@@ -645,12 +645,12 @@ export default function LeaveManagement() {
               approved.length) so admins know what each colour means even on
               an empty month. */}
           <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-page">
-            <span className="text-tag rounded-full px-2 py-0.5 font-semibold"
+            <span className="text-tag rounded-none px-2 py-0.5 font-semibold"
                   style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
               P/H — VIC Public Holiday
             </span>
             {(['annual', 'personal', 'time_in_lieu', 'unpaid'] as const).map(t => (
-              <span key={t} className="text-tag rounded-full px-2 py-0.5 text-ink"
+              <span key={t} className="text-tag rounded-none px-2 py-0.5 text-ink"
                     style={{ backgroundColor: leaveTypeColour(t) }}>
                 {LEAVE_TYPE_LABELS[t]}
               </span>

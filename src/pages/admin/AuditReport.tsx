@@ -155,15 +155,15 @@ export default function AuditReport() {
       {/* Summary — colour-coded by severity (all backgrounds @ 10% transparency) */}
       <div className="grid grid-cols-3 gap-3">
         <div style={{ backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold tabular-nums">{total}</p>
+          <p className="text-4xl font-clock font-bold">{total}</p>
           <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Entries in range</p>
         </div>
         <div style={{ backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold tabular-nums">{flaggedRed}</p>
+          <p className="text-4xl font-clock font-bold">{flaggedRed}</p>
           <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Off-site</p>
         </div>
         <div style={{ backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold tabular-nums">{flaggedAmber}</p>
+          <p className="text-4xl font-clock font-bold">{flaggedAmber}</p>
           <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Missing GPS</p>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function AuditReport() {
                     {r.clock_out_distance_m !== null ? `${r.clock_out_distance_m}m` : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                    <span className="inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
                           style={flagLabel[r.audit_flag].style}>
                       {flagLabel[r.audit_flag].text}
                     </span>

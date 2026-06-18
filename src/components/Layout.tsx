@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex md:w-56 md:flex-col md:fixed md:inset-y-0 bg-surface border-r border-page shadow-sm">
         <div className="flex h-16 items-center gap-2 px-6 border-b border-page">
           <img src="/lb-icon.svg" alt="LB" className="w-7 h-7" />
-          <span className="text-lg font-bold text-sky">OnTheClock</span>
+          <span className="text-base font-condensed font-bold text-sky">OnTheClock</span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {nav.map(item => (
@@ -100,7 +100,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </p>
           <button
             onClick={handleSignOut}
-            className="w-full border border-page px-3 py-2 text-sm text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+            className="w-full border border-page px-3 py-2 text-sm font-forma text-muted hover:bg-page hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
           >
             Sign Out
           </button>
@@ -112,13 +112,13 @@ export default function Layout({ children }: { children: ReactNode }) {
         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page safe-top">
           <div className="flex items-center gap-2">
             <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
-            <span className="text-base font-bold text-sky">OnTheClock</span>
+            <span className="text-base font-condensed font-bold text-sky">OnTheClock</span>
           </div>
           {/* Real tap-target — was a 12px text link, well below 44pt minimum */}
           <button
             type="button"
             onClick={handleSignOut}
-            className="inline-flex items-center justify-center min-h-11 px-3 py-2 text-sm font-semibold text-muted hover:text-ink border border-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
+            className="inline-flex items-center justify-center min-h-11 px-3 py-2 text-sm font-semibold font-forma text-muted hover:text-ink border border-page focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky"
           >
             Sign Out
           </button>
