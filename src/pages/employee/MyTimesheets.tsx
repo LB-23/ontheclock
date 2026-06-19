@@ -605,13 +605,11 @@ export default function MyTimesheets() {
     await reloadEntries()
   }
 
-  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize'
-  // Status palette — soft pastel bg + deeply-toned text. Foregrounds darkened
-  // so every pair clears WCAG AA 4.5:1 against its own bg (the earlier
-  // saturated text colours were ~2.5–2.8:1, all failing).
+  const badgeCls = 'inline-flex items-center rounded-none px-2 py-[3px] text-[9px] font-semibold font-forma uppercase'
+  // Status palette — matched to the design gallery (exact bg + text per status).
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'submitted' || s === 'pending') return { backgroundColor: '#FEDDB4', color: '#8A5402' }
-    if (s === 'approved')                     return { backgroundColor: '#E0F499', color: '#5E7000' }
+    if (s === 'submitted' || s === 'pending') return { backgroundColor: '#fbe3bd', color: '#f99702' }
+    if (s === 'approved')                     return { backgroundColor: '#d2f2a9', color: '#8bc93d' }
     if (s === 'rejected')                     return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
     return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }   // draft (default)
   }
