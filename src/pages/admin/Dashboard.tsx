@@ -34,9 +34,9 @@ export default function Dashboard() {
   // May 2026 design-system dashboard tile palette — light-to-deep sky ramp,
   // black text on every tile so values read crisply.
   const stats = [
-    { label: 'On Site Now',          value: activeEntries.length,    bg: '#9ADBED', to: '#on-site-now' },
-    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#5DC4E3', to: '/timesheets' },
-    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#0096C7', to: '/leave' },
+    { label: 'On Site Now',          value: activeEntries.length,    bg: '#a3dff5', to: '#on-site-now' },
+    { label: 'Timesheets to Review', value: pendingTimesheets.length, bg: '#47bfeb', to: '/timesheets' },
+    { label: 'Leave Requests',       value: pendingLeave.length,      bg: '#1787b9', to: '/leave' },
   ]
 
   const goTo = (to: string) => {
@@ -51,7 +51,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-ink">Dashboard</h1>
-        <p className="text-sm text-muted">{format(new Date(), 'EEEE d MMMM yyyy')}</p>
+        <p className="text-sm font-semibold text-muted">{format(new Date(), 'EEEE, d MMMM yyyy')}</p>
       </div>
 
       {/* Click-through stat tiles — brand-coloured backgrounds with dark accent text */}
@@ -66,8 +66,8 @@ export default function Dashboard() {
              * reserved for functional depth (modals, sheets), not hover. */
             className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
           >
-            <p className="text-3xl sm:text-4xl font-clock">{s.value}</p>
-            <p className="text-micro sm:text-micro font-semibold uppercase tracking-tight mt-1 whitespace-nowrap">{s.label}</p>
+            <p className="text-4xl font-clock font-bold">{s.value}</p>
+            <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-1 whitespace-nowrap">{s.label}</p>
           </button>
         ))}
       </div>
@@ -76,8 +76,8 @@ export default function Dashboard() {
       <div id="on-site-now" className="bg-surface rounded-2xl border border-page shadow-sm scroll-mt-20">
         <div className="px-5 py-4 border-b border-page flex items-center justify-between">
           <h2 className="font-semibold text-ink">On Site Now</h2>
-          <button onClick={() => nav('/audit')} className="text-xs text-sky hover:underline">
-            Location audit →
+          <button onClick={() => nav('/audit')} className="text-tag font-medium text-sky capitalize hover:underline">
+            Location audit ▸
           </button>
         </div>
         {activeEntries.length === 0 ? (
@@ -90,18 +90,18 @@ export default function Dashboard() {
                 <div key={e.id} className="px-5 py-4 flex justify-between items-center">
                   <div>
                     <p className="text-sm font-semibold">{(e.profiles as { full_name: string })?.full_name}</p>
-                    <p className="text-xs text-muted">
+                    <p className="text-tag font-medium text-muted mt-0.5">
                       In at {fmtTime(e.clock_in)} · {(e.job_addresses as { address: string })?.address ?? '—'}
                     </p>
                     {(e.stages as { name: string })?.name && (
-                      <p className="text-xs text-muted">{(e.stages as { name: string }).name}</p>
+                      <p className="text-tag font-medium text-muted mt-0.5">{(e.stages as { name: string }).name}</p>
                     )}
                     {e.clock_in_lat && (
                       <a
                         href={`https://maps.google.com/?q=${e.clock_in_lat},${e.clock_in_lng}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-sky underline"
+                        className="text-tag font-medium text-sky underline capitalize"
                         onClick={ev => ev.stopPropagation()}
                       >
                         View on map
@@ -109,7 +109,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-clock text-sky">{fmtHours(elapsed)}</p>
+                    <p className="text-sm font-clock font-bold text-sky tracking-[0.04em]">{fmtHours(elapsed)}</p>
                   </div>
                 </div>
               )
@@ -123,8 +123,8 @@ export default function Dashboard() {
         <div className="bg-surface rounded-2xl border border-page shadow-sm">
           <div className="px-5 py-4 border-b border-page flex items-center justify-between">
             <h2 className="font-semibold text-ink">Timesheets Awaiting Approval</h2>
-            <button onClick={() => nav('/timesheets')} className="text-xs text-sky hover:underline">
-              Review all →
+            <button onClick={() => nav('/timesheets')} className="text-tag font-medium text-sky capitalize hover:underline">
+              Review all ▸
             </button>
           </div>
           <div className="divide-y divide-page">
@@ -136,7 +136,7 @@ export default function Dashboard() {
               >
                 <div>
                   <p className="text-sm font-semibold">{(ts.profiles as { full_name: string })?.full_name}</p>
-                  <p className="text-xs text-muted">Week of {fmtWeekRangeLong(ts.week_start)}</p>
+                  <p className="text-tag font-medium text-muted">Week of {fmtWeekRangeLong(ts.week_start)}</p>
                 </div>
                 <p className="text-sm font-bold">{fmtHours(ts.total_hours ?? 0)}</p>
               </button>
@@ -150,14 +150,15 @@ export default function Dashboard() {
         <div className="bg-surface rounded-2xl border border-page shadow-sm">
           <div className="px-5 py-4 border-b border-page flex items-center justify-between">
             <h2 className="font-semibold text-ink">Leave Requests Pending</h2>
-            <button onClick={() => nav('/leave')} className="text-xs text-sky hover:underline">
-              Review all →
+            <button onClick={() => nav('/leave')} className="text-tag font-medium text-sky capitalize hover:underline">
+              Review all ▸
             </button>
           </div>
           <div className="divide-y divide-page">
             {pendingLeave.map(lr => {
-              // Normalise leave-type label: 'time_in_lieu' -> 'time in lieu', plus capitalize.
-              const typeLabel = lr.leave_type.replace(/_/g, ' ')
+              // Title-case the leave type in JS (e.g. 'time_in_lieu' -> 'Time In Lieu')
+              // so the dates/am-pm beside it stay natural case (no CSS capitalize).
+              const typeLabel = lr.leave_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
               const start = lr.start_time
                 ? `${lr.start_date} ${lr.start_time.slice(0, 5)}`
                 : lr.start_date
@@ -171,7 +172,7 @@ export default function Dashboard() {
                   className="w-full px-5 py-4 hover:bg-page transition-colors text-left"
                 >
                   <p className="text-sm font-semibold">{(lr.profiles as { full_name: string })?.full_name}</p>
-                  <p className="text-xs text-muted capitalize">{typeLabel} · {start} → {end}</p>
+                  <p className="text-tag font-medium text-muted">{typeLabel} · {start} → {end}</p>
                 </button>
               )
             })}
