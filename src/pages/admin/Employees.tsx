@@ -200,7 +200,7 @@ export default function Employees() {
         <div className="flex gap-3 pt-2">
           <button
             onClick={() => { const v = viewing; setViewing(null); openEdit(v) }}
-            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnPrimary} flex-1 h-11`}
           >
             Edit
@@ -208,7 +208,7 @@ export default function Employees() {
           <button
             onClick={() => removeEmployee(viewing)}
             disabled={viewing.id === me?.id}
-            style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnDanger} flex-1 h-11`}
           >
             Delete
@@ -226,7 +226,7 @@ export default function Employees() {
         <h1 className="text-2xl font-bold text-ink">Team</h1>
         <button
           onClick={openAdd}
-          style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
           className={btnPrimary}
         >
           + Add New Employee
@@ -334,7 +334,7 @@ export default function Employees() {
             <button
               type="submit"
               disabled={saving}
-              style={{ backgroundColor: '#D7E363', color: '#141414' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnPrimary} h-11`}
             >
               {saving ? 'Saving…' : 'Save'}
@@ -342,7 +342,7 @@ export default function Employees() {
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnSecondary} h-11`}
             >
               Cancel

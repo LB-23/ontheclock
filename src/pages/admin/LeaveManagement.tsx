@@ -353,7 +353,7 @@ export default function LeaveManagement() {
                 <button
                   onClick={() => decide(r, 'approved')}
                   disabled={deciding === r.id}
-                  style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                  style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                   className={`${btnPrimary} flex-1 h-11`}
                 >
                   Approve
@@ -361,7 +361,7 @@ export default function LeaveManagement() {
                 <button
                   onClick={() => decide(r, 'declined')}
                   disabled={deciding === r.id}
-                  style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+                  style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                   className={`${btnDanger} flex-1 h-11`}
                 >
                   Reject
@@ -548,14 +548,14 @@ export default function LeaveManagement() {
               <button
                 onClick={saveEdit}
                 disabled={editBusy}
-                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnPrimary} flex-1 h-11`}
               >
                 {editBusy ? 'Saving…' : 'Save Changes'}
               </button>
               <button
                 onClick={() => setOpenReq(null)}
-                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnSecondary} flex-1 h-11`}
               >
                 Cancel
@@ -564,7 +564,7 @@ export default function LeaveManagement() {
             <button
               onClick={deleteRequest}
               disabled={editBusy}
-              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnDanger} w-full h-11`}
             >
               Delete Request
@@ -747,7 +747,7 @@ export default function LeaveManagement() {
               <button
                 type="button"
                 onClick={() => setShowAddLeave(false)}
-                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnSecondary} flex-1 h-11`}
               >
                 Cancel
@@ -755,7 +755,7 @@ export default function LeaveManagement() {
               <button
                 type="submit"
                 disabled={addBusy}
-                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnPrimary} flex-1 h-11`}
               >
                 {addBusy ? 'Adding…' : 'Add Leave'}

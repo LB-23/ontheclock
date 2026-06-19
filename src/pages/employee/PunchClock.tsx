@@ -222,7 +222,7 @@ export default function PunchClock() {
           <button
             onClick={handleClockIn}
             disabled={!selectedJob || loading}
-            style={{ backgroundColor: '#D7E363', color: '#141414' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnPrimary} w-full h-14 text-base`}
           >
             {loading ? 'Clocking In…' : 'Clock-In'}
@@ -236,7 +236,7 @@ export default function PunchClock() {
           onClick={openClockOut}
           disabled={loading}
           className="inline-flex items-center justify-center w-full h-14 text-base font-semibold active:scale-95 transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
         >
           Clock-Out
         </button>
@@ -273,7 +273,7 @@ export default function PunchClock() {
                 type="button"
                 onClick={() => setShowOutDialog(false)}
                 disabled={loading}
-                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnSecondary} flex-1 h-12`}
               >
                 Cancel
@@ -281,7 +281,7 @@ export default function PunchClock() {
               <button
                 type="submit"
                 disabled={loading || !outNotes.trim()}
-                style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className="inline-flex items-center justify-center flex-1 h-12 font-semibold active:scale-95 transition-all disabled:opacity-50"
               >
                 {loading ? 'Clocking Out…' : 'Confirm Clock-Out'}

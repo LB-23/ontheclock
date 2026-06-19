@@ -280,7 +280,7 @@ export default function LeaveAndTIL() {
       {!showForm && (
         <button
           onClick={() => { setShowForm(true); setErr('') }}
-          style={{ backgroundColor: '#A4A3A3', color: '#141414' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
           className={`${btnPrimary} w-full h-12`}
         >
           + Request Leave
@@ -357,7 +357,7 @@ export default function LeaveAndTIL() {
             <button
               type="button"
               onClick={() => { setShowForm(false); setErr('') }}
-              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnSecondary} flex-1 h-12`}
             >
               Cancel
@@ -365,7 +365,7 @@ export default function LeaveAndTIL() {
             <button
               type="submit"
               disabled={loading}
-              style={{ backgroundColor: '#D7E363', color: '#141414' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnPrimary} flex-1 h-12`}
             >
               {loading ? 'Submitting…' : 'Submit Request'}

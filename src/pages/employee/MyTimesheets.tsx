@@ -676,7 +676,7 @@ export default function MyTimesheets() {
           <button
             type="button"
             onClick={() => { setEditing(null); setErr('') }}
-            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnSecondary} flex-1 h-11`}
           >
             Cancel
@@ -684,7 +684,7 @@ export default function MyTimesheets() {
           <button
             type="submit"
             disabled={saving || deleting}
-            style={{ backgroundColor: '#D7E363', color: '#141414' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnPrimary} flex-1 h-11`}
           >
             {saving ? 'Saving…' : 'Save Edit'}
@@ -694,7 +694,7 @@ export default function MyTimesheets() {
           type="button"
           onClick={deleteEntry}
           disabled={saving || deleting}
-          style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
           className={`${btnDanger} w-full h-11 mt-2`}
         >
           {deleting ? 'Deleting…' : 'Delete This Entry'}
@@ -749,7 +749,7 @@ export default function MyTimesheets() {
           <button
             type="button"
             onClick={() => { setShowManualForm(false); setErr('') }}
-            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnSecondary} flex-1 h-11`}
           >
             Cancel
@@ -757,7 +757,7 @@ export default function MyTimesheets() {
           <button
             type="submit"
             disabled={manualSaving}
-            style={{ backgroundColor: '#D7E363', color: '#141414' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnPrimary} flex-1 h-11`}
           >
             {manualSaving ? 'Adding…' : 'Add Entry'}
@@ -776,7 +776,7 @@ export default function MyTimesheets() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSelected(null)}
-              style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={btnSecondary}
             >
               ← Back
@@ -790,7 +790,7 @@ export default function MyTimesheets() {
           {selected.status === 'draft' && (
             <button
               onClick={() => { setShowManualForm(true); setErr('') }}
-              style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnPrimary} w-full h-11`}
             >
               + Add Manual Entry
@@ -880,7 +880,7 @@ export default function MyTimesheets() {
               <button
                 onClick={submitTimesheet}
                 disabled={submitting}
-                style={{ backgroundColor: '#D7E363', color: '#000000' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold uppercase tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
                 title={needClockOut ? 'One or more entries are still active — clock out before review for accurate hours.' : undefined}
               >
@@ -914,7 +914,7 @@ export default function MyTimesheets() {
               setSelected(null)
               loadTimesheets()
             }}
-            style={{ backgroundColor: '#737373', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all"
           >
             Delete Timesheet
@@ -933,7 +933,7 @@ export default function MyTimesheets() {
               // happens to fall in the default window.
               setExpFrom(''); setExpTo(''); setShowExport(true); setErr('')
             }}
-            style={{ backgroundColor: '#A4A3A3', color: '#141414' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={`${btnSecondary} w-full h-11`}
           >
             ↓ Export Timesheets
@@ -1005,7 +1005,7 @@ export default function MyTimesheets() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => { setShowExport(false); setErr('') }}
-                style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnSecondary} flex-1 h-11`}
               >
                 Cancel
@@ -1013,7 +1013,7 @@ export default function MyTimesheets() {
               <button
                 onClick={exportPdf}
                 disabled={exporting}
-                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnPrimary} flex-1 h-11`}
               >
                 {exporting ? 'Generating…' : 'PDF'}
@@ -1021,7 +1021,7 @@ export default function MyTimesheets() {
               <button
                 onClick={exportXlsx}
                 disabled={exporting}
-                style={{ backgroundColor: '#D7E363', color: '#141414' }}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
                 className={`${btnPrimary} flex-1 h-11`}
               >
                 {exporting ? 'Generating…' : 'Excel'}

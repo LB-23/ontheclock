@@ -395,7 +395,7 @@ export default function Reports() {
           <button
             onClick={runReport}
             disabled={loading}
-            style={{ backgroundColor: '#A4A3A3', color: '#FAFAFA' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
             className={btnPrimary}
           >
             {loading ? 'Loading…' : 'Run Report'}
