@@ -149,43 +149,33 @@ export function fmtHours(h: number): string {
   return `${hrs}h ${mins}m`
 }
 
-/** Tailwind class helpers — May 2026 design system button buckets.
- *  Three roles, every label uppercase with 0.02em tracking:
- *    primary    #D7E363 / #000000 — save, submit for approval, save changes,
- *                                    clock-in, save edit, add entry
- *    secondary  #B4B3B3 / #FFFFFF — cancel, export, add manual entry,
- *                                    enable push reminders
- *    danger     #666666 / #FFFFFF — clock-out, delete, disable push, exit
- *  Per-page overrides via inline `style` still win when needed (e.g. a few
- *  background/text colours can ride on top via the `style` prop. */
-/* All three helpers carry a keyboard-visible focus ring (sky 2px outline,
- * 2px offset) so tab-only users can always see where they are.            */
+/** Gallery action-button style (Jun 2026): every action button — Submit, Save,
+ *  Add, Approve, Reject, Export, Back, Cancel, Delete, etc. — renders the SAME
+ *  way per the design gallery: #0352fb underlined text, Forma DJR Text,
+ *  uppercase, on the grey #e8e8e8 fill, square corners. The old lime/grey/dark
+ *  buckets are collapsed into one look; primary/secondary/danger are aliases.
+ *  Keeps a keyboard-visible focus ring for tab-only users. */
 const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky'
 
-export const btnPrimary =
-  `inline-flex items-center justify-center bg-[#D7E363] px-5 py-3 text-sm font-semibold font-forma uppercase tracking-[0.04em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50 disabled:cursor-not-allowed`
+const btnAction =
+  `inline-flex items-center justify-center bg-[#e8e8e8] px-5 py-3 text-[10px] font-semibold font-forma uppercase tracking-[0.02em] underline text-[#0352fb] hover:opacity-80 transition-opacity ${FOCUS} disabled:opacity-50 disabled:cursor-not-allowed`
 
-/* btnSecondary text flipped white → black: the previous #B4B3B3 + #FFFFFF
- * pair was ~2:1 (failing WCAG AA). Black on #B4B3B3 is ~9:1 — safe at any
- * brightness, including outdoor / job-site use.                            */
-export const btnSecondary =
-  `inline-flex items-center justify-center bg-[#B4B3B3] px-5 py-3 text-sm font-semibold font-forma uppercase tracking-[0.04em] text-black hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
+export const btnPrimary   = btnAction
+export const btnSecondary = btnAction
+export const btnDanger    = btnAction
 
-export const btnDanger =
-  `inline-flex items-center justify-center bg-[#666666] px-5 py-3 text-sm font-semibold font-forma uppercase tracking-[0.04em] text-white hover:opacity-90 active:scale-95 transition-colors ${FOCUS} disabled:opacity-50`
-
-/** Brand button colour tokens — referenced by inline style on per-page
- *  buttons so the colour intent is explicit at the call site. */
+/** Brand button colour tokens — now all the gallery action style (grey fill,
+ *  #0352fb text) so per-page inline-styled buttons match the helpers. */
 export const BTN = {
-  actionBg:   '#D7E363', // lime — primary positive (Save, Submit, Clock-in)
-  actionFg:   '#000000',
-  mutedBg:    '#B4B3B3', // light-grey — secondary / neutral (Cancel, Export, Add Manual)
-  mutedFg:    '#000000', // black on #B4B3B3 hits ~9:1 — passes WCAG AA easily
-  mutedFgDk:  '#000000', // alias kept for back-compat; same value as mutedFg now
-  darkBg:     '#666666', // mid-grey — destructive / exit (Clock-out, Delete, Disable push)
-  darkFg:     '#FFFFFF',
-  charcoalBg: '#666666', // admin delete actions — same bucket as `darkBg`
-  charcoalFg: '#FFFFFF',
+  actionBg:   '#e8e8e8',
+  actionFg:   '#0352fb',
+  mutedBg:    '#e8e8e8',
+  mutedFg:    '#0352fb',
+  mutedFgDk:  '#0352fb',
+  darkBg:     '#e8e8e8',
+  darkFg:     '#0352fb',
+  charcoalBg: '#e8e8e8',
+  charcoalFg: '#0352fb',
 } as const
 
 /** Text inputs / selects / textareas — square, 2px border, sky focus ring,
