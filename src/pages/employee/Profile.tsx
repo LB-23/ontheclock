@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
 import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
 /** Render a 'HH:MM:SS' reminder time as 12-hour with am/pm (e.g. '7:25 am') */
@@ -28,11 +28,32 @@ export default function EmployeeProfile() {
   const [pushErr, setPushErr] = useState('')
   const [muted, setMuted] = useState(profile ? !profile.notifications_enabled : false)
 
+  // Timesheet submission timeliness (on-time vs late) — counts across the
+  // user's submitted/approved timesheets that carry a submission timestamp.
+  const [subStats, setSubStats] = useState({ onTime: 0, late: 0 })
+
   useEffect(() => {
     if (!pushSupported()) { setPermission('unsupported'); return }
     setPermission(Notification.permission)
     getCurrentSubscription().then(s => setSubscribed(!!s))
   }, [])
+
+  useEffect(() => {
+    if (!profile) return
+    supabase.from('timesheets')
+      .select('week_start, submitted_at')
+      .eq('employee_id', profile.id)
+      .in('status', ['submitted', 'approved', 'rejected'])
+      .then(({ data }) => {
+        let onTime = 0, late = 0
+        for (const t of data ?? []) {
+          const s = timesheetSubmissionStatus(t.week_start as string, t.submitted_at as string | null)
+          if (s === 'on-time') onTime++
+          else if (s === 'late') late++
+        }
+        setSubStats({ onTime, late })
+      })
+  }, [profile])
 
   useEffect(() => {
     if (profile) {
@@ -173,6 +194,21 @@ export default function EmployeeProfile() {
             {pushErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{pushErr}</p>}
           </>
         )}
+      </div>
+
+      {/* Timesheet submission timeliness — on-time vs late counts */}
+      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Timesheet Submissions</p>
+        <div className="flex gap-8 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-clock font-bold text-ink">{subStats.onTime}</span>
+            <span className={onTimeFlagCls}>On-Time</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-clock font-bold text-ink">{subStats.late}</span>
+            <span className={onTimeFlagCls}>Late</span>
+          </div>
+        </div>
       </div>
 
       {!isAdmin && (

@@ -16,6 +16,26 @@ export function fmtTime(iso: string): string {
   return format(parseISO(iso), 'h:mm aaa')
 }
 
+/** Timesheet submission timeliness. On-time if submitted by 5:00 pm the day
+ *  after the Fri–Thu pay week ends (i.e. the Friday after `weekStart`,
+ *  weekStart + 7 days, 17:00). Returns null when there is no submission
+ *  timestamp — historical timesheets predate submitted_at tracking.
+ *  NOTE: uses the viewer's local clock for the 5pm cutoff; correct for
+ *  Melbourne-based users (the app's timezone elsewhere). */
+export function timesheetSubmissionStatus(
+  weekStart: string,
+  submittedAt: string | null | undefined,
+): 'on-time' | 'late' | null {
+  if (!submittedAt) return null
+  const cutoff = new Date(`${weekStart}T00:00:00`)
+  cutoff.setDate(cutoff.getDate() + 7)
+  cutoff.setHours(17, 0, 0, 0)
+  return new Date(submittedAt).getTime() <= cutoff.getTime() ? 'on-time' : 'late'
+}
+
+/** On-time / late flag style: ALL CAPS, Forma DJR Text Regular, 10px, grey. */
+export const onTimeFlagCls = 'text-[10px] font-forma font-normal uppercase text-muted'
+
 /** Format a 'HH:MM[:SS]' time-of-day string as 12-hour am/pm (e.g. '7:00 am').
  *  Used for leave start/end times and the admin calendar (stored as `time`,
  *  not full timestamps, so `fmtTime` / parseISO don't apply). */
