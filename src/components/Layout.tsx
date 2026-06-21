@@ -65,7 +65,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Sidebar — visible on md+ */}
       <aside className="hidden md:flex md:w-56 md:flex-col md:fixed md:inset-y-0 bg-surface border-r border-page shadow-sm">
         <div className="flex h-16 items-center gap-2 px-6 border-b border-page">
-          <img src="/lb-icon.svg" alt="LB" className="w-7 h-7" />
+          <img src="/lb-icon.svg" alt="LB" className="h-10 w-auto" />
           <span className="text-[15px] font-condensed font-bold text-sky">OnTheClock</span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
@@ -111,7 +111,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main className="flex-1 md:ml-56 pb-20 md:pb-0">
         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between bg-surface px-4 border-b border-page safe-top">
           <div className="flex items-center gap-2">
-            <img src="/lb-icon.svg" alt="LB" className="w-6 h-6" />
+            <img src="/lb-icon.svg" alt="LB" className="h-10 w-auto" />
             <span className="text-[15px] font-condensed font-bold text-sky">OnTheClock</span>
           </div>
           {/* Real tap-target — was a 12px text link, well below 44pt minimum */}

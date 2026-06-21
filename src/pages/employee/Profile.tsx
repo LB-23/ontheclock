@@ -96,7 +96,7 @@ export default function EmployeeProfile() {
               type="tel"
               value={mobile}
               onChange={e => setMobile(e.target.value)}
-              className={inputCls}
+              className="block w-full bg-transparent text-sm text-ink placeholder:text-[#D9D9D9] focus:outline-none"
               placeholder="04XX XXX XXX"
             />
           </div>
@@ -145,7 +145,7 @@ export default function EmployeeProfile() {
         ) : (
           <>
             <div className="flex items-center justify-between rounded-xl bg-page px-4 py-3">
-              <span className="text-sm font-medium text-ink uppercase">Mute all reminders</span>
+              <span className="text-xs font-medium text-ink">Mute All Reminders</span>
               <button type="button" onClick={toggleMute}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${muted ? 'bg-red-500' : 'bg-page border border-skyDeep/40'}`}>
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0.5'}`} />

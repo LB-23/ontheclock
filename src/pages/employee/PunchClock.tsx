@@ -146,6 +146,8 @@ export default function PunchClock() {
       backgroundColor: state.isSelected ? '#116DFF' : state.isFocused ? '#E8E8E8' : '#FAFAFA',
       color: state.isSelected ? '#FFFFFF' : '#000000',
     }),
+    // Smaller placeholder text per design refinement
+    placeholder: (base: object) => ({ ...base, fontSize: '12px' }),
   }
 
   const isClockedIn = !!activeEntry
@@ -201,7 +203,7 @@ export default function PunchClock() {
               options={jobOptions}
               value={selectedJob}
               onChange={opt => setSelectedJob(opt)}
-              placeholder="Search job site…"
+              placeholder="search job site…"
               isClearable
               styles={selectStyles}
             />
@@ -214,7 +216,7 @@ export default function PunchClock() {
               options={stageOptions}
               value={selectedStage}
               onChange={opt => setSelectedStage(opt)}
-              placeholder="Select stage…"
+              placeholder="select stage…"
               isClearable
               styles={selectStyles}
             />

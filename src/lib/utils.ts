@@ -16,6 +16,19 @@ export function fmtTime(iso: string): string {
   return format(parseISO(iso), 'h:mm aaa')
 }
 
+/** Format a 'HH:MM[:SS]' time-of-day string as 12-hour am/pm (e.g. '7:00 am').
+ *  Used for leave start/end times and the admin calendar (stored as `time`,
+ *  not full timestamps, so `fmtTime` / parseISO don't apply). */
+export function fmtClock(t: string | null | undefined): string {
+  if (!t) return ''
+  const [hStr, mStr] = t.split(':')
+  const h = Number(hStr)
+  const m = mStr ?? '00'
+  const period = h >= 12 ? 'pm' : 'am'
+  const h12 = ((h + 11) % 12) + 1
+  return `${h12}:${m} ${period}`
+}
+
 /** "Fri 25 Apr – Thu 1 May" — week runs Friday to Thursday */
 export function fmtWeekRange(weekStart: string): string {
   const start = parseISO(weekStart)

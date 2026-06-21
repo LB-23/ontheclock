@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -189,7 +189,7 @@ export default function LeaveAndTIL() {
     if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
     return {}
   }
-  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-[9px] font-semibold font-forma uppercase tracking-[0.04em]'
+  const badgeCls = 'inline-flex items-center rounded-none px-2 py-[3px] text-[9px] font-semibold font-forma uppercase'
 
   // Detail dialog for a leave request
   const detailDialog = openReq && (
@@ -203,8 +203,8 @@ export default function LeaveAndTIL() {
         </div>
         <span className={badgeCls} style={statusStyle(openReq.status)}>{openReq.status}</span>
         <dl className="space-y-2 text-sm">
-          <div className="flex justify-between"><dt className="text-muted">Start</dt><dd>{fmtDate(openReq.start_date)}{openReq.start_time ? ` · ${openReq.start_time.slice(0, 5)}` : ''}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted">End</dt><dd>{fmtDate(openReq.end_date)}{openReq.end_time ? ` · ${openReq.end_time.slice(0, 5)}` : ''}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">Start</dt><dd>{fmtDate(openReq.start_date)}{openReq.start_time ? ` · ${fmtClock(openReq.start_time)}` : ''}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted">End</dt><dd>{fmtDate(openReq.end_date)}{openReq.end_time ? ` · ${fmtClock(openReq.end_time)}` : ''}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Total Hours</dt><dd className="font-bold">{fmtHours(openReq.total_hours ?? 0)}</dd></div>
           {openReq.reason && (
             <div><dt className="text-muted">Reason</dt><dd className="mt-0.5">{openReq.reason}</dd></div>
@@ -283,7 +283,7 @@ export default function LeaveAndTIL() {
           style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
           className={`${btnPrimary} w-full h-12`}
         >
-          + Request Leave
+          Request Leave
         </button>
       )}
 
@@ -392,10 +392,10 @@ export default function LeaveAndTIL() {
                 <p className="text-sm font-semibold">{shortLabels[r.leave_type]} Leave</p>
                 <p className="text-xs text-muted mt-0.5">
                   {fmtDate(r.start_date)}
-                  {r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''}
+                  {r.start_time ? ` ${fmtClock(r.start_time)}` : ''}
                   {' — '}
                   {fmtDate(r.end_date)}
-                  {r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''}
+                  {r.end_time ? ` ${fmtClock(r.end_time)}` : ''}
                   {r.total_hours ? ` (${fmtHours(r.total_hours)})` : ''}
                 </p>
                 {r.reason && <p className="text-xs text-muted mt-0.5">{r.reason}</p>}
