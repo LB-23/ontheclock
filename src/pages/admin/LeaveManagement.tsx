@@ -635,9 +635,10 @@ export default function LeaveManagement() {
                     return (
                       <div
                         key={l.id}
-                        className="text-micro leading-tight rounded px-0.5 mt-0.5 text-ink"
+                        onDoubleClick={() => openEdit(l)}
+                        className="text-micro leading-tight rounded px-0.5 mt-0.5 text-ink cursor-pointer"
                         style={{ backgroundColor: leaveTypeColour(l.leave_type) }}
-                        title={`${fullName} — ${typeLabel}${timeRange ? ` (${timeRange})` : ''}`}
+                        title={`${fullName} — ${typeLabel}${timeRange ? ` (${timeRange})` : ''} (double-click to edit)`}
                       >
                         <div className="truncate">{display}</div>
                         {timeRange && <div className="truncate opacity-80">{timeRange}</div>}
