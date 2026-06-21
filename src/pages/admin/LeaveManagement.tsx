@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtClock, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
@@ -86,15 +86,14 @@ export default function LeaveManagement() {
     // Compute total_hours: full working days between start and end times.
     // Mirrors the employee-side calc: span_days × per_day_hours where per_day
     // is the difference between start_time and end_time on a single day.
-    const dayMs = 86_400_000
     const startMs = new Date(`${addForm.start_date}T${addForm.start_time}:00`).getTime()
     const endMs   = new Date(`${addForm.end_date}T${addForm.end_time}:00`).getTime()
     if (endMs <= startMs) { setAddErr('End must be after start.'); return }
-    const days = Math.max(1, Math.round((new Date(addForm.end_date).getTime() - new Date(addForm.start_date).getTime()) / dayMs) + 1)
     const [sh, sm] = addForm.start_time.split(':').map(Number)
     const [eh, em] = addForm.end_time.split(':').map(Number)
-    const perDayMin = (eh * 60 + em) - (sh * 60 + sm)
-    const totalHours = Math.max(0, (perDayMin / 60) * days)
+    const perDayHrs = ((eh * 60 + em) - (sh * 60 + sm)) / 60
+    // Count only workdays — weekends + VIC public holidays are not deducted
+    const totalHours = computeLeaveHours(addForm.start_date, addForm.start_time, addForm.end_date, addForm.end_time, perDayHrs)
 
     setAddBusy(true); setAddErr('')
     const { error } = await supabase.from('leave_requests').insert({
@@ -158,13 +157,18 @@ export default function LeaveManagement() {
   const saveEdit = async () => {
     if (!openReq) return
     setEditBusy(true); setEditErr('')
+    // Recompute hours on save so edited dates/times re-apply the workday rule
+    const [esh, esm] = editForm.start_time.split(':').map(Number)
+    const [eeh, eem] = editForm.end_time.split(':').map(Number)
+    const perDayHrs  = ((eeh * 60 + eem) - (esh * 60 + esm)) / 60
+    const recomputed = computeLeaveHours(editForm.start_date, editForm.start_time, editForm.end_date, editForm.end_time, perDayHrs)
     const { error } = await supabase.from('leave_requests').update({
       leave_type:  editForm.leave_type,
       start_date:  editForm.start_date,
       start_time:  editForm.start_time + ':00',
       end_date:    editForm.end_date,
       end_time:    editForm.end_time   + ':00',
-      total_hours: editForm.total_hours,
+      total_hours: recomputed,
       reason:      editForm.reason || null,
       admin_notes: editForm.admin_notes || null,
     }).eq('id', openReq.id)

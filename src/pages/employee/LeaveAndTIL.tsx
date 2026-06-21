@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtClock, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -77,41 +77,12 @@ export default function LeaveAndTIL() {
     }
   }, [form.start_date, form.end_date, profile])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Compute total hours from start_date+time -> end_date+time considering daily required hours
+  // Total leave hours, counting only workdays (excludes weekends + VIC public
+  // holidays — those aren't deducted from a leave balance). See computeLeaveHours.
   const computeTotalHours = (): number => {
     if (!profile || !form.start_date || !form.end_date || !form.start_time || !form.end_time) return 0
     const dailyHrs = profile.weekly_hours_category / 5
-    const start = new Date(`${form.start_date}T${form.start_time}`)
-    const end   = new Date(`${form.end_date}T${form.end_time}`)
-    if (end <= start) return 0
-
-    // Days inclusive
-    const startDay = new Date(form.start_date).getTime()
-    const endDay   = new Date(form.end_date).getTime()
-    const dayCount = Math.round((endDay - startDay) / 86400000) + 1
-
-    if (dayCount === 1) {
-      // Same-day: just the duration in hours (capped at daily)
-      const hrs = (end.getTime() - start.getTime()) / 3_600_000
-      return Math.round(Math.min(hrs, dailyHrs) * 10) / 10
-    }
-
-    // Multi-day: hours from start_time to end-of-workday on day 1,
-    //          + full days for days in between,
-    //          + hours from start-of-workday to end_time on last day.
-    const endOfDay1Mins = (7 * 60) + (dailyHrs * 60)  // assume 7am start; cap at start_time + dailyHrs
-    const [sh, sm] = form.start_time.split(':').map(Number)
-    const startMins = sh * 60 + sm
-    const day1Hrs = Math.max(0, (endOfDay1Mins - startMins) / 60)
-
-    const [eh2, em2] = form.end_time.split(':').map(Number)
-    const endMins = eh2 * 60 + em2
-    // Day N: from 7am up to end_time (capped at dailyHrs)
-    const dayNHrs = Math.max(0, Math.min(endMins - 7 * 60, dailyHrs * 60) / 60)
-
-    const middleDays = dayCount - 2
-    const total = day1Hrs + (middleDays * dailyHrs) + dayNHrs
-    return Math.round(total * 10) / 10
+    return computeLeaveHours(form.start_date, form.start_time, form.end_date, form.end_time, dailyHrs)
   }
 
   const totalHours = computeTotalHours()
