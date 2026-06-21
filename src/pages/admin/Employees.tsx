@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Profile, type WeeklyHours, type AppRole } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtHours, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import Skeleton from '../../components/Skeleton'
 
@@ -55,6 +55,27 @@ export default function Employees() {
 
   // For viewing an individual employee profile
   const [viewing, setViewing] = useState<Profile | null>(null)
+  // On-time/late submission counts + most-recent approver for the viewed employee
+  const [viewStats, setViewStats] = useState<{ onTime: number; late: number; approver: string | null }>({ onTime: 0, late: 0, approver: null })
+
+  useEffect(() => {
+    if (!viewing) { setViewStats({ onTime: 0, late: 0, approver: null }); return }
+    supabase.from('timesheets')
+      .select('week_start, submitted_at, approved_by, approver:profiles!timesheets_approved_by_fkey(full_name)')
+      .eq('employee_id', viewing.id)
+      .order('week_start', { ascending: false })
+      .then(({ data }) => {
+        let onTime = 0, late = 0
+        let approver: string | null = null
+        for (const t of (data ?? []) as unknown as Array<{ week_start: string; submitted_at: string | null; approved_by: string | null; approver?: { full_name: string } | null }>) {
+          const s = timesheetSubmissionStatus(t.week_start, t.submitted_at)
+          if (s === 'on-time') onTime++
+          else if (s === 'late') late++
+          if (!approver && t.approved_by && t.approver?.full_name) approver = t.approver.full_name
+        }
+        setViewStats({ onTime, late, approver })
+      })
+  }, [viewing])
 
   // Esc dismisses the profile detail dialog
   useEscapeKey(!!viewing, () => setViewing(null))
@@ -193,6 +214,10 @@ export default function Employees() {
               <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
             </>
+          )}
+          <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Timesheet Submissions</dt><dd><span className={onTimeFlagCls}>{viewStats.onTime} On-Time · {viewStats.late} Late</span></dd></div>
+          {viewStats.approver && (
+            <div className="flex justify-between"><dt className="text-muted">Last Approved By</dt><dd className="text-ink">{viewStats.approver}</dd></div>
           )}
         </dl>
           )

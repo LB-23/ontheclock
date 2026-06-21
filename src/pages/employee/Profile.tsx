@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
 import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
 /** Render a 'HH:MM:SS' reminder time as 12-hour with am/pm (e.g. '7:25 am') */
@@ -28,11 +28,32 @@ export default function EmployeeProfile() {
   const [pushErr, setPushErr] = useState('')
   const [muted, setMuted] = useState(profile ? !profile.notifications_enabled : false)
 
+  // Timesheet submission timeliness (on-time vs late) — counts across the
+  // user's submitted/approved timesheets that carry a submission timestamp.
+  const [subStats, setSubStats] = useState({ onTime: 0, late: 0 })
+
   useEffect(() => {
     if (!pushSupported()) { setPermission('unsupported'); return }
     setPermission(Notification.permission)
     getCurrentSubscription().then(s => setSubscribed(!!s))
   }, [])
+
+  useEffect(() => {
+    if (!profile) return
+    supabase.from('timesheets')
+      .select('week_start, submitted_at')
+      .eq('employee_id', profile.id)
+      .in('status', ['submitted', 'approved', 'rejected'])
+      .then(({ data }) => {
+        let onTime = 0, late = 0
+        for (const t of data ?? []) {
+          const s = timesheetSubmissionStatus(t.week_start as string, t.submitted_at as string | null)
+          if (s === 'on-time') onTime++
+          else if (s === 'late') late++
+        }
+        setSubStats({ onTime, late })
+      })
+  }, [profile])
 
   useEffect(() => {
     if (profile) {
@@ -96,7 +117,7 @@ export default function EmployeeProfile() {
               type="tel"
               value={mobile}
               onChange={e => setMobile(e.target.value)}
-              className={inputCls}
+              className="block w-full bg-transparent text-sm text-ink placeholder:text-[#D9D9D9] focus:outline-none"
               placeholder="04XX XXX XXX"
             />
           </div>
@@ -145,7 +166,7 @@ export default function EmployeeProfile() {
         ) : (
           <>
             <div className="flex items-center justify-between rounded-xl bg-page px-4 py-3">
-              <span className="text-sm font-medium text-ink uppercase">Mute all reminders</span>
+              <span className="text-xs font-medium text-ink">Mute All Reminders</span>
               <button type="button" onClick={toggleMute}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${muted ? 'bg-red-500' : 'bg-page border border-skyDeep/40'}`}>
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -173,6 +194,21 @@ export default function EmployeeProfile() {
             {pushErr && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{pushErr}</p>}
           </>
         )}
+      </div>
+
+      {/* Timesheet submission timeliness — on-time vs late counts */}
+      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Timesheet Submissions</p>
+        <div className="flex gap-8 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-clock font-bold text-ink">{subStats.onTime}</span>
+            <span className={onTimeFlagCls}>On-Time</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-clock font-bold text-ink">{subStats.late}</span>
+            <span className={onTimeFlagCls}>Late</span>
+          </div>
+        </div>
       </div>
 
       {!isAdmin && (

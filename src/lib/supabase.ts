@@ -88,7 +88,10 @@ export interface Timesheet {
   status: TimesheetStatus
   admin_notes: string | null
   created_at: string
+  submitted_at: string | null
+  approved_by: string | null
   profiles?: Profile
+  approver?: { full_name: string } | null
 }
 
 export interface LeaveRequest {

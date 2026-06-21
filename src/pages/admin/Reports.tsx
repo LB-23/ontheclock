@@ -3,7 +3,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
+import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
 import { format } from 'date-fns'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -146,10 +146,32 @@ export default function Reports() {
         .gte('clock_in', dateFrom).lte('clock_in', dateTo + 'T23:59:59')
       if (filterEmp) q = q.eq('employee_id', filterEmp)
       const { data } = await q
+      const entryRows = (data ?? []) as Record<string, unknown>[]
+
+      // Timesheet submission timeliness + approver, keyed by employee|week_start,
+      // for the weeks present in this result set.
+      const weeks = [...new Set(entryRows.map(e => e.week_start as string).filter(Boolean))]
+      const tsMap: Record<string, { status: 'on-time' | 'late' | null; approver: string }> = {}
+      let onTimeTotal = 0, lateTotal = 0
+      if (weeks.length) {
+        let tq = supabase.from('timesheets')
+          .select('employee_id, week_start, submitted_at, approver:profiles!timesheets_approved_by_fkey(full_name)')
+          .in('week_start', weeks)
+        if (filterEmp) tq = tq.eq('employee_id', filterEmp)
+        const { data: tsData } = await tq
+        for (const t of (tsData ?? []) as unknown as Array<{ employee_id: string; week_start: string; submitted_at: string | null; approver?: { full_name: string } | null }>) {
+          const st = timesheetSubmissionStatus(t.week_start, t.submitted_at)
+          tsMap[`${t.employee_id}|${t.week_start}`] = { status: st, approver: t.approver?.full_name ?? '' }
+          if (st === 'on-time') onTimeTotal++
+          else if (st === 'late') lateTotal++
+        }
+      }
+
       // Map first, then sort per user-selected key (Employee by default)
-      const mapped = (data ?? []).map((e: Record<string, unknown>) => {
+      const mapped = entryRows.map((e) => {
         const isLeave = e.entry_type && e.entry_type !== 'regular'
         const leaveLabel = entryTypeLabel(e.entry_type as string)
+        const ts = tsMap[`${e.employee_id as string}|${e.week_start as string}`]
         return {
           Employee:   (e.profiles as { full_name: string })?.full_name ?? '',
           Date:       e.clock_in ? fmtDateLong(e.clock_in as string) : '',
@@ -160,6 +182,8 @@ export default function Reports() {
           Hours:      fmtHours(Number(e.total_hours ?? 0)),
           'Additional Hrs': e.is_overtime ? 'Yes' : 'No',
           'Leave Taken': isLeave ? `${leaveLabel} (${fmtHours(Number(e.total_hours ?? 0))})` : '',
+          Submission: ts?.status ? ts.status.toUpperCase() : '',
+          'Approved By': ts?.approver ?? '',
           Notes:      (e.notes as string) ?? '',
           // Hidden sort keys (stripped before export below)
           __date: e.clock_in as string,
@@ -173,6 +197,15 @@ export default function Reports() {
       }
       mapped.sort((a, b) => sortKey[empSort](a).localeCompare(sortKey[empSort](b)))
       nextRows = mapped.map(({ __date, ...rest }) => { void __date; return rest })
+      // Totals line at the end: timesheets submitted on-time vs late.
+      if (nextRows.length) {
+        nextRows.push({
+          Employee: 'TOTALS', Date: '', Site: '', Stage: '', 'Clock-In': '', 'Clock-Out': '',
+          Hours: '', 'Additional Hrs': '', 'Leave Taken': '',
+          Submission: `ON-TIME: ${onTimeTotal} · LATE: ${lateTotal}`, 'Approved By': '',
+          Notes: `Timesheets submitted on-time: ${onTimeTotal} · late: ${lateTotal}`,
+        })
+      }
     } else if (tab === 'job') {
       let q = supabase.from('time_entries').select('*, profiles!time_entries_employee_id_fkey(full_name), job_addresses(address)')
         .gte('clock_in', dateFrom).lte('clock_in', dateTo + 'T23:59:59')

@@ -773,7 +773,9 @@ export default function MyTimesheets() {
 
       {selected ? (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          {/* Back on its own line above the week; week + badge left-aligned
+              inline with the rest of the page content. */}
+          <div className="space-y-3">
             <button
               onClick={() => setSelected(null)}
               style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
@@ -843,7 +845,6 @@ export default function MyTimesheets() {
                   </div>
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                    {e.is_overtime && !isSystem && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>+HRS</span>}
                     {selected.status === 'draft' && !isSystem && (
                       <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
                         Edit
