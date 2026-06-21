@@ -139,6 +139,11 @@ export default function LeaveAndTIL() {
       setRequests(prev => [data as LeaveRequest, ...prev])
       setShowForm(false)
       setForm(BLANK)
+      // Notify admins immediately (fire-and-forget — a push failure must not
+      // block the employee's submission).
+      supabase.functions.invoke('notify-leave-request', {
+        body: { leave_request_id: (data as LeaveRequest).id },
+      }).catch(() => { /* ignore */ })
     }
   }
 

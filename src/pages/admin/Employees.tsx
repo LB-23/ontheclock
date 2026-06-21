@@ -336,8 +336,9 @@ export default function Employees() {
             </>
           )}
 
-          {/* Reminder times — admins too can set their own */}
-          {editing && (
+          {/* Clock-in/out reminder times — employees only. Admins don't clock in;
+              they instead receive event-driven leave-request notifications. */}
+          {editing && !isFormForAdmin && (
             <div className="grid grid-cols-2 gap-3 border-t border-page pt-4">
               <div>
                 <label className={labelCls}>Clock-in reminder</label>
