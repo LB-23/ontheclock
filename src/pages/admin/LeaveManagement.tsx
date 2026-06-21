@@ -17,12 +17,14 @@ const LEAVE_TYPE_COLOURS: Record<string, string> = {
   personal:     '#FFBFEB', // soft pink
   time_in_lieu: '#FFF89F', // yellow (matches former unpaid)
   unpaid:       '#FFF89F', // soft cream
+  away:         '#a7eff1', // admin "Away" flag — calendar-only, no deduction
 }
 const LEAVE_TYPE_LABELS: Record<string, string> = {
   annual:       'Annual Leave',
   personal:     'Personal / Sick Leave',
   time_in_lieu: 'Time In Lieu',
   unpaid:       'Unpaid Leave',
+  away:         'Away',
 }
 function leaveTypeColour(t: string): string {
   return LEAVE_TYPE_COLOURS[t] ?? '#E8E8E8'
@@ -83,6 +85,32 @@ export default function LeaveManagement() {
     e.preventDefault()
     if (!addForm.employee_id) { setAddErr('Pick a user.'); return }
     if (!addForm.start_date || !addForm.end_date) { setAddErr('Pick start and end dates.'); return }
+
+    // Admin "Away" flag: when the selected user is an admin, this is just a
+    // calendar marker over a date range — no leave type, no times, no
+    // deduction. Any admin can add it.
+    if (allUsers.find(u => u.id === addForm.employee_id)?.app_role === 'admin') {
+      setAddBusy(true); setAddErr('')
+      const { error: awayErr } = await supabase.from('leave_requests').insert({
+        employee_id: addForm.employee_id,
+        leave_type:  'away',
+        start_date:  addForm.start_date,
+        start_time:  null,
+        end_date:    addForm.end_date,
+        end_time:    null,
+        total_hours: 0,
+        reason:      addForm.reason || null,
+        status:      'approved',
+        admin_notes: 'Away (admin flag)',
+        decided_by:  (await supabase.auth.getUser()).data.user?.id ?? null,
+      })
+      setAddBusy(false)
+      if (awayErr) { setAddErr(awayErr.message); return }
+      setShowAddLeave(false)
+      load()
+      return
+    }
+
     // Compute total_hours: full working days between start and end times.
     // Mirrors the employee-side calc: span_days × per_day_hours where per_day
     // is the difference between start_time and end_time on a single day.
@@ -269,6 +297,10 @@ export default function LeaveManagement() {
     load()
   }
 
+  // When the Add-Leave user picker has an admin selected, the form collapses to
+  // an "Away" flag (date range only — no leave type, no times, no deduction).
+  const addSelectedIsAdmin = allUsers.find(u => u.id === addForm.employee_id)?.app_role === 'admin'
+
   // Calendar helpers
   const monthStart = startOfMonth(calMonth)
   const monthEnd = endOfMonth(calMonth)
@@ -385,7 +417,7 @@ export default function LeaveManagement() {
               <p className="text-xs mt-1">Nothing scheduled yet.</p>
             </div>
           )}
-          {approved.map(r => (
+          {approved.filter(r => (r.leave_type as string) !== 'away').map(r => (
             <button key={r.id} onClick={() => openEdit(r)}
                     className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
               <div className="flex justify-between items-start">
@@ -411,7 +443,7 @@ export default function LeaveManagement() {
               <p className="text-xs mt-1">Approved and pending requests will appear here.</p>
             </div>
           )}
-          {allRequests.map(r => {
+          {allRequests.filter(r => (r.leave_type as string) !== 'away').map(r => {
             const status = r.status
             // Status palette — every fg darkened to clear WCAG AA 4.5:1
             const style: React.CSSProperties =
@@ -659,7 +691,7 @@ export default function LeaveManagement() {
                   style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
               P/H — VIC Public Holiday
             </span>
-            {(['annual', 'personal', 'time_in_lieu'] as const).map(t => (
+            {(['annual', 'personal', 'time_in_lieu', 'away'] as const).map(t => (
               <span key={t} className="text-tag rounded-none px-2 py-0.5 text-ink"
                     style={{ backgroundColor: leaveTypeColour(t) }}>
                 {LEAVE_TYPE_LABELS[t]}
@@ -699,10 +731,11 @@ export default function LeaveManagement() {
               </select>
             </div>
 
-            <div>
-              <label className={labelCls}>Leave Type</label>
-              <select value={addForm.leave_type}
+            <div className={addSelectedIsAdmin ? 'opacity-50' : ''}>
+              <label className={labelCls}>Leave Type{addSelectedIsAdmin ? ' — Away (admin)' : ''}</label>
+              <select value={addSelectedIsAdmin ? '' : addForm.leave_type}
                       onChange={e => setAddForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
+                      disabled={addSelectedIsAdmin}
                       className={inputCls}>
                 {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
@@ -719,10 +752,11 @@ export default function LeaveManagement() {
                        className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                        required />
               </label>
-              <label className="min-w-0 overflow-hidden">
+              <label className={`min-w-0 overflow-hidden ${addSelectedIsAdmin ? 'opacity-50' : ''}`}>
                 <span className={labelCls}>Start Time</span>
                 <input type="time" value={addForm.start_time}
                        onChange={e => setAddForm(f => ({ ...f, start_time: e.target.value }))}
+                       disabled={addSelectedIsAdmin}
                        style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                        className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
               </label>
@@ -736,10 +770,11 @@ export default function LeaveManagement() {
                        className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20"
                        required />
               </label>
-              <label className="min-w-0 overflow-hidden">
+              <label className={`min-w-0 overflow-hidden ${addSelectedIsAdmin ? 'opacity-50' : ''}`}>
                 <span className={labelCls}>End Time</span>
                 <input type="time" value={addForm.end_time}
                        onChange={e => setAddForm(f => ({ ...f, end_time: e.target.value }))}
+                       disabled={addSelectedIsAdmin}
                        style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', WebkitAppearance: 'none', appearance: 'none' }}
                        className="block border border-page bg-surface px-2 py-2.5 text-xs sm:text-sm text-ink focus:border-sky focus:outline-none focus:ring-2 focus:ring-sky/20" />
               </label>

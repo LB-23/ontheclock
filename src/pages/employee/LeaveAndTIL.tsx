@@ -57,6 +57,7 @@ export default function LeaveAndTIL() {
       .from('leave_requests')
       .select('*')
       .eq('employee_id', profile.id)
+      .neq('leave_type', 'away')   // "Away" admin flags are calendar-only
       .order('created_at', { ascending: false })
       .then(({ data }) => setRequests((data as LeaveRequest[]) ?? []))
   }
