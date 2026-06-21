@@ -44,7 +44,7 @@ export default function Stages() {
         {stages.map(s => (
           <div key={s.id} className={`px-5 py-3 flex justify-between items-center ${!s.is_active ? 'opacity-40' : ''}`}>
             <p className="text-sm font-medium">{s.name}</p>
-            <button onClick={() => toggle(s)} className={`text-xs hover:underline ${s.is_active ? 'text-red-500' : 'text-sky'}`}>
+            <button onClick={() => toggle(s)} className={`text-[10px] font-forma uppercase tracking-[0.04em] underline ${s.is_active ? 'text-red-500' : 'text-sky'}`}>
               {s.is_active ? 'Deactivate' : 'Restore'}
             </button>
           </div>

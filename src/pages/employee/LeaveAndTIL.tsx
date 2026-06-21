@@ -183,13 +183,13 @@ export default function LeaveAndTIL() {
   // Status palette — soft pastel bg + deeply-toned text. Each pair clears
   // WCAG AA 4.5:1 against its own bg.
   const statusStyle = (s: string): React.CSSProperties => {
-    if (s === 'pending')   return { backgroundColor: '#FEDDB4', color: '#8A5402' }
-    if (s === 'approved')  return { backgroundColor: '#E0F499', color: '#5E7000' }
+    if (s === 'pending')   return { backgroundColor: '#fbe3bd', color: '#f99702' }
+    if (s === 'approved')  return { backgroundColor: '#d2f2a9', color: '#8bc93d' }
     if (s === 'declined' || s === 'rejected') return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
     if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
     return {}
   }
-  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize'
+  const badgeCls = 'inline-flex items-center rounded-none px-2.5 py-0.5 text-[9px] font-semibold font-forma uppercase tracking-[0.04em]'
 
   // Detail dialog for a leave request
   const detailDialog = openReq && (
@@ -280,7 +280,7 @@ export default function LeaveAndTIL() {
       {!showForm && (
         <button
           onClick={() => { setShowForm(true); setErr('') }}
-          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
           className={`${btnPrimary} w-full h-12`}
         >
           + Request Leave
@@ -294,7 +294,7 @@ export default function LeaveAndTIL() {
             <select value={form.leave_type}
                     onChange={e => setForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                     className={inputCls}>
-              {Object.entries(leaveLabels).map(([k, v]) => (
+              {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>

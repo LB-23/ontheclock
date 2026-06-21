@@ -192,7 +192,7 @@ export default function TimesheetReview() {
 
       {selected ? (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="space-y-3">
             <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
             <div>
               <p className="font-semibold">{(selected.profiles as Profile)?.full_name}</p>
@@ -233,7 +233,7 @@ export default function TimesheetReview() {
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                      {e.is_overtime && <span className="text-xs text-orange-600">+HRS</span>}
+                      {e.is_overtime && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>+HRS</span>}
                       {hasEdits && (
                         <button
                           onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}
@@ -279,7 +279,7 @@ export default function TimesheetReview() {
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-3">
             <div className="flex justify-between text-sm"><span className="text-muted">Regular</span><span className="font-semibold">{fmtHours(selected.regular_hours ?? 0)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted">Additional Hours</span><span className="font-semibold text-orange-600">{fmtHours(selected.overtime_hours ?? 0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Additional Hours</span><span className="font-semibold" style={{ color: '#1C9FDA' }}>{fmtHours(selected.overtime_hours ?? 0)}</span></div>
             <div className="flex justify-between font-bold border-t pt-3"><span>Total</span><span className="tabular-nums">{fmtHours(selected.total_hours ?? 0)}</span></div>
           </div>
 
@@ -290,18 +290,18 @@ export default function TimesheetReview() {
 
           {(selected.status === 'submitted') && (
             <div className="flex gap-3">
-              {/* Brand palette: lime approve / red reject / charcoal delete */}
+              {/* Gallery action style: underlined #0352fb link buttons on grey */}
               <button
                 onClick={() => updateStatus('approved')}
-                style={{ backgroundColor: '#AEE001', color: '#000000' }}
-                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+                className={`${btnPrimary} flex-1 h-12`}
               >
                 Approve
               </button>
               <button
                 onClick={() => updateStatus('rejected')}
-                style={{ backgroundColor: '#FF2828', color: '#000000' }}
-                className="inline-flex items-center justify-center flex-1 h-12 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+                className={`${btnDanger} flex-1 h-12`}
               >
                 Reject
               </button>
@@ -323,8 +323,8 @@ export default function TimesheetReview() {
               setSelected(null)
               load()
             }}
-            style={{ backgroundColor: '#595858', color: '#E8E8E8' }}
-            className="inline-flex items-center justify-center w-full h-11 mt-2 rounded-xl text-sm font-semibold shadow-sm active:scale-95 transition-all disabled:opacity-50"
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+            className={`${btnPrimary} w-full h-11 mt-2`}
           >
             Delete this timesheet
           </button>
@@ -411,10 +411,10 @@ export default function TimesheetReview() {
                   <p className="text-sm font-semibold">{(ts.profiles as Profile)?.full_name}</p>
                   <p className="text-xs text-muted">{fmtWeekRange(ts.week_start)}</p>
                   <span
-                    className="inline-flex items-center rounded-none px-2 py-0.5 text-xs font-semibold capitalize mt-1"
+                    className="inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-semibold font-forma uppercase tracking-[0.04em] mt-1"
                     style={
-                      ts.status === 'submitted' ? { backgroundColor: '#FEDDB4', color: '#8A5402' }
-                      : ts.status === 'approved' ? { backgroundColor: '#E0F499', color: '#5E7000' }
+                      ts.status === 'submitted' ? { backgroundColor: '#fbe3bd', color: '#f99702' }
+                      : ts.status === 'approved' ? { backgroundColor: '#d2f2a9', color: '#8bc93d' }
                       : ts.status === 'rejected' ? { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
                       : { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
                     }

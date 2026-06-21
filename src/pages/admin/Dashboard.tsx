@@ -159,11 +159,17 @@ export default function Dashboard() {
               // Title-case the leave type in JS (e.g. 'time_in_lieu' -> 'Time In Lieu')
               // so the dates/am-pm beside it stay natural case (no CSS capitalize).
               const typeLabel = lr.leave_type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+              const fmt12 = (t: string) => {
+                const [H, M] = t.split(':').map(Number)
+                const period = H >= 12 ? 'pm' : 'am'
+                const h12 = ((H + 11) % 12) + 1
+                return `${h12}:${String(M).padStart(2, '0')} ${period}`
+              }
               const start = lr.start_time
-                ? `${lr.start_date} ${lr.start_time.slice(0, 5)}`
+                ? `${lr.start_date} ${fmt12(lr.start_time)}`
                 : lr.start_date
               const end = lr.end_time
-                ? `${lr.end_date} ${lr.end_time.slice(0, 5)}`
+                ? `${lr.end_date} ${fmt12(lr.end_time)}`
                 : lr.end_date
               return (
                 <button

@@ -223,7 +223,7 @@ export default function PunchClock() {
             onClick={handleClockIn}
             disabled={!selectedJob || loading}
             style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-            className={`${btnPrimary} w-full h-14 text-base`}
+            className={`${btnPrimary} w-full h-14`}
           >
             {loading ? 'Clocking In…' : 'Clock-In'}
           </button>
@@ -235,7 +235,7 @@ export default function PunchClock() {
         <button
           onClick={openClockOut}
           disabled={loading}
-          className="inline-flex items-center justify-center w-full h-14 text-base font-semibold active:scale-95 transition-all disabled:opacity-50"
+          className={`${btnSecondary} w-full h-14`}
           style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
         >
           Clock-Out
@@ -247,11 +247,6 @@ export default function PunchClock() {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 px-4 py-6">
           <form onSubmit={handleClockOut}
                 className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
-            <div>
-              <h2 className="font-semibold text-ink">Description of works</h2>
-              <p className="text-xs text-muted mt-0.5">Required — describe the work you completed today.</p>
-            </div>
-
             <div>
               <label className={labelCls}>Description of works <span className="text-red-500">*</span></label>
               <textarea
@@ -282,7 +277,7 @@ export default function PunchClock() {
                 type="submit"
                 disabled={loading || !outNotes.trim()}
                 style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-                className="inline-flex items-center justify-center flex-1 h-12 font-semibold active:scale-95 transition-all disabled:opacity-50"
+                className={`${btnSecondary} flex-1 h-12`}
               >
                 {loading ? 'Clocking Out…' : 'Confirm Clock-Out'}
               </button>

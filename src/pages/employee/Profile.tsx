@@ -80,39 +80,38 @@ export default function EmployeeProfile() {
     <div className="space-y-6 max-w-md">
       <h1 className="text-2xl font-bold text-ink">My Profile</h1>
 
-      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
-        <div>
-          <label className={labelCls}>Name</label>
-          <p className="text-sm font-medium text-ink">{profile.full_name || '—'}</p>
-        </div>
-        <div>
-          <label className={labelCls}>Email</label>
-          <p className="text-sm text-muted">{profile.email}</p>
-        </div>
-        <div>
-          <label className={labelCls}>Job Role</label>
-          <p className="text-sm text-muted">{profile.job_role || '—'}</p>
-        </div>
-        {/* Required hours + leave balances don't apply to admin users — they
-            don't accrue leave. Employees still see both. */}
-        {!isAdmin && (
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
           <div>
-            <label className={labelCls}>Required Hours P/W</label>
-            <p className="text-sm text-muted">{profile.weekly_hours_category} hours</p>
+            <label className={labelCls}>Name</label>
+            <p className="text-sm font-medium text-ink">{profile.full_name || '—'}</p>
           </div>
-        )}
-      </div>
-
-      <form onSubmit={handleSave} className="bg-surface rounded-2xl border border-page shadow-sm p-5 space-y-4">
-        <div>
-          <label className={labelCls}>Mobile Number</label>
-          <input
-            type="tel"
-            value={mobile}
-            onChange={e => setMobile(e.target.value)}
-            className={inputCls}
-            placeholder="04XX XXX XXX"
-          />
+          <div>
+            <label className={labelCls}>Email</label>
+            <p className="text-sm text-muted">{profile.email}</p>
+          </div>
+          <div>
+            <label className={labelCls}>Mobile Number</label>
+            <input
+              type="tel"
+              value={mobile}
+              onChange={e => setMobile(e.target.value)}
+              className={inputCls}
+              placeholder="04XX XXX XXX"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Job Role</label>
+            <p className="text-sm text-muted">{profile.job_role || '—'}</p>
+          </div>
+          {/* Required hours + leave balances don't apply to admin users — they
+              don't accrue leave. Employees still see both. */}
+          {!isAdmin && (
+            <div>
+              <label className={labelCls}>Required Hours P/W</label>
+              <p className="text-sm text-muted">{profile.weekly_hours_category} hours</p>
+            </div>
+          )}
         </div>
         <button
           type="submit"
@@ -146,7 +145,7 @@ export default function EmployeeProfile() {
         ) : (
           <>
             <div className="flex items-center justify-between rounded-xl bg-page px-4 py-3">
-              <span className="text-sm font-medium text-ink">Mute all reminders</span>
+              <span className="text-sm font-medium text-ink uppercase">Mute all reminders</span>
               <button type="button" onClick={toggleMute}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${muted ? 'bg-red-500' : 'bg-page border border-skyDeep/40'}`}>
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0.5'}`} />

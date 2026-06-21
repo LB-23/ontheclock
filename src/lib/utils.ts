@@ -183,7 +183,7 @@ export const BTN = {
  *  outline (not just border colour) so hue-only colour-blind users still see
  *  a perceptible state change. */
 export const inputCls =
-  'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink placeholder:text-[#D9D9D9] focus:border-sky focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-sky'
+  'block w-full min-w-0 border-2 border-page bg-surface px-4 py-3 text-sm text-ink font-[Mona_Sans_SemiCondensed] placeholder:text-[#D9D9D9] focus:border-sky focus:outline focus:outline-2 focus:outline-offset-0 focus:outline-sky'
 
 /* Field labels (EMAIL / PASSWORD / form labels) — Forma DJR Text, 10px,
  * uppercase, .04em tracking, muted grey. Matches the gallery exactly. */
