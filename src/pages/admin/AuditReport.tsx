@@ -28,11 +28,11 @@ type AuditRow = {
 // Audit flag palette mirrors the system-wide status badge palette — soft
 // pastel bg + deeply-toned text, each pair clearing WCAG AA 4.5:1.
 const flagLabel: Record<AuditFlag, { text: string; style: React.CSSProperties }> = {
-  ok:                { text: 'OK',                       style: { backgroundColor: '#E0F499', color: '#5E7000' } },
-  clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: '#FDBEB5', color: '#9C0F0F' } },
-  clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: '#FDBEB5', color: '#9C0F0F' } },
-  no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: '#FEDDB4', color: '#8A5402' } },
-  no_clock_out_gps:  { text: 'No clock-out GPS',         style: { backgroundColor: '#FEDDB4', color: '#8A5402' } },
+  ok:                { text: 'OK',                       style: { backgroundColor: '#d2f2a9', color: '#8bc93d' } },
+  clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: '#f7d8d8', color: '#ff2828' } },
+  clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: '#f7d8d8', color: '#ff2828' } },
+  no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: '#fbe3bd', color: '#f99702' } },
+  no_clock_out_gps:  { text: 'No clock-out GPS',         style: { backgroundColor: '#fbe3bd', color: '#f99702' } },
   site_not_geocoded: { text: 'Site not geocoded',        style: { backgroundColor: '#CDCBCB', color: '#3E3E3E' } },
 }
 
@@ -154,17 +154,17 @@ export default function AuditReport() {
 
       {/* Summary — colour-coded by severity (all backgrounds @ 10% transparency) */}
       <div className="grid grid-cols-3 gap-3">
-        <div style={{ backgroundColor: 'rgba(174,224,1,0.10)', color: '#AEE001' }} className="rounded-2xl p-4">
+        <div style={{ backgroundColor: '#d2f2a9', color: '#8bc93d' }} className="rounded-2xl p-4">
           <p className="text-4xl font-clock font-bold">{total}</p>
-          <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Entries in range</p>
+          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Entries in range</p>
         </div>
-        <div style={{ backgroundColor: 'rgba(255,40,40,0.10)', color: '#FF2828' }} className="rounded-2xl p-4">
+        <div style={{ backgroundColor: '#f7d8d8', color: '#ff2828' }} className="rounded-2xl p-4">
           <p className="text-4xl font-clock font-bold">{flaggedRed}</p>
-          <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Off-site</p>
+          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Off-site</p>
         </div>
-        <div style={{ backgroundColor: 'rgba(249,151,2,0.10)', color: '#F99702' }} className="rounded-2xl p-4">
+        <div style={{ backgroundColor: '#fbe3bd', color: '#f99702' }} className="rounded-2xl p-4">
           <p className="text-4xl font-clock font-bold">{flaggedAmber}</p>
-          <p className="text-tag mt-1 font-semibold uppercase tracking-wide opacity-90">Missing GPS</p>
+          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Missing GPS</p>
         </div>
       </div>
 
@@ -198,17 +198,17 @@ export default function AuditReport() {
             <tbody className="divide-y divide-page">
               {rows.map(r => (
                 <tr key={r.id} className="hover:bg-page">
-                  <td className="px-4 py-3 text-ink whitespace-nowrap">{format(new Date(r.clock_in), 'd MMM HH:mm')}</td>
+                  <td className="px-4 py-3 text-ink whitespace-nowrap">{format(new Date(r.clock_in), 'd MMM h:mm aaa')}</td>
                   <td className="px-4 py-3 font-medium text-ink">{r.employee_name}</td>
                   <td className="px-4 py-3 text-ink max-w-xs truncate">{r.job_address ?? '—'}</td>
-                  <td className={`px-4 py-3 text-right font-mono ${r.clock_in_distance_m && r.clock_in_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-ink'}`}>
+                  <td className="px-4 py-3 text-right font-medium" style={{ color: r.clock_in_distance_m && r.clock_in_distance_m > threshold ? '#ff1919' : '#000000' }}>
                     {r.clock_in_distance_m !== null ? `${r.clock_in_distance_m}m` : '—'}
                   </td>
-                  <td className={`px-4 py-3 text-right font-mono ${r.clock_out_distance_m && r.clock_out_distance_m > threshold ? 'text-red-600 font-semibold' : 'text-ink'}`}>
+                  <td className="px-4 py-3 text-right font-medium" style={{ color: r.clock_out_distance_m && r.clock_out_distance_m > threshold ? '#ff1919' : '#000000' }}>
                     {r.clock_out_distance_m !== null ? `${r.clock_out_distance_m}m` : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap"
+                    <span className="inline-flex items-center rounded-none px-2.5 py-0.5 text-[9px] font-semibold font-forma uppercase tracking-[0.04em] whitespace-nowrap"
                           style={flagLabel[r.audit_flag].style}>
                       {flagLabel[r.audit_flag].text}
                     </span>

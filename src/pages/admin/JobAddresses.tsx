@@ -146,7 +146,7 @@ export default function JobAddresses() {
         <div className="px-5 py-3 border-b border-page">
           <h2 className="text-sm font-semibold text-ink">Active ({active.length})</h2>
         </div>
-        <div className="divide-y divide-page max-h-96 overflow-y-auto">
+        <div className="divide-y divide-page max-h-[800px] overflow-y-auto">
           {active.map(a => (
             <div key={a.id} className="px-5 py-3 flex justify-between items-center gap-3">
               <div className="min-w-0">
@@ -155,7 +155,7 @@ export default function JobAddresses() {
                   <p className="text-tag text-amber-600">⚠ No GPS — won't be audited</p>
                 ) : null}
               </div>
-              <button onClick={() => toggle(a)} className="text-xs text-red-500 hover:underline shrink-0">
+              <button onClick={() => toggle(a)} className="text-[10px] font-forma uppercase tracking-[0.04em] underline text-red-500 shrink-0">
                 Deactivate
               </button>
             </div>

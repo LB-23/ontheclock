@@ -15,7 +15,7 @@ const leaveLabels: Record<string, string> = {
 const LEAVE_TYPE_COLOURS: Record<string, string> = {
   annual:       '#D7B8F4', // soft lavender
   personal:     '#FFBFEB', // soft pink
-  time_in_lieu: '#FFD7A8', // soft peach
+  time_in_lieu: '#FFF89F', // yellow (matches former unpaid)
   unpaid:       '#FFF89F', // soft cream
 }
 const LEAVE_TYPE_LABELS: Record<string, string> = {
@@ -283,7 +283,7 @@ export default function LeaveManagement() {
         <h1 className="text-2xl font-bold text-ink">Leave Management</h1>
         <button
           onClick={openAddLeave}
-          style={{ backgroundColor: '#B4B3B3', color: '#FFFFFF' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
           className={btnPrimary}
         >
           + Add Leave For User
@@ -491,10 +491,9 @@ export default function LeaveManagement() {
               <select value={editForm.leave_type}
                       onChange={e => setEditForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                       className={inputCls}>
-                {Object.entries(leaveLabels).map(([k, v]) => (
+                {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
-                <option value="unpaid">Unpaid</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -649,7 +648,7 @@ export default function LeaveManagement() {
                   style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
               P/H — VIC Public Holiday
             </span>
-            {(['annual', 'personal', 'time_in_lieu', 'unpaid'] as const).map(t => (
+            {(['annual', 'personal', 'time_in_lieu'] as const).map(t => (
               <span key={t} className="text-tag rounded-none px-2 py-0.5 text-ink"
                     style={{ backgroundColor: leaveTypeColour(t) }}>
                 {LEAVE_TYPE_LABELS[t]}
@@ -694,7 +693,7 @@ export default function LeaveManagement() {
               <select value={addForm.leave_type}
                       onChange={e => setAddForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                       className={inputCls}>
-                {Object.entries(leaveLabels).map(([k, v]) => (
+                {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>

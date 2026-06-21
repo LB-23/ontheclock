@@ -915,7 +915,7 @@ export default function MyTimesheets() {
               loadTimesheets()
             }}
             style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-            className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold active:scale-95 transition-all"
+            className={`${btnDanger} w-full h-12`}
           >
             Delete Timesheet
           </button>
@@ -933,10 +933,10 @@ export default function MyTimesheets() {
               // happens to fall in the default window.
               setExpFrom(''); setExpTo(''); setShowExport(true); setErr('')
             }}
-            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
             className={`${btnSecondary} w-full h-11`}
           >
-            ↓ Export Timesheets
+            Export Timesheets
           </button>
 
           {timesheets.length === 0 && (
