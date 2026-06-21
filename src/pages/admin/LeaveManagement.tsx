@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
@@ -623,14 +623,20 @@ export default function LeaveManagement() {
                       ? `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}`
                       : parts[0] ?? ''
                     const typeLabel = LEAVE_TYPE_LABELS[l.leave_type] ?? l.leave_type
+                    // Hours of leave taken (e.g. "1:00 pm – 3:30 pm") shown under
+                    // the name when the request carries explicit start/end times.
+                    const timeRange = l.start_time && l.end_time
+                      ? `${fmtClock(l.start_time)} – ${fmtClock(l.end_time)}`
+                      : ''
                     return (
                       <div
                         key={l.id}
-                        className="text-micro leading-tight rounded px-0.5 mt-0.5 truncate text-ink"
+                        className="text-micro leading-tight rounded px-0.5 mt-0.5 text-ink"
                         style={{ backgroundColor: leaveTypeColour(l.leave_type) }}
-                        title={`${fullName} — ${typeLabel}`}
+                        title={`${fullName} — ${typeLabel}${timeRange ? ` (${timeRange})` : ''}`}
                       >
-                        {display}
+                        <div className="truncate">{display}</div>
+                        {timeRange && <div className="truncate opacity-80">{timeRange}</div>}
                       </div>
                     )
                   })}
