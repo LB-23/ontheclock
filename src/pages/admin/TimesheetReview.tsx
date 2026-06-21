@@ -233,7 +233,6 @@ export default function TimesheetReview() {
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                      {e.is_overtime && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>+HRS</span>}
                       {hasEdits && (
                         <button
                           onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}

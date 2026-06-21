@@ -845,7 +845,6 @@ export default function MyTimesheets() {
                   </div>
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                    {e.is_overtime && !isSystem && <span className="text-xs font-medium" style={{ color: '#1C9FDA' }}>+HRS</span>}
                     {selected.status === 'draft' && !isSystem && (
                       <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
                         Edit
