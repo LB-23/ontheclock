@@ -64,10 +64,10 @@ export default function Dashboard() {
             /* Hover affordance is movement + sky ring instead of shadow-md so
              * we stay inside the "no-shadow surface" rule. shadow-md is
              * reserved for functional depth (modals, sheets), not hover. */
-            className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
+            className="flex flex-col justify-between min-h-[92px] text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
           >
-            <p className="text-4xl font-clock font-bold">{s.value}</p>
-            <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-1 leading-tight">{s.label}</p>
+            <p className="text-4xl font-clock font-bold leading-none">{s.value}</p>
+            <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-2 leading-tight">{s.label}</p>
           </button>
         ))}
       </div>

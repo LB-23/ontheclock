@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
+import { ensureFreshSubscription } from '../lib/push'
 
 interface NavItem { to: string; label: string; icon: string }
 
@@ -54,6 +55,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const isAdmin = profile?.app_role === 'admin'
   const nav = isAdmin ? adminNav : employeeNav
+
+  // Repair push subscriptions that were created with the pre-rotation VAPID key
+  // so notifications resume without each user manually re-enabling.
+  useEffect(() => { ensureFreshSubscription() }, [])
 
   const handleSignOut = async () => {
     await signOut()
