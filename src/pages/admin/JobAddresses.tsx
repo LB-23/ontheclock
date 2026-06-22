@@ -136,7 +136,8 @@ export default function JobAddresses() {
         value={search}
         onChange={e => setSearch(e.target.value)}
         className={inputCls}
-        placeholder="Search addresses…"
+        style={{ fontSize: '12px' }}
+        placeholder="search address…"
       />
 
       {loading && <Skeleton count={6} />}

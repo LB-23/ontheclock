@@ -41,7 +41,14 @@ export default function AuditReport() {
   const [employees, setEmployees]   = useState<Profile[]>([])
   const [filterEmp, setFilterEmp]   = useState('')
   const [filterFlag, setFilterFlag] = useState<'flagged' | 'all' | AuditFlag>('flagged')
-  const [from, setFrom]             = useState(format(new Date(Date.now() - 30 * 86400000), 'yyyy-MM-dd'))
+  // Default range never starts earlier than 19 Jun 2026 (audit baseline /
+  // system go-live) — keeps the older test/pre-go-live rows out of the default
+  // view; otherwise the trailing 30 days. Admin can still widen it manually.
+  const [from, setFrom]             = useState(() => {
+    const thirtyAgo = new Date(Date.now() - 30 * 86400000)
+    const floor = new Date('2026-06-19T00:00:00')
+    return format(thirtyAgo > floor ? thirtyAgo : floor, 'yyyy-MM-dd')
+  })
   const [to,   setTo]               = useState(format(new Date(), 'yyyy-MM-dd'))
   const [threshold, setThreshold]   = useState(200)
   const [loading, setLoading]       = useState(false)
