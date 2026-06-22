@@ -128,11 +128,13 @@ export default function AuditReport() {
       <div className="bg-surface rounded-2xl border border-page shadow-sm p-5 grid gap-3 md:grid-cols-5">
         <div>
           <label className={labelCls}>From</label>
-          <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={inputCls} />
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={inputCls}
+                 style={{ WebkitAppearance: 'none', appearance: 'none', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label className={labelCls}>To</label>
-          <input type="date" value={to} onChange={e => setTo(e.target.value)} className={inputCls} />
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} className={inputCls}
+                 style={{ WebkitAppearance: 'none', appearance: 'none', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
         </div>
         <div>
           <label className={labelCls}>Employee</label>
@@ -161,17 +163,17 @@ export default function AuditReport() {
 
       {/* Summary — colour-coded by severity (all backgrounds @ 10% transparency) */}
       <div className="grid grid-cols-3 gap-3">
-        <div style={{ backgroundColor: '#dff8be', color: '#8bc93d' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold">{total}</p>
-          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Entries in range</p>
+        <div style={{ backgroundColor: '#dff8be', color: '#8bc93d' }} className="flex flex-col justify-between min-h-[92px] p-3 sm:p-4 overflow-hidden">
+          <p className="text-4xl font-clock font-bold leading-none">{total}</p>
+          <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-2 leading-tight opacity-90">Entries in range</p>
         </div>
-        <div style={{ backgroundColor: '#f7d8d8', color: '#ff2828' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold">{flaggedRed}</p>
-          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Off-site</p>
+        <div style={{ backgroundColor: '#f7d8d8', color: '#ff2828' }} className="flex flex-col justify-between min-h-[92px] p-3 sm:p-4 overflow-hidden">
+          <p className="text-4xl font-clock font-bold leading-none">{flaggedRed}</p>
+          <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-2 leading-tight opacity-90">Off-site</p>
         </div>
-        <div style={{ backgroundColor: '#fbe3bd', color: '#f99702' }} className="rounded-2xl p-4">
-          <p className="text-4xl font-clock font-bold">{flaggedAmber}</p>
-          <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Missing GPS</p>
+        <div style={{ backgroundColor: '#fbe3bd', color: '#f99702' }} className="flex flex-col justify-between min-h-[92px] p-3 sm:p-4 overflow-hidden">
+          <p className="text-4xl font-clock font-bold leading-none">{flaggedAmber}</p>
+          <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-2 leading-tight opacity-90">Missing GPS</p>
         </div>
       </div>
 
