@@ -1,8 +1,8 @@
-﻿// Bump CACHE version when shipping new builds â€” forces refresh of cached shell
+// Bump CACHE version when shipping new builds - forces refresh of cached shell
 const CACHE = 'ontheclock-v23'
 const SHELL = [
   '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
-  // Brand typography â€” self-hosted, precached so first paint after install has
+  // Brand typography - self-hosted, precached so first paint after install has
   // the real fonts. Three-face system: Mona Sans SemiCondensed (body/numerals),
   // Mona Sans Condensed (wordmark), Forma DJR Text (buttons/labels).
   '/fonts/MonaSans_SemiCondensed-Regular.ttf',
@@ -66,7 +66,7 @@ self.addEventListener('push', e => {
   try { data = e.data?.json() ?? {} } catch { data = { title: e.data?.text() } }
 
   // Derive title from the reminder kind so the OS renders the bold heading the
-  // brand wants ("Reminder to Clock-In" / "Reminder to Clock-Out") â€” even if
+  // brand wants ("Reminder to Clock-In" / "Reminder to Clock-Out") - even if
   // the Edge Function payload only carries `kind`. Falls back to whatever the
   // server explicitly set, then to the company name.
   const kind = data.kind || ''
