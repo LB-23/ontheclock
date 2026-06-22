@@ -51,8 +51,11 @@ Deno.serve(async (req) => {
     .eq('notifications_enabled', true)
   if (error) return json({ error: error.message }, 500)
 
+  // `name` is still resolved (kept for the response/logs) but the notification
+  // title is a fixed phrase per request. Body left empty.
+  void name
   const payload = JSON.stringify({
-    title: `${name} has requested leave`,
+    title: 'New Leave Request',
     body: '',
     url: '/leave',
     kind: 'leave_request',

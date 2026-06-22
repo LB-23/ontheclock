@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds - forces refresh of cached shell
-const CACHE = 'ontheclock-v24'
+const CACHE = 'ontheclock-v25'
 const SHELL = [
   '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
   // Brand typography - self-hosted, precached so first paint after install has
@@ -84,13 +84,9 @@ self.addEventListener('push', e => {
     requireInteraction: false,
     vibrate: [200, 100, 200],
   }
-  // Body line beneath the bold title. Defaults to "from Larkin Building Group"
-  // so the company is named even when iOS hides the source-app tag. Server can
-  // override with any non-empty string; explicit `body: ''` collapses it.
-  const body =
-    typeof data.body === 'string'
-      ? data.body
-      : titleByKind ? 'from Larkin Building Group' : ''
+  // Body line beneath the bold title - shown only when the payload supplies one.
+  // No "from ..." fallback; the source app name is iOS's own attribution.
+  const body = typeof data.body === 'string' ? data.body : ''
   if (body.length > 0) opts.body = body
 
   e.waitUntil(self.registration.showNotification(title, opts))
