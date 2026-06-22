@@ -224,7 +224,7 @@ export default function PunchClock() {
           <button
             onClick={handleClockIn}
             disabled={!selectedJob || loading}
-            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
             className={`${btnPrimary} w-full h-14`}
           >
             {loading ? 'Clocking In…' : 'Clock-In'}
@@ -238,7 +238,7 @@ export default function PunchClock() {
           onClick={openClockOut}
           disabled={loading}
           className={`${btnSecondary} w-full h-14`}
-          style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+          style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
         >
           Clock-Out
         </button>

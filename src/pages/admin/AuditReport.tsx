@@ -28,7 +28,7 @@ type AuditRow = {
 // Audit flag palette mirrors the system-wide status badge palette — soft
 // pastel bg + deeply-toned text, each pair clearing WCAG AA 4.5:1.
 const flagLabel: Record<AuditFlag, { text: string; style: React.CSSProperties }> = {
-  ok:                { text: 'OK',                       style: { backgroundColor: '#d2f2a9', color: '#8bc93d' } },
+  ok:                { text: 'OK',                       style: { backgroundColor: '#dff8be', color: '#8bc93d' } },
   clock_in_far:      { text: 'Clock-in far from site',   style: { backgroundColor: '#f7d8d8', color: '#ff2828' } },
   clock_out_far:     { text: 'Clock-out far from site',  style: { backgroundColor: '#f7d8d8', color: '#ff2828' } },
   no_clock_in_gps:   { text: 'No clock-in GPS',          style: { backgroundColor: '#fbe3bd', color: '#f99702' } },
@@ -161,7 +161,7 @@ export default function AuditReport() {
 
       {/* Summary — colour-coded by severity (all backgrounds @ 10% transparency) */}
       <div className="grid grid-cols-3 gap-3">
-        <div style={{ backgroundColor: '#d2f2a9', color: '#8bc93d' }} className="rounded-2xl p-4">
+        <div style={{ backgroundColor: '#dff8be', color: '#8bc93d' }} className="rounded-2xl p-4">
           <p className="text-4xl font-clock font-bold">{total}</p>
           <p className="text-tag mt-1 font-semibold font-forma uppercase tracking-wide opacity-90">Entries in range</p>
         </div>

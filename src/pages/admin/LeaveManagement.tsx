@@ -30,6 +30,17 @@ function leaveTypeColour(t: string): string {
   return LEAVE_TYPE_COLOURS[t] ?? '#E8E8E8'
 }
 
+// Status badge — matches the employee Leave page exactly (9px Forma uppercase,
+// square). Approved bg is the brand green #dff8be.
+const statusBadgeCls = 'inline-flex items-center rounded-none px-2 py-[3px] text-[9px] font-semibold font-forma uppercase'
+const statusBadgeStyle = (s: string): React.CSSProperties => {
+  if (s === 'pending')   return { backgroundColor: '#fbe3bd', color: '#f99702' }
+  if (s === 'approved')  return { backgroundColor: '#dff8be', color: '#8bc93d' }
+  if (s === 'declined' || s === 'rejected') return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
+  if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
+  return {}
+}
+
 export default function LeaveManagement() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [approved, setApproved] = useState<LeaveRequest[]>([])
@@ -134,7 +145,7 @@ export default function LeaveManagement() {
       total_hours: totalHours,
       reason:      addForm.reason || null,
       status:      'approved',  // admin-created leave is immediately approved
-      admin_notes: 'Added by admin',
+      admin_notes: 'Added By Admin',
       decided_by:  (await supabase.auth.getUser()).data.user?.id ?? null,
     })
     setAddBusy(false)
@@ -367,7 +378,7 @@ export default function LeaveManagement() {
                   <div>
                     <p className="font-semibold">{prof?.full_name}</p>
                     <p className="text-sm text-muted">
-                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(reqHrs)})
+                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${fmtClock(r.start_time)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${fmtClock(r.end_time)}` : ''} ({fmtHours(reqHrs)})
                     </p>
                     {/* Available-balance line — red when the request would
                         overdraw the bank so admin sees the conflict at a glance. */}
@@ -424,9 +435,11 @@ export default function LeaveManagement() {
                 <div>
                   <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
                   <p className="text-sm text-muted mt-0.5">
-                    {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''}
+                    {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${fmtClock(r.start_time)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${fmtClock(r.end_time)}` : ''}
                   </p>
-                  {r.admin_notes && <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>}
+                  {r.admin_notes && (r.admin_notes === 'Added By Admin' || r.admin_notes === 'Added by admin'
+                    ? <p className="text-xs mt-1" style={{ color: '#ff2828' }}>Added By Admin</p>
+                    : <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>)}
                 </div>
                 <p className="text-sm font-bold font-clock text-ink normal-case">{fmtHours(r.total_hours ?? 0)}</p>
               </div>
@@ -445,12 +458,6 @@ export default function LeaveManagement() {
           )}
           {allRequests.filter(r => (r.leave_type as string) !== 'away').map(r => {
             const status = r.status
-            // Status palette — every fg darkened to clear WCAG AA 4.5:1
-            const style: React.CSSProperties =
-              status === 'pending'   ? { backgroundColor: '#FEDDB4', color: '#8A5402' }
-              : status === 'approved'  ? { backgroundColor: '#E0F499', color: '#5E7000' }
-              : status === 'withdrawn' ? { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
-              : { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
             return (
               <button key={r.id} onClick={() => openEdit(r)}
                       className="w-full text-left bg-surface border border-page px-5 py-4 hover:border-sky/40 transition-colors normal-case">
@@ -458,13 +465,15 @@ export default function LeaveManagement() {
                   <div>
                     <p className="font-semibold">{(r.profiles as Profile)?.full_name}</p>
                     <p className="text-sm text-muted mt-0.5">
-                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${r.start_time.slice(0, 5)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${r.end_time.slice(0, 5)}` : ''} ({fmtHours(r.total_hours ?? 0)})
+                      {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${fmtClock(r.start_time)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${fmtClock(r.end_time)}` : ''} ({fmtHours(r.total_hours ?? 0)})
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
-                    {r.admin_notes && <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>}
+                    {r.admin_notes && (r.admin_notes === 'Added By Admin' || r.admin_notes === 'Added by admin'
+                    ? <p className="text-xs mt-1" style={{ color: '#ff2828' }}>Added By Admin</p>
+                    : <AdminNoteBanner className="mt-1">{r.admin_notes}</AdminNoteBanner>)}
                     {r.withdrawal_reason && <p className="text-xs text-muted mt-1">Withdrawn: {r.withdrawal_reason}</p>}
                   </div>
-                  <span className="inline-flex items-center rounded-none px-2.5 py-0.5 text-xs font-semibold capitalize" style={style}>
+                  <span className={statusBadgeCls} style={statusBadgeStyle(status)}>
                     {status}
                   </span>
                 </div>
@@ -520,7 +529,7 @@ export default function LeaveManagement() {
               <p className="font-semibold text-lg">{(openReq.profiles as Profile)?.full_name}</p>
               <button type="button" onClick={() => setOpenReq(null)} className="text-muted hover:text-ink">✕</button>
             </div>
-            <p className="text-xs text-muted capitalize">{openReq.status}</p>
+            <span className={statusBadgeCls} style={statusBadgeStyle(openReq.status)}>{openReq.status}</span>
 
             <div>
               <label className={labelCls}>Leave Type</label>

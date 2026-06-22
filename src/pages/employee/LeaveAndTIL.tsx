@@ -221,7 +221,7 @@ export default function LeaveAndTIL() {
   // WCAG AA 4.5:1 against its own bg.
   const statusStyle = (s: string): React.CSSProperties => {
     if (s === 'pending')   return { backgroundColor: '#fbe3bd', color: '#f99702' }
-    if (s === 'approved')  return { backgroundColor: '#d2f2a9', color: '#8bc93d' }
+    if (s === 'approved')  return { backgroundColor: '#dff8be', color: '#8bc93d' }
     if (s === 'declined' || s === 'rejected') return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
     if (s === 'withdrawn') return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
     return {}
@@ -303,9 +303,9 @@ export default function LeaveAndTIL() {
         <div className="grid grid-cols-3 gap-3">
           {[
             // May 2026 design-system tile palette — same sky ramp as admin Dashboard
-            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#9ADBED' },
-            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#5DC4E3' },
-            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#0096C7' },
+            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#a3dff5' },
+            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#47bfeb' },
+            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#1787b9' },
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#000000' }}
                  className="p-3 sm:p-4 overflow-hidden">

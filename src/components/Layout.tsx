@@ -134,13 +134,15 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Bottom nav — mobile only.
        *  min-h-[56px] per Material bottom-nav guidance so each tap target
        *  reads ≥48dp even after the safe-area inset eats into the height. */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-10 flex bg-surface border-t border-page shadow-lg safe-bottom">
-        {nav.slice(0, 5).map(item => (
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-10 flex overflow-x-auto bg-surface border-t border-page shadow-lg safe-bottom">
+        {/* Every page is reachable — items past the 5th scroll horizontally
+            (basis-1/5 shows five at a time). */}
+        {nav.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center justify-center min-h-[56px] py-2 text-tag font-clock transition-colors ${
+              `flex flex-shrink-0 basis-1/5 flex-col items-center justify-center min-h-[56px] py-2 text-tag font-clock transition-colors ${
                 isActive ? 'text-sky' : 'text-muted'
               }`
             }

@@ -172,7 +172,7 @@ export default function EmployeeProfile() {
         ) : (
           <>
             <div className="flex items-center justify-between rounded-xl bg-page px-4 py-3">
-              <span className="text-xs font-medium text-ink">Mute All Reminders</span>
+              <span className="text-xs font-medium text-ink">{isAdmin ? 'Mute Leave Notifications' : 'Mute All Reminders'}</span>
               <button type="button" onClick={toggleMute}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${muted ? 'bg-red-500' : 'bg-page border border-skyDeep/40'}`}>
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0.5'}`} />
@@ -202,20 +202,23 @@ export default function EmployeeProfile() {
         )}
       </div>
 
-      {/* Timesheet submission timeliness — on-time vs late counts */}
-      <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Timesheet Submissions</p>
-        <div className="flex gap-8 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-clock font-bold text-ink">{subStats.onTime}</span>
-            <span className={onTimeFlagCls}>On-Time</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-clock font-bold text-ink">{subStats.late}</span>
-            <span className={onTimeFlagCls}>Late</span>
+      {/* Timesheet submission timeliness — on-time vs late counts. Employees
+          only; admins don't submit their own timesheets for this metric. */}
+      {!isAdmin && (
+        <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Timesheet Submissions</p>
+          <div className="flex gap-8 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-clock font-bold text-ink">{subStats.onTime}</span>
+              <span className={onTimeFlagCls}>On-Time</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-clock font-bold text-ink">{subStats.late}</span>
+              <span className={onTimeFlagCls}>Late</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {!isAdmin && (
         <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
