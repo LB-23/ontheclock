@@ -67,7 +67,7 @@ export default function Dashboard() {
             className="text-left p-3 sm:p-4 transition-transform hover:scale-[1.02] hover:ring-2 hover:ring-sky/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky overflow-hidden"
           >
             <p className="text-4xl font-clock font-bold">{s.value}</p>
-            <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-1 whitespace-nowrap">{s.label}</p>
+            <p className="text-tag font-semibold font-forma uppercase tracking-[-0.01em] mt-1 leading-tight">{s.label}</p>
           </button>
         ))}
       </div>

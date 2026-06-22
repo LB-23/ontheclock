@@ -609,7 +609,7 @@ export default function MyTimesheets() {
   // Status palette — matched to the design gallery (exact bg + text per status).
   const statusStyle = (s: string): React.CSSProperties => {
     if (s === 'submitted' || s === 'pending') return { backgroundColor: '#fbe3bd', color: '#f99702' }
-    if (s === 'approved')                     return { backgroundColor: '#d2f2a9', color: '#8bc93d' }
+    if (s === 'approved')                     return { backgroundColor: '#dff8be', color: '#8bc93d' }
     if (s === 'rejected')                     return { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
     return { backgroundColor: '#CDCBCB', color: '#3E3E3E' }   // draft (default)
   }

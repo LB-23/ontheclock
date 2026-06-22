@@ -3,7 +3,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnSecondary, btnDanger } from '../../lib/utils'
+import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnSecondary, btnDanger, labelCls } from '../../lib/utils'
 import { format } from 'date-fns'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -368,11 +368,11 @@ export default function Reports() {
         {(tab === 'employee' || tab === 'job') && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="min-w-0">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">From</label>
+              <label className={labelCls}>From</label>
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={inputCls} />
             </div>
             <div className="min-w-0">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">To</label>
+              <label className={labelCls}>To</label>
               <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={inputCls} />
             </div>
           </div>
@@ -380,14 +380,14 @@ export default function Reports() {
         {tab === 'employee' && (
           <div className="grid grid-cols-2 gap-3">
             <div className="min-w-0">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Filter Employee</label>
+              <label className={labelCls}>Filter Employee</label>
               <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={inputCls}>
                 <option value="">All employees</option>
                 {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
               </select>
             </div>
             <div className="min-w-0">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Sort By</label>
+              <label className={labelCls}>Sort By</label>
               <select value={empSort} onChange={e => setEmpSort(e.target.value as EmployeeSort)} className={inputCls}>
                 <option value="employee">Employee</option>
                 <option value="date">Date</option>
@@ -406,7 +406,7 @@ export default function Reports() {
         {tab === 'weekly' && (
           <>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Week Starting (Friday)</label>
+              <label className={labelCls}>Week Starting (Friday)</label>
               <input type="date" value={filterWeek} onChange={e => setFilterWeek(e.target.value)} className={inputCls} />
             </div>
             <fieldset className="border border-page rounded-xl p-3">

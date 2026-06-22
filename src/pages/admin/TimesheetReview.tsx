@@ -413,7 +413,7 @@ export default function TimesheetReview() {
                     className="inline-flex items-center rounded-none px-2 py-0.5 text-[9px] font-semibold font-forma uppercase tracking-[0.04em] mt-1"
                     style={
                       ts.status === 'submitted' ? { backgroundColor: '#fbe3bd', color: '#f99702' }
-                      : ts.status === 'approved' ? { backgroundColor: '#d2f2a9', color: '#8bc93d' }
+                      : ts.status === 'approved' ? { backgroundColor: '#dff8be', color: '#8bc93d' }
                       : ts.status === 'rejected' ? { backgroundColor: '#FDBEB5', color: '#9C0F0F' }
                       : { backgroundColor: '#CDCBCB', color: '#3E3E3E' }
                     }
