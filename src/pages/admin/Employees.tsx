@@ -215,7 +215,9 @@ export default function Employees() {
               <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
             </>
           )}
-          <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Timesheet Submissions</dt><dd><span className={onTimeFlagCls}>{viewStats.onTime} On-Time · {viewStats.late} Late</span></dd></div>
+          {viewing.app_role !== 'admin' && (
+            <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Timesheet Submissions</dt><dd><span className={onTimeFlagCls}>{viewStats.onTime} On-Time · {viewStats.late} Late</span></dd></div>
+          )}
           {viewStats.approver && (
             <div className="flex justify-between"><dt className="text-muted">Last Approved By</dt><dd className="text-ink">{viewStats.approver}</dd></div>
           )}

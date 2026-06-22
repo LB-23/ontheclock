@@ -142,7 +142,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-shrink-0 basis-1/5 flex-col items-center justify-center min-h-[56px] py-2 text-tag font-clock transition-colors ${
+              `flex flex-1 min-w-[20%] flex-col items-center justify-center min-h-[56px] py-2 text-tag font-clock transition-colors ${
                 isActive ? 'text-sky' : 'text-muted'
               }`
             }
