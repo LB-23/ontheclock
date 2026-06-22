@@ -149,15 +149,21 @@ export default function EmployeeProfile() {
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Push Reminders</p>
         </div>
-        <p className="text-sm text-muted">
-          Get reminded to clock in and out at the times your admin sets:
-          <br />
-          <span className="text-ink">
-            In: <strong>{fmtReminderTime(profile.clock_in_reminder)}</strong>
-            {'   '}·{'   '}
-            Out: <strong>{fmtReminderTime(profile.clock_out_reminder)}</strong>
-          </span>
-        </p>
+        {isAdmin ? (
+          <p className="text-sm text-muted">
+            Get notified the moment an employee submits a leave request.
+          </p>
+        ) : (
+          <p className="text-sm text-muted">
+            Get reminded to clock in and out at the times your admin sets:
+            <br />
+            <span className="text-ink">
+              In: <strong>{fmtReminderTime(profile.clock_in_reminder)}</strong>
+              {'   '}·{'   '}
+              Out: <strong>{fmtReminderTime(profile.clock_out_reminder)}</strong>
+            </span>
+          </p>
+        )}
 
         {permission === 'unsupported' ? (
           <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
@@ -186,7 +192,7 @@ export default function EmployeeProfile() {
               <button
                 type="button" onClick={handleDisablePush} disabled={pushBusy}
                 style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-                className="inline-flex items-center justify-center w-full h-11 text-sm font-semibold active:scale-95 transition-all disabled:opacity-50"
+                className={`${btnSecondary} w-full h-11`}
               >
                 {pushBusy ? 'Disabling…' : 'Disable Push Reminders'}
               </button>

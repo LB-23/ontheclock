@@ -1,4 +1,5 @@
 import { startOfWeek, format, parseISO, differenceInCalendarDays } from 'date-fns'
+import { holidayFor } from './holidays'
 
 /** Friday of the LBG work-week containing `date` (week runs Fri → Thu) */
 export function getWeekStart(date: Date = new Date()): string {
@@ -79,6 +80,48 @@ export function calcHours(clockIn: string, clockOut: string): number {
 /** Working days between two date strings (inclusive) */
 export function workdaysBetween(start: string, end: string): number {
   return differenceInCalendarDays(parseISO(end), parseISO(start)) + 1
+}
+
+/** True for Mon–Fri that are NOT VIC public holidays. */
+export function isWorkday(d: Date): boolean {
+  const dow = d.getDay()
+  if (dow === 0 || dow === 6) return false   // Sun / Sat
+  return holidayFor(d) === null
+}
+
+/** Hours of leave to deduct over [startDate, endDate] counting ONLY workdays
+ *  (excludes Sat/Sun and VIC public holidays — those aren't deducted from a
+ *  leave balance). First/last partial days use the supplied times capped at the
+ *  daily figure; full middle workdays count `dailyHrs`. Mirrors the per-day
+ *  shape the DB uses, so the deducted total matches the timesheet entries. */
+export function computeLeaveHours(
+  startDate: string, startTime: string, endDate: string, endTime: string, dailyHrs: number,
+): number {
+  if (!startDate || !endDate) return 0
+  const start = new Date(`${startDate}T00:00:00`)
+  const end   = new Date(`${endDate}T00:00:00`)
+  const [sh, sm] = startTime.split(':').map(Number)
+  const [eh, em] = endTime.split(':').map(Number)
+
+  if (startDate === endDate) {
+    if (!isWorkday(start)) return 0
+    const hrs = ((eh * 60 + em) - (sh * 60 + sm)) / 60
+    return Math.round(Math.min(Math.max(0, hrs), dailyHrs) * 10) / 10
+  }
+
+  let total = 0
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (!isWorkday(d)) continue
+    let dayHrs = dailyHrs
+    if (d.getTime() === start.getTime()) {
+      // from start_time to the end of a 7am-anchored workday, capped at dailyHrs
+      dayHrs = Math.max(0, Math.min((7 * 60 + dailyHrs * 60 - (sh * 60 + sm)) / 60, dailyHrs))
+    } else if (d.getTime() === end.getTime()) {
+      dayHrs = Math.max(0, Math.min(((eh * 60 + em) - 7 * 60) / 60, dailyHrs))
+    }
+    total += dayHrs
+  }
+  return Math.round(total * 10) / 10
 }
 
 /** Download an array of objects as a CSV file (kept for legacy callers) */

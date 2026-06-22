@@ -165,12 +165,14 @@ export default function Dashboard() {
                 const h12 = ((H + 11) % 12) + 1
                 return `${h12}:${String(M).padStart(2, '0')} ${period}`
               }
+              // Dates shown DD/MM/YYYY per design (e.g. 24/07/2026)
+              const fmtDMY = (d: string) => d.split('-').reverse().join('/')
               const start = lr.start_time
-                ? `${lr.start_date} ${fmt12(lr.start_time)}`
-                : lr.start_date
+                ? `${fmtDMY(lr.start_date)} ${fmt12(lr.start_time)}`
+                : fmtDMY(lr.start_date)
               const end = lr.end_time
-                ? `${lr.end_date} ${fmt12(lr.end_time)}`
-                : lr.end_date
+                ? `${fmtDMY(lr.end_date)} ${fmt12(lr.end_time)}`
+                : fmtDMY(lr.end_date)
               return (
                 <button
                   key={lr.id}

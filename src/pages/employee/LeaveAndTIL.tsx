@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtClock, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -44,6 +44,9 @@ export default function LeaveAndTIL() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState<FormState>(BLANK)
   const [openReq, setOpenReq] = useState<LeaveRequest | null>(null)
+  // When set, the request form is editing this (admin-created) leave rather than
+  // creating a new one — saving restores the old deduction and re-submits.
+  const [editing, setEditing] = useState<LeaveRequest | null>(null)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawReason, setWithdrawReason] = useState('')
   const [err, setErr] = useState('')
@@ -57,6 +60,7 @@ export default function LeaveAndTIL() {
       .from('leave_requests')
       .select('*')
       .eq('employee_id', profile.id)
+      .neq('leave_type', 'away')   // "Away" admin flags are calendar-only
       .order('created_at', { ascending: false })
       .then(({ data }) => setRequests((data as LeaveRequest[]) ?? []))
   }
@@ -77,44 +81,31 @@ export default function LeaveAndTIL() {
     }
   }, [form.start_date, form.end_date, profile])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Compute total hours from start_date+time -> end_date+time considering daily required hours
+  // Total leave hours, counting only workdays (excludes weekends + VIC public
+  // holidays — those aren't deducted from a leave balance). See computeLeaveHours.
   const computeTotalHours = (): number => {
     if (!profile || !form.start_date || !form.end_date || !form.start_time || !form.end_time) return 0
     const dailyHrs = profile.weekly_hours_category / 5
-    const start = new Date(`${form.start_date}T${form.start_time}`)
-    const end   = new Date(`${form.end_date}T${form.end_time}`)
-    if (end <= start) return 0
-
-    // Days inclusive
-    const startDay = new Date(form.start_date).getTime()
-    const endDay   = new Date(form.end_date).getTime()
-    const dayCount = Math.round((endDay - startDay) / 86400000) + 1
-
-    if (dayCount === 1) {
-      // Same-day: just the duration in hours (capped at daily)
-      const hrs = (end.getTime() - start.getTime()) / 3_600_000
-      return Math.round(Math.min(hrs, dailyHrs) * 10) / 10
-    }
-
-    // Multi-day: hours from start_time to end-of-workday on day 1,
-    //          + full days for days in between,
-    //          + hours from start-of-workday to end_time on last day.
-    const endOfDay1Mins = (7 * 60) + (dailyHrs * 60)  // assume 7am start; cap at start_time + dailyHrs
-    const [sh, sm] = form.start_time.split(':').map(Number)
-    const startMins = sh * 60 + sm
-    const day1Hrs = Math.max(0, (endOfDay1Mins - startMins) / 60)
-
-    const [eh2, em2] = form.end_time.split(':').map(Number)
-    const endMins = eh2 * 60 + em2
-    // Day N: from 7am up to end_time (capped at dailyHrs)
-    const dayNHrs = Math.max(0, Math.min(endMins - 7 * 60, dailyHrs * 60) / 60)
-
-    const middleDays = dayCount - 2
-    const total = day1Hrs + (middleDays * dailyHrs) + dayNHrs
-    return Math.round(total * 10) / 10
+    return computeLeaveHours(form.start_date, form.start_time, form.end_date, form.end_time, dailyHrs)
   }
 
   const totalHours = computeTotalHours()
+
+  // Load an (admin-created, approved) leave into the form for editing.
+  const startEdit = (r: LeaveRequest) => {
+    setForm({
+      leave_type: r.leave_type,
+      start_date: r.start_date,
+      start_time: r.start_time ? r.start_time.slice(0, 5) : '07:00',
+      end_date:   r.end_date,
+      end_time:   r.end_time ? r.end_time.slice(0, 5) : '15:00',
+      reason:     r.reason ?? '',
+    })
+    setEditing(r)
+    setOpenReq(null)
+    setShowForm(true)
+    setErr('')
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,6 +113,47 @@ export default function LeaveAndTIL() {
     if (totalHours <= 0) { setErr('Times need to span at least a partial day.'); return }
     setLoading(true)
     setErr('')
+
+    // Editing an existing (admin-created) leave: restore the previously-deducted
+    // hours and send it back for re-approval (status -> pending). The admin's
+    // approval then re-deducts the new amount.
+    if (editing) {
+      const balCol: Record<string, string> = {
+        annual: 'annual_leave_balance', personal: 'personal_leave_balance', time_in_lieu: 'accrued_til_hours',
+      }
+      const col = balCol[editing.leave_type]
+      if (col && editing.status === 'approved') {
+        const { data: prof } = await supabase.from('profiles').select(col).eq('id', profile.id).single()
+        if (prof) {
+          const current = (prof as unknown as Record<string, number>)[col] ?? 0
+          await supabase.from('profiles').update({ [col]: current + (editing.total_hours ?? 0) }).eq('id', profile.id)
+          if (editing.leave_type === 'time_in_lieu') {
+            await supabase.from('til_ledger').insert({
+              employee_id: profile.id, date: new Date().toISOString().split('T')[0],
+              hours_delta: (editing.total_hours ?? 0), source: 'leave_used',
+              note: 'TIL leave edited — restored pending re-approval',
+            })
+          }
+        }
+      }
+      const { error: upErr } = await supabase.from('leave_requests').update({
+        leave_type: form.leave_type,
+        start_date: form.start_date,
+        end_date:   form.end_date,
+        start_time: form.start_time + ':00',
+        end_time:   form.end_time + ':00',
+        total_hours: totalHours,
+        reason:     form.reason || null,
+        status:     'pending',
+      }).eq('id', editing.id)
+      setLoading(false)
+      if (upErr) { setErr(upErr.message); return }
+      const editedId = editing.id
+      setEditing(null); setShowForm(false); setForm(BLANK); reload()
+      supabase.functions.invoke('notify-leave-request', { body: { leave_request_id: editedId } }).catch(() => {})
+      return
+    }
+
     const { data, error } = await supabase.from('leave_requests').insert({
       employee_id: profile.id,
       leave_type:  form.leave_type,
@@ -139,6 +171,11 @@ export default function LeaveAndTIL() {
       setRequests(prev => [data as LeaveRequest, ...prev])
       setShowForm(false)
       setForm(BLANK)
+      // Notify admins immediately (fire-and-forget — a push failure must not
+      // block the employee's submission).
+      supabase.functions.invoke('notify-leave-request', {
+        body: { leave_request_id: (data as LeaveRequest).id },
+      }).catch(() => { /* ignore */ })
     }
   }
 
@@ -227,6 +264,14 @@ export default function LeaveAndTIL() {
           </button>
         )}
 
+        {/* Admin-created approved leave: the employee can edit it. Saving sends
+            it back for re-approval (status -> pending). */}
+        {openReq.status === 'approved' && openReq.admin_notes === 'Added by admin' && (
+          <button onClick={() => startEdit(openReq)} className={`${btnPrimary} w-full h-11`}>
+            Edit Leave
+          </button>
+        )}
+
         {/* Approved: needs withdrawal flow with reason */}
         {openReq.status === 'approved' && (
           <div className="space-y-2 pt-2 border-t border-page">
@@ -279,7 +324,7 @@ export default function LeaveAndTIL() {
           form so the action pair lives in one consistent spot. */}
       {!showForm && (
         <button
-          onClick={() => { setShowForm(true); setErr('') }}
+          onClick={() => { setEditing(null); setForm(BLANK); setShowForm(true); setErr('') }}
           style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
           className={`${btnPrimary} w-full h-12`}
         >
@@ -356,7 +401,7 @@ export default function LeaveAndTIL() {
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => { setShowForm(false); setErr('') }}
+              onClick={() => { setShowForm(false); setEditing(null); setForm(BLANK); setErr('') }}
               style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnSecondary} flex-1 h-12`}
             >
@@ -368,7 +413,7 @@ export default function LeaveAndTIL() {
               style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
               className={`${btnPrimary} flex-1 h-12`}
             >
-              {loading ? 'Submitting…' : 'Submit Request'}
+              {loading ? (editing ? 'Re-submitting…' : 'Submitting…') : (editing ? 'Re-submit' : 'Submit Request')}
             </button>
           </div>
         </form>
