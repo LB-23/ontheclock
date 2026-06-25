@@ -98,7 +98,7 @@ export default function TimesheetReview() {
     const thisFri = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offsetToFri)
     const thisWeekStart = format(thisFri, 'yyyy-MM-dd')
 
-    let q = supabase.from('timesheets').select('*, profiles(full_name)')
+    let q = supabase.from('timesheets').select('*, profiles!timesheets_employee_id_fkey(full_name)')
       .lte('week_start', thisWeekStart)  // hide future weeks
       .order('week_start', { ascending: false })
     if (filterStatus) {

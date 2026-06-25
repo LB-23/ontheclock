@@ -302,6 +302,9 @@ export default function LeaveManagement() {
           }
         }
       }
+      // Notify the employee their leave was approved (fire-and-forget — a push
+      // failure must not block the approval).
+      supabase.functions.invoke('notify-leave-approved', { body: { leave_request_id: r.id } }).catch(() => { /* ignore */ })
     }
     setDeciding(null)
     setAdminNote('')
