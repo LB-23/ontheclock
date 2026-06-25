@@ -16,7 +16,7 @@ export default function Dashboard() {
     const load = async () => {
       const [{ data: active }, { data: tSheets }, { data: leave }] = await Promise.all([
         supabase.from('time_entries').select('*, profiles(full_name, job_role), job_addresses(address), stages(name)').eq('status', 'active').order('clock_in'),
-        supabase.from('timesheets').select('*, profiles(full_name)').eq('status', 'submitted').order('week_start', { ascending: false }),
+        supabase.from('timesheets').select('*, profiles!timesheets_employee_id_fkey(full_name)').eq('status', 'submitted').order('week_start', { ascending: false }),
         supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'pending').order('created_at'),
       ])
       setActiveEntries((active as TimeEntry[]) ?? [])
