@@ -375,7 +375,7 @@ export default function MyTimesheets() {
     const hdr = ws.getRow(1)
     hdr.height = 22
     hdr.eachCell(c => {
-      c.font = { name: 'Cerebri Sans Pro', size: 9, bold: true, color: { argb: 'FF000000' } }
+      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF000000' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
       c.alignment = { vertical: 'middle', horizontal: 'left' }
     })
@@ -389,12 +389,12 @@ export default function MyTimesheets() {
         const r = ws.addRow(row)
         const colour = opts.isLeave ? 'FF1C8DBF' : 'FF000000'
         r.eachCell((c, colNumber) => {
-          c.font = { name: 'Cerebri Sans Pro', size: 9, color: { argb: colour } }
+          c.font = { name: 'Calibri', size: 9, color: { argb: colour } }
           c.alignment = { vertical: 'middle', horizontal: 'left' }
           // Notes column auto-flag: Auto-closed / Added manually -> red italic
           const colKey = (ws.columns[colNumber - 1] as { key?: string }).key
           if (colKey === 'notes' && opts.flaggedCol === 'notes') {
-            c.font = { name: 'Cerebri Sans Pro', size: 9, italic: true, color: { argb: 'FFFF2828' } }
+            c.font = { name: 'Calibri', size: 9, italic: true, color: { argb: 'FFFF2828' } }
           }
         })
       }
@@ -442,10 +442,10 @@ export default function MyTimesheets() {
       const addSummary = (label: string, h: number, m: number, bgHex: string, bold: boolean) => {
         const hoursStr = `${h}h ${m}m`
         const r = ws.addRow({ employee: '', week: '', status: '', date: '', site: '', stage: '', in: '', out: label.toUpperCase(), hours: hoursStr, notes: '' })
-        r.getCell('out').font = { name: 'Cerebri Sans Pro', size: 9, bold, color: { argb: 'FFFFFFFF' } }
+        r.getCell('out').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FFFFFFFF' } }
         r.getCell('out').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgHex } }
         r.getCell('out').alignment = { horizontal: 'right', vertical: 'middle' }
-        r.getCell('hours').font = { name: 'Cerebri Sans Pro', size: 9, bold, color: { argb: 'FF000000' } }
+        r.getCell('hours').font = { name: 'Calibri', size: 9, bold, color: { argb: 'FF000000' } }
       }
       addSummary('Regular',     reg.h, reg.m, 'FF7F7F7F', false)
       addSummary('Additional', ot.h,  ot.m,  'FF595959', false)
