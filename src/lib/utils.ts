@@ -169,7 +169,7 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   const headerRow = ws.getRow(1)
   headerRow.height = 22
   headerRow.eachCell(cell => {
-    cell.font = { name: 'Cerebri Sans Pro', size: 9, bold: true, color: { argb: 'FF000000' } }
+    cell.font = { name: 'Calibri', size: 9, bold: true, color: { argb: 'FF000000' } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFADADAD' } }
     cell.alignment = { vertical: 'middle', horizontal: 'left' }
   })
@@ -178,7 +178,7 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   for (const r of rows) {
     const row = ws.addRow(r)
     row.eachCell(cell => {
-      cell.font = { name: 'Cerebri Sans Pro', size: 9, color: { argb: 'FF000000' } }
+      cell.font = { name: 'Calibri', size: 9, color: { argb: 'FF000000' } }
       cell.alignment = { vertical: 'middle', horizontal: 'left' }
     })
   }
