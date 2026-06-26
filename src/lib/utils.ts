@@ -106,7 +106,10 @@ export function computeLeaveHours(
   if (startDate === endDate) {
     if (!isWorkday(start)) return 0
     const hrs = ((eh * 60 + em) - (sh * 60 + sm)) / 60
-    return Math.round(Math.min(Math.max(0, hrs), dailyHrs) * 10) / 10
+    // Round to the nearest MINUTE (1/60 h), not 0.1 h. The old 0.1-h rounding
+    // turned a real 5 h 51 m span (5.85 h) into 5.9 h (5 h 54 m), which both
+    // mis-displayed the duration and falsely tripped "request exceeds balance".
+    return Math.round(Math.min(Math.max(0, hrs), dailyHrs) * 60) / 60
   }
 
   let total = 0
@@ -121,7 +124,8 @@ export function computeLeaveHours(
     }
     total += dayHrs
   }
-  return Math.round(total * 10) / 10
+  // Nearest minute, matching the single-day branch above.
+  return Math.round(total * 60) / 60
 }
 
 /** Download an array of objects as a CSV file (kept for legacy callers) */
