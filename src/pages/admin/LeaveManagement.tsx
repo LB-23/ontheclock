@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, weeklyAccrualsUntil, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
@@ -235,7 +235,7 @@ export default function LeaveManagement() {
     const [{ data: pending }, { data: appr }, { data: all }, { data: emps }, { data: everyone }] = await Promise.all([
       // Pending pulls extra balance fields so admin can see what the employee
       // has left when deciding whether to approve a request.
-      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name, annual_leave_balance, personal_leave_balance, accrued_til_hours)').eq('status', 'pending').order('start_date'),
+      supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name, annual_leave_balance, personal_leave_balance, accrued_til_hours, annual_accrual_per_week, personal_accrual_per_week)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false }),
       // Balances tab — employees only
@@ -371,7 +371,17 @@ export default function LeaveManagement() {
               : t === 'personal'     ? Number(prof?.personal_leave_balance ?? 0)
               : t === 'time_in_lieu' ? Number(prof?.accrued_til_hours      ?? 0)
               : null
-            const avail = balanceFor(r.leave_type)
+            const currentBal = balanceFor(r.leave_type)
+            // Project the balance forward to the requested dates: add the weekly
+            // accrual for each accrual event (Thursday) between now and the leave
+            // start. Only annual + personal accrue weekly; TIL/unpaid keep the
+            // current figure. Display-only — does NOT change the stored balance.
+            const accrualRate = r.leave_type === 'annual'   ? Number(prof?.annual_accrual_per_week   ?? 0)
+                              : r.leave_type === 'personal' ? Number(prof?.personal_accrual_per_week ?? 0)
+                              : 0
+            const avail = currentBal === null
+              ? null
+              : currentBal + accrualRate * weeklyAccrualsUntil(r.start_date)
             const reqHrs = Number(r.total_hours ?? 0)
             const wouldOverdraw = avail !== null && reqHrs > avail
             return (
@@ -383,16 +393,17 @@ export default function LeaveManagement() {
                     <p className="text-sm text-muted">
                       {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${fmtClock(r.start_time)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${fmtClock(r.end_time)}` : ''} ({fmtHours(reqHrs)})
                     </p>
-                    {/* Available-balance line — red when the request would
-                        overdraw the bank so admin sees the conflict at a glance. */}
+                    {/* Projected-balance line — the balance the employee will
+                        have AT the requested dates (current + weekly accruals to
+                        then), not today's balance. Red when it would overdraw. */}
                     <p className="text-xs mt-1" style={{ color: wouldOverdraw ? '#9C0F0F' : '#666666' }}>
                       {avail === null
                         ? 'Unpaid leave — no balance deduction'
-                        : <>Available: <span className="font-semibold">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
+                        : <>Available Balance = <span className="font-semibold">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                   </div>
-                  <span className="text-xs text-muted">Edit ▸</span>
+                  <span className={editLinkCls}>Edit</span>
                 </div>
               </button>
               <div>

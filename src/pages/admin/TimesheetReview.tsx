@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Timesheet, type TimeEntry, type Profile } from '../../lib/supabase'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
 import { format } from 'date-fns'
 import Skeleton from '../../components/Skeleton'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
@@ -51,7 +51,7 @@ export default function TimesheetReview() {
 
   const saveEntryEdit = async () => {
     if (!editingEntry) return
-    if (!editForm.reason.trim()) { setEditErr('Reason is required for an admin edit.'); return }
+    // Reason is optional for admin edits (a blank reason is stored as '').
     setEditBusy(true); setEditErr('')
     const newIn  = editForm.newClockIn  ? new Date(editForm.newClockIn).toISOString()  : null
     const newOut = editForm.newClockOut ? new Date(editForm.newClockOut).toISOString() : null
@@ -236,9 +236,9 @@ export default function TimesheetReview() {
                       {hasEdits && (
                         <button
                           onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}
-                          className="block mt-1 text-xs text-blue-600 hover:underline"
+                          className={`block mt-1 ${editedTagCls}`}
                         >
-                          ✎ {entryEdits.length} edit{entryEdits.length > 1 ? 's' : ''}
+                          Edited
                         </button>
                       )}
                       {/* Admin can edit clock_in/out on a submitted timesheet
@@ -248,9 +248,9 @@ export default function TimesheetReview() {
                       {selected.status === 'submitted' && !isSystem && (
                         <button
                           onClick={() => openEntryEdit(e)}
-                          className="block mt-1 text-xs text-sky hover:underline"
+                          className={`block mt-1 ${editLinkCls}`}
                         >
-                          ✎ Edit
+                          Edit
                         </button>
                       )}
                     </div>
@@ -266,7 +266,7 @@ export default function TimesheetReview() {
                           {ed.field_changed !== 'clock_in' && ed.new_clock_out && (
                             <p>Clock-out: {fmtEditTime(ed.old_clock_out)} → {fmtEditTime(ed.new_clock_out)}</p>
                           )}
-                          <p className="italic mt-1">"{ed.reason}"</p>
+                          {ed.reason && <p className="italic mt-1">"{ed.reason}"</p>}
                         </div>
                       ))}
                     </div>
@@ -356,7 +356,7 @@ export default function TimesheetReview() {
                          className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Reason <span className="text-red-500">*</span></label>
+                  <label className={labelCls}>Reason (optional)</label>
                   <textarea value={editForm.reason}
                             onChange={e => setEditForm(f => ({ ...f, reason: e.target.value }))}
                             className={`${inputCls} resize-none`} rows={2}
