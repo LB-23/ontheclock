@@ -4,7 +4,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import Skeleton from '../../components/Skeleton'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
@@ -838,7 +838,7 @@ export default function MyTimesheets() {
                           )
                         })()}
                         {e.status === 'edited' && (
-                          <span className="inline-flex items-center text-micro uppercase font-semibold mt-1" style={{ color: '#1C9FDA' }}>Edited</span>
+                          <span className={`block mt-1 ${editedTagCls}`}>Edited</span>
                         )}
                       </>
                     )}
@@ -846,7 +846,7 @@ export default function MyTimesheets() {
                   <div className="text-right ml-3 flex-shrink-0">
                     <p className="text-sm font-bold text-ink">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
                     {selected.status === 'draft' && !isSystem && (
-                      <button onClick={() => openEdit(e)} className="block mt-1 text-xs text-sky hover:underline">
+                      <button onClick={() => openEdit(e)} className={`block mt-1 ${editLinkCls}`}>
                         Edit
                       </button>
                     )}
@@ -899,6 +899,31 @@ export default function MyTimesheets() {
               className={`${btnPrimary} w-full h-12`}
             >
               Reopen for editing
+            </button>
+          )}
+
+          {/* Undo Submission — while a timesheet is still 'submitted' (not yet
+              approved/rejected), the employee can pull it back to draft to edit
+              and re-submit. Reverting the timesheet status removes it from the
+              admin "Submitted" list; entries are reverted to 'completed' so the
+              draft is internally consistent. */}
+          {selected.status === 'submitted' && (
+            <button
+              onClick={async () => {
+                if (!selected || !profile) return
+                const { error } = await supabase.from('timesheets').update({ status: 'draft' }).eq('id', selected.id)
+                if (error) { setErr(error.message); return }
+                await supabase.from('time_entries').update({ status: 'completed' })
+                  .eq('employee_id', profile.id).eq('week_start', selected.week_start)
+                  .eq('status', 'submitted')
+                setSelected(prev => prev ? { ...prev, status: 'draft' } : prev)
+                setTimesheets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'draft' } : t))
+                loadTimesheets()
+              }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+              className={`${btnPrimary} w-full h-12`}
+            >
+              Undo Submission
             </button>
           )}
 

@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react'
 import { supabase, type JobAddress } from '../../lib/supabase'
-import { btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
 import { geocodeAddress } from '../../lib/geocode'
 import Skeleton from '../../components/Skeleton'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
-/** JobAddress + the lat/lng/geocoded_at columns the audit view depends on. */
+/** JobAddress + the lat/lng/geocoded_at columns the audit view depends on,
+ *  plus the client/job-card fields. */
 type JobAddressGeo = JobAddress & {
-  lat:           number | null
-  lng:           number | null
-  geocoded_at:   string | null
+  lat:                number | null
+  lng:                number | null
+  geocoded_at:        string | null
+  client_name:        string | null
+  client_number:      string | null
+  client_email:       string | null
+  total_hours:        number | null
+  total_hours_manual: boolean | null
 }
 
 export default function JobAddresses() {
@@ -20,6 +27,44 @@ export default function JobAddresses() {
   const [search, setSearch] = useState('')
   const [backfillBusy, setBackfillBusy] = useState(false)
   const [backfillMsg, setBackfillMsg] = useState('')
+
+  // Job-card modal — opened by clicking a site row.
+  const [openJob, setOpenJob] = useState<JobAddressGeo | null>(null)
+  const [jobForm, setJobForm] = useState({ client_name: '', client_number: '', client_email: '', total_hours: '', manual: false })
+  const [jobBusy, setJobBusy] = useState(false)
+  useEscapeKey(!!openJob, () => setOpenJob(null))
+
+  const openJobCard = (a: JobAddressGeo) => {
+    setOpenJob(a)
+    setJobForm({
+      client_name:   a.client_name   ?? '',
+      client_number: a.client_number ?? '',
+      client_email:  a.client_email  ?? '',
+      total_hours:   String(a.total_hours ?? 0),
+      manual:        !!a.total_hours_manual,
+    })
+  }
+
+  const saveJobCard = async () => {
+    if (!openJob) return
+    setJobBusy(true)
+    const patch: Record<string, unknown> = {
+      client_name:   jobForm.client_name.trim()   || null,
+      client_number: jobForm.client_number.trim() || null,
+      client_email:  jobForm.client_email.trim()  || null,
+      total_hours_manual: jobForm.manual,
+    }
+    // Only persist a hand-entered total when the admin is overriding; otherwise
+    // the total stays auto-maintained by the approval trigger.
+    if (jobForm.manual) patch.total_hours = parseFloat(jobForm.total_hours) || 0
+    const { error } = await supabase.from('job_addresses').update(patch).eq('id', openJob.id)
+    // Switching back to auto: recompute the total now from approved entries.
+    if (!error && !jobForm.manual) await supabase.rpc('recompute_job_total_hours', { job_id: openJob.id })
+    setJobBusy(false)
+    if (error) { alert(`Could not save: ${error.message}`); return }
+    setOpenJob(null)
+    load()
+  }
 
   const load = () =>
     supabase.from('job_addresses').select('*').order('address')
@@ -150,12 +195,14 @@ export default function JobAddresses() {
         <div className="divide-y divide-page max-h-[800px] overflow-y-auto">
           {active.map(a => (
             <div key={a.id} className="px-5 py-3 flex justify-between items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-sm text-ink truncate">{a.address}</p>
+              {/* Click the address to open the job card */}
+              <button onClick={() => openJobCard(a)} className="min-w-0 text-left normal-case flex-1">
+                <p className="text-sm text-ink truncate underline decoration-page hover:decoration-sky">{a.address}</p>
+                <p className="text-tag text-muted">{fmtHours(a.total_hours ?? 0)} total{a.client_name ? ` · ${a.client_name}` : ''}</p>
                 {a.lat == null || a.lng == null ? (
                   <p className="text-tag text-amber-600">⚠ No GPS — won't be audited</p>
                 ) : null}
-              </div>
+              </button>
               <button onClick={() => toggle(a)} className="text-[10px] font-forma uppercase tracking-[0.04em] underline text-red-500 shrink-0">
                 Deactivate
               </button>
@@ -179,6 +226,57 @@ export default function JobAddresses() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Job card — client details + total hours */}
+      {openJob && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6"
+             onClick={() => setOpenJob(null)}>
+          <div className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-lg"
+               onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-semibold text-ink normal-case">{openJob.address}</h2>
+              <button type="button" onClick={() => setOpenJob(null)} className="text-muted hover:text-ink shrink-0">✕</button>
+            </div>
+
+            <div>
+              <label className={labelCls}>Client Name</label>
+              <input value={jobForm.client_name} onChange={e => setJobForm(f => ({ ...f, client_name: e.target.value }))} className={inputCls} placeholder="e.g. Jane Smith" />
+            </div>
+            <div>
+              <label className={labelCls}>Client Number</label>
+              <input value={jobForm.client_number} onChange={e => setJobForm(f => ({ ...f, client_number: e.target.value }))} className={inputCls} placeholder="e.g. 0400 000 000" />
+            </div>
+            <div>
+              <label className={labelCls}>Client Email</label>
+              <input type="email" value={jobForm.client_email} onChange={e => setJobForm(f => ({ ...f, client_email: e.target.value }))} className={inputCls} placeholder="e.g. jane@example.com" />
+            </div>
+            <div>
+              <label className={labelCls}>Total Hours</label>
+              <input
+                type="number" step="0.01" min="0"
+                value={jobForm.total_hours}
+                disabled={!jobForm.manual}
+                onChange={e => setJobForm(f => ({ ...f, total_hours: e.target.value }))}
+                className={`${inputCls} ${jobForm.manual ? '' : 'opacity-60'}`}
+              />
+              <label className="flex items-center gap-2 mt-2 text-xs text-muted normal-case cursor-pointer">
+                <input type="checkbox" checked={jobForm.manual} onChange={e => setJobForm(f => ({ ...f, manual: e.target.checked }))} />
+                Override manually (otherwise total is auto-summed from approved timesheet entries for this site)
+              </label>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={saveJobCard} disabled={jobBusy} className={`${btnPrimary} flex-1 h-11`}>
+                {jobBusy ? 'Saving…' : 'Save'}
+              </button>
+              <button onClick={() => setOpenJob(null)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+            </div>
+            <p className="text-tag text-muted">
+              {openJob.total_hours_manual ? 'Total is currently a manual override.' : 'Total is auto-maintained from approved timesheets.'}
+            </p>
           </div>
         </div>
       )}

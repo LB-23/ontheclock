@@ -3,7 +3,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnSecondary, btnDanger, labelCls } from '../../lib/utils'
+import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnDanger, labelCls, textLinkCls, reportHeadingCls, reportTableCls } from '../../lib/utils'
 import { format } from 'date-fns'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -207,20 +207,26 @@ export default function Reports() {
         })
       }
     } else if (tab === 'job') {
-      let q = supabase.from('time_entries').select('*, profiles!time_entries_employee_id_fkey(full_name), job_addresses(address)')
+      let q = supabase.from('time_entries').select('*, profiles!time_entries_employee_id_fkey(full_name), job_addresses(address), stages(name)')
         .gte('clock_in', dateFrom).lte('clock_in', dateTo + 'T23:59:59')
         .neq('entry_type', 'annual_leave').neq('entry_type', 'personal_leave')
         .neq('entry_type', 'time_in_lieu').neq('entry_type', 'public_holiday')
       if (filterJob) q = q.eq('job_address_id', filterJob)
       const { data } = await q.order('clock_in')
-      nextRows = (data ?? []).map((e: Record<string, unknown>) => ({
+      const jobRows = (data ?? []) as Record<string, unknown>[]
+      // By-job columns: Date, Site, Employee, Stage, Hours (Clock-In/Out dropped).
+      nextRows = jobRows.map((e) => ({
         Date:      e.clock_in ? fmtDateLong(e.clock_in as string) : '',
         Site:      (e.job_addresses as { address: string })?.address ?? '',
         Employee:  (e.profiles as { full_name: string })?.full_name ?? '',
-        'Clock-In':  e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm aaa') : '',
-        'Clock-Out': e.clock_out ? format(new Date(e.clock_out as string), 'h:mm aaa') : '',
+        Stage:     (e.stages as { name: string })?.name ?? '',
         Hours:     fmtHours(Number(e.total_hours ?? 0)),
       }))
+      // Total-hours row beneath the Hours column.
+      if (nextRows.length) {
+        const totalH = jobRows.reduce((s, e) => s + Number(e.total_hours ?? 0), 0)
+        nextRows.push({ Date: '', Site: '', Employee: '', Stage: 'TOTAL', Hours: fmtHours(totalH) })
+      }
     } else {
       // Weekly All-Staff — simple OR detailed
       const ws = filterWeek || getWeekStart()
@@ -323,7 +329,7 @@ export default function Reports() {
     let lastGroupKey = ''
     return (
       <div className="bg-surface rounded-2xl border border-page shadow-sm overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className={`w-full text-sm ${reportTableCls}`}>
           <thead className="bg-page">
             <tr>
               {headers.map(h => (
@@ -339,7 +345,7 @@ export default function Reports() {
               return (
                 <tr key={i} className={`hover:bg-page ${showSeparator ? 'border-t-4 border-t-ink' : ''}`}>
                   {Object.values(r).map((v, j) => (
-                    <td key={j} className="px-4 py-3 text-ink whitespace-nowrap">{String(v ?? '—') || '—'}</td>
+                    <td key={j} className="px-4 py-3 text-ink whitespace-nowrap font-[Mona_Sans_SemiCondensed]">{String(v ?? '—') || '—'}</td>
                   ))}
                 </tr>
               )
@@ -353,7 +359,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-ink">Reports</h1>
+      <h1 className={reportHeadingCls}>Reports</h1>
 
       <div className="flex gap-2 flex-wrap">
         {([['employee','By Employee'],['job','By Job Site'],['weekly','Weekly All-Staff']] as const).map(([t, label]) => (
@@ -437,7 +443,7 @@ export default function Reports() {
             <>
               <div className="relative">
                 <details className="group">
-                  <summary className={`${btnSecondary} cursor-pointer list-none select-none`}>↓ Export</summary>
+                  <summary className={`${textLinkCls} cursor-pointer list-none select-none`}>↓ Export</summary>
                   <div className="absolute right-0 mt-2 z-10 bg-surface border border-page rounded-xl shadow-lg min-w-[160px] overflow-hidden">
                     <button onClick={() => exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)}
                             className="block w-full px-4 py-2 text-left text-sm hover:bg-page">Excel (.xlsx)</button>
@@ -446,7 +452,7 @@ export default function Reports() {
                   </div>
                 </details>
               </div>
-              <button onClick={saveReport} className={btnSecondary}>Save Report</button>
+              <button onClick={saveReport} className={textLinkCls}>Save Report</button>
             </>
           )}
         </div>
@@ -508,8 +514,8 @@ export default function Reports() {
             </div>
             {renderTable(openSaved.data, openSaved.report_type === 'weekly_detailed' ? { groupBy: 'Employee' } : undefined)}
             <div className="flex gap-3 pt-2">
-              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={btnSecondary}>↓ Excel</button>
-              <button onClick={() => reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'weekly_detailed' || openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={btnSecondary}>↓ PDF</button>
+              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={textLinkCls}>↓ Excel</button>
+              <button onClick={() => reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'weekly_detailed' || openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={textLinkCls}>↓ PDF</button>
               <button onClick={() => deleteSaved(openSaved)} className={btnDanger}>Delete</button>
             </div>
           </div>

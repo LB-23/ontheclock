@@ -203,6 +203,25 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   URL.revokeObjectURL(url)
 }
 
+/** Count weekly leave-accrual events between today and a target date. The
+ *  accrue-weekly cron runs every Thursday (`30 14 * * 4`), so this counts the
+ *  Thursdays strictly after today and before `targetDate`. Used to project a
+ *  leave balance forward to the date an employee has requested off, e.g. a
+ *  request starting 24/07 from 01/07 crosses 4 Thursdays (02, 09, 16, 23 Jul). */
+export function weeklyAccrualsUntil(targetDate: string): number {
+  if (!targetDate) return 0
+  const target = new Date(`${targetDate}T00:00:00`)
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 1)   // start counting from tomorrow
+  let count = 0
+  while (d < target) {
+    if (d.getDay() === 4) count++   // 4 = Thursday
+    d.setDate(d.getDate() + 1)
+  }
+  return count
+}
+
 /** Split hours decimal into integer hours and rounded minutes */
 export function splitHM(h: number): { h: number; m: number } {
   const totalMin = Math.round(Number(h ?? 0) * 60)
@@ -268,3 +287,25 @@ export const inputCls =
 /* Field labels (EMAIL / PASSWORD / form labels) — Forma DJR Text, 10px,
  * uppercase, .04em tracking, muted grey. Matches the gallery exactly. */
 export const labelCls = 'block text-[10px] font-semibold font-forma uppercase tracking-[0.04em] text-muted mb-1'
+
+/** Inline "EDIT" affordance on entry/leave rows — Forma DJR 8px, uppercase,
+ *  underlined, #0352fb text link, no icon. Shared by admin + employee views. */
+export const editLinkCls =
+  'inline-flex items-center text-[8px] font-semibold font-forma uppercase tracking-[0.04em] underline text-[#0352fb] hover:opacity-80'
+
+/** Inline "EDITED" indicator — same shape as editLinkCls but #9440dd. Replaces
+ *  the old "N edits" pencil button / blue "Edited" tag. */
+export const editedTagCls =
+  'inline-flex items-center text-[8px] font-semibold font-forma uppercase tracking-[0.04em] underline text-[#9440dd] hover:opacity-80'
+
+/** Flat underlined text link — #0352fb, Forma DJR 10px, uppercase, NO fill (sits
+ *  straight on the page ground). Used for report export/download/save links. */
+export const textLinkCls =
+  'inline-flex items-center bg-transparent p-0 text-[10px] font-semibold font-forma uppercase tracking-[0.04em] underline text-[#0352fb] hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed'
+
+/** Report heading — Forma DJR 10px, uppercase, matching the gallery label system. */
+export const reportHeadingCls =
+  'text-[10px] font-semibold font-forma uppercase tracking-[0.04em] text-ink'
+
+/** Report table data — Mona Sans SemiCondensed (weights 400–600). */
+export const reportTableCls = 'font-[Mona_Sans_SemiCondensed]'

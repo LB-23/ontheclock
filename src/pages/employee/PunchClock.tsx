@@ -278,8 +278,8 @@ export default function PunchClock() {
               <button
                 type="submit"
                 disabled={loading || !outNotes.trim()}
-                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-                className={`${btnSecondary} flex-1 h-12`}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb', textDecorationLine: 'underline' }}
+                className={`${btnSecondary} flex-1 h-12 underline`}
               >
                 {loading ? 'Clocking Out…' : 'Confirm Clock-Out'}
               </button>
