@@ -233,26 +233,25 @@ export default function TimesheetReview() {
                     </div>
                     <div className="text-right ml-3">
                       <p className="text-sm font-bold">{e.total_hours ? fmtHours(e.total_hours) : '—'}</p>
-                      {hasEdits && (
-                        <button
-                          onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))}
-                          className={`block mt-1 ${editedTagCls}`}
-                        >
-                          Edited
-                        </button>
-                      )}
-                      {/* Admin can edit clock_in/out on a submitted timesheet
-                          BEFORE approval. System entries (leave shadows,
-                          public holidays) are sourced from leave_requests, so
-                          editing them here would desync — disable. */}
-                      {selected.status === 'submitted' && !isSystem && (
-                        <button
-                          onClick={() => openEntryEdit(e)}
-                          className={`block mt-1 ${editLinkCls}`}
-                        >
-                          Edit
-                        </button>
-                      )}
+                      {/* Stack EDITED above EDIT (the shared link helpers are
+                          inline-flex, so a flex-col wrapper is needed to stop
+                          them sitting side by side). */}
+                      <div className="flex flex-col items-end gap-1 mt-1">
+                        {hasEdits && (
+                          <button onClick={() => setOpenEdits(o => ({ ...o, [e.id]: !o[e.id] }))} className={editedTagCls}>
+                            Edited
+                          </button>
+                        )}
+                        {/* Admin can edit clock_in/out on a submitted timesheet
+                            BEFORE approval. System entries (leave shadows,
+                            public holidays) are sourced from leave_requests, so
+                            editing them here would desync — disable. */}
+                        {selected.status === 'submitted' && !isSystem && (
+                          <button onClick={() => openEntryEdit(e)} className={editLinkCls}>
+                            Edit
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {hasEdits && openEdits[e.id] && (
