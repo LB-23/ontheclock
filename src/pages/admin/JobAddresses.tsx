@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type JobAddress } from '../../lib/supabase'
-import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { geocodeAddress } from '../../lib/geocode'
 import Skeleton from '../../components/Skeleton'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
@@ -195,10 +195,11 @@ export default function JobAddresses() {
         <div className="divide-y divide-page max-h-[800px] overflow-y-auto">
           {active.map(a => (
             <div key={a.id} className="px-5 py-3 flex justify-between items-center gap-3">
-              {/* Click the address to open the job card */}
+              {/* Click the address to open the job card. Total hours are shown
+                  only inside the job card, not in this list. */}
               <button onClick={() => openJobCard(a)} className="min-w-0 text-left normal-case flex-1">
                 <p className="text-sm text-ink truncate underline decoration-page hover:decoration-sky">{a.address}</p>
-                <p className="text-tag text-muted">{fmtHours(a.total_hours ?? 0)} total{a.client_name ? ` · ${a.client_name}` : ''}</p>
+                {a.client_name && <p className="text-tag text-muted">{a.client_name}</p>}
                 {a.lat == null || a.lng == null ? (
                   <p className="text-tag text-amber-600">⚠ No GPS — won't be audited</p>
                 ) : null}

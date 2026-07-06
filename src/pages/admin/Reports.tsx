@@ -275,6 +275,7 @@ export default function Reports() {
           return {
             Employee:     (e.profiles as { full_name: string })?.full_name ?? '',
             Date:         e.clock_in ? fmtDateLong(e.clock_in as string) : '',
+            Day:          e.clock_in ? format(new Date(e.clock_in as string), 'EEE') : '',
             Site:         (e.job_addresses as { address: string })?.address ?? '',
             Stage:        (e.stages as { name: string })?.name ?? '',
             'Start Time': e.clock_in  ? format(new Date(e.clock_in  as string), 'h:mm aaa') : '',
@@ -425,7 +426,7 @@ export default function Reports() {
               <label className="flex items-center gap-2 text-sm py-1 cursor-pointer">
                 <input type="radio" name="weeklyVariant" checked={weeklyVariant === 'detailed'}
                        onChange={() => setWeeklyVariant('detailed')} className="accent-sky" />
-                <span><strong>Detailed</strong> — Date, Site, Stage, Start Time, End Time, Total Hours, Leave Taken</span>
+                <span><strong>Detailed</strong> — Date, Day, Site, Stage, Start Time, End Time, Total Hours, Leave Taken</span>
               </label>
             </fieldset>
           </>

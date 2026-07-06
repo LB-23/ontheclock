@@ -776,10 +776,11 @@ export default function MyTimesheets() {
           {/* Back on its own line above the week; week + badge left-aligned
               inline with the rest of the page content. */}
           <div className="space-y-3">
+            {/* Flat link, no horizontal padding, so "← BACK" aligns with the
+                week-range title beneath it. */}
             <button
               onClick={() => setSelected(null)}
-              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-              className={btnSecondary}
+              className="inline-flex items-center gap-1 py-1 text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
             >
               ← Back
             </button>
@@ -788,16 +789,6 @@ export default function MyTimesheets() {
               <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
             </div>
           </div>
-
-          {selected.status === 'draft' && (
-            <button
-              onClick={() => { setShowManualForm(true); setErr('') }}
-              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-              className={`${btnPrimary} w-full h-11`}
-            >
-              + Add Manual Entry
-            </button>
-          )}
 
           <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
             {entries.length === 0 && (
@@ -871,6 +862,37 @@ export default function MyTimesheets() {
             </div>
           </div>
 
+          {/* Actions row — Delete Timesheet (left) and Add Manual Entry (right,
+              draft only) sit on the same line at the bottom of the page. */}
+          <div className="flex justify-between items-center">
+            {/* Permanent delete — uses the SECURITY DEFINER RPC so it can disable
+                the recalc trigger atomically (otherwise sync_timesheet_on_entry_change
+                re-INSERTs the timesheet via ON CONFLICT while entries are deleted,
+                leaving an orphan row that re-appears in the list). */}
+            <button
+              onClick={async () => {
+                if (!profile) return
+                if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(selected.week_start)} — ${fmtHours(selected.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
+                const { error } = await supabase.rpc('employee_delete_own_timesheet', { timesheet_id: selected.id })
+                if (error) { alert(`Could not delete timesheet:\n${error.message}`); return }
+                setSelected(null)
+                loadTimesheets()
+              }}
+              className="text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+            >
+              Delete Timesheet
+            </button>
+            {selected.status === 'draft' && (
+              <button
+                onClick={() => { setShowManualForm(true); setErr('') }}
+                className="text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+              >
+                + Add Manual Entry
+              </button>
+            )}
+          </div>
+
+          {/* Submit / Undo / Reopen — below the Delete + Add Manual Entry row. */}
           {selected.status === 'draft' && entries.length > 0 && (() => {
             // Submit For Approval is always available on a draft — the previous
             // "Clock-Out Of All Entries First" prompt has been removed per spec.
@@ -926,25 +948,6 @@ export default function MyTimesheets() {
               Undo Submission
             </button>
           )}
-
-          {/* Permanent delete — uses the SECURITY DEFINER RPC so it can disable the
-              recalc trigger atomically (otherwise sync_timesheet_on_entry_change
-              re-INSERTs the timesheet via ON CONFLICT while entries are deleted,
-              leaving an orphan row that re-appears in the list). */}
-          <button
-            onClick={async () => {
-              if (!profile) return
-              if (!confirm(`Remove Timesheet?\n\n${fmtWeekRange(selected.week_start)} — ${fmtHours(selected.total_hours ?? 0)} total\n\nThis permanently deletes the timesheet and every entry inside it. This cannot be undone.`)) return
-              const { error } = await supabase.rpc('employee_delete_own_timesheet', { timesheet_id: selected.id })
-              if (error) { alert(`Could not delete timesheet:\n${error.message}`); return }
-              setSelected(null)
-              loadTimesheets()
-            }}
-            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-            className={`${btnDanger} w-full h-12`}
-          >
-            Delete Timesheet
-          </button>
 
           {selected.admin_notes && (
             <AdminNoteBanner className="mt-1">{selected.admin_notes}</AdminNoteBanner>
