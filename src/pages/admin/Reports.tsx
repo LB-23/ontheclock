@@ -4,7 +4,7 @@ import autoTable from 'jspdf-autotable'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
 import { exportXLSX, fmtHours, fmtDateLong, fmtWeekRangeLong, getWeekStart, timesheetSubmissionStatus, btnPrimary, btnDanger, labelCls, textLinkCls, reportHeadingCls, reportTableCls } from '../../lib/utils'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 type ReportTab = 'employee' | 'job' | 'weekly'
@@ -75,6 +75,93 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
   })
 
   pdf.save(filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
+}
+
+/** Weekly-Detailed Excel export — matches the approved template exactly:
+ *  bold Calibri-11 title, grey Calibri-9 header (height 21.95), a blank
+ *  separator row, Calibri-9 body rows, a per-employee grey "WEEK TOTAL" row,
+ *  and leave cells (LEAVE TAKEN column) filled with the leave-type colour used
+ *  on the admin calendar. */
+async function exportWeeklyDetailedXLSX(rows: Row[], weekStart: string, filename: string) {
+  if (rows.length === 0) return
+  const ExcelJS = (await import('exceljs')).default
+  const wb = new ExcelJS.Workbook()
+  const ws = wb.addWorksheet('Report')
+  const GREY = 'FFADADAD'
+  const BLACK = 'FF000000'
+
+  ws.columns = [18, 13, 10, 31, 12, 12, 11.85546875, 13, 30].map(w => ({ width: w }))
+
+  // Row 1 — title
+  const weekLabel = format(parseISO(weekStart), 'd MMM yyyy').toUpperCase()
+  const title = ws.addRow([`TIMESHEET REPORT - WEEK STARTING ${weekLabel}`])
+  title.getCell(1).font = { name: 'Calibri', size: 11, bold: true }
+
+  // Row 2 — header band
+  const headers = ['EMPLOYEE', 'DATE', 'DAY', 'SITE', 'STAGE', 'START TIME', 'END TIME', 'TOTAL HOURS', 'LEAVE TAKEN']
+  const hdr = ws.addRow(headers)
+  hdr.height = 21.95
+  hdr.eachCell(c => {
+    c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: BLACK } }
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: GREY } }
+    c.alignment = { horizontal: 'left', vertical: 'middle' }
+  })
+
+  // Row 3 — blank separator
+  ws.addRow([]).height = 15
+
+  // Leave-type colour by the LEAVE TAKEN label prefix (matches admin calendar).
+  const leaveFill = (label: string): string | null => {
+    if (!label) return null
+    if (label.startsWith('Annual Leave'))   return 'FFD7B8F4'
+    if (label.startsWith('Personal'))       return 'FFFFBFEB'
+    if (label.startsWith('TIL'))            return 'FFFFF89F'
+    return null   // public holiday / unknown — no calendar colour
+  }
+  const parseHM = (s: unknown): number => {
+    const m = /(\d+)\s*h\s*(\d+)\s*m/.exec(String(s ?? ''))
+    return m ? (+m[1] * 60 + +m[2]) : 0
+  }
+  const fmtHM = (mins: number) => `${Math.floor(mins / 60)}h ${mins % 60}m`
+
+  let i = 0
+  while (i < rows.length) {
+    const emp = rows[i].Employee
+    let groupMin = 0
+    while (i < rows.length && rows[i].Employee === emp) {
+      const r = rows[i]
+      const dataRow = ws.addRow([
+        r.Employee, r.Date, r.Day, r.Site, r.Stage, r['Start Time'], r['End Time'], r['Total Hours'], r['Leave Taken'],
+      ])
+      dataRow.eachCell(c => {
+        c.font = { name: 'Calibri', size: 9, color: { argb: BLACK } }
+        c.alignment = { horizontal: 'left' }
+      })
+      const lf = leaveFill(String(r['Leave Taken'] ?? ''))
+      if (lf) dataRow.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lf } }
+      groupMin += parseHM(r['Total Hours'])
+      i++
+    }
+    // Per-employee WEEK TOTAL row (grey, bold) — label in G, sum in H.
+    const tot = ws.addRow([])
+    tot.height = 15
+    for (const col of [7, 8]) {
+      const c = tot.getCell(col)
+      c.font = { name: 'Calibri', size: 9, bold: true, color: { argb: BLACK } }
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: GREY } }
+    }
+    tot.getCell(7).value = 'WEEK TOTAL'
+    tot.getCell(8).value = fmtHM(groupMin)
+  }
+
+  const buf = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 interface SavedReport {
@@ -446,7 +533,9 @@ export default function Reports() {
                 <details className="group">
                   <summary className={`${textLinkCls} cursor-pointer list-none select-none`}>↓ Export</summary>
                   <div className="absolute right-0 mt-2 z-10 bg-surface border border-page rounded-xl shadow-lg min-w-[160px] overflow-hidden">
-                    <button onClick={() => exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)}
+                    <button onClick={() => (tab === 'weekly' && weeklyVariant === 'detailed')
+                              ? exportWeeklyDetailedXLSX(rows, filterWeek, `ontheclock-weekly_detailed-report.xlsx`)
+                              : exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)}
                             className="block w-full px-4 py-2 text-left text-sm hover:bg-page">Excel (.xlsx)</button>
                     <button onClick={() => reportRowsToPdf(`${tab === 'weekly' ? 'Weekly ' + weeklyVariant : tab === 'employee' ? 'By Employee' : 'By Job Site'} report`, rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.pdf`, tab === 'employee' ? 'Employee' : tab === 'weekly' && weeklyVariant === 'detailed' ? 'Employee' : undefined)}
                             className="block w-full px-4 py-2 text-left text-sm hover:bg-page">PDF (.pdf)</button>
@@ -515,7 +604,9 @@ export default function Reports() {
             </div>
             {renderTable(openSaved.data, openSaved.report_type === 'weekly_detailed' ? { groupBy: 'Employee' } : undefined)}
             <div className="flex gap-3 pt-2">
-              <button onClick={() => exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={textLinkCls}>↓ Excel</button>
+              <button onClick={() => openSaved.report_type === 'weekly_detailed'
+                        ? exportWeeklyDetailedXLSX(openSaved.data, openSaved.date_from ?? '', `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)
+                        : exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={textLinkCls}>↓ Excel</button>
               <button onClick={() => reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'weekly_detailed' || openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={textLinkCls}>↓ PDF</button>
               <button onClick={() => deleteSaved(openSaved)} className={btnDanger}>Delete</button>
             </div>

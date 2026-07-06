@@ -775,18 +775,29 @@ export default function MyTimesheets() {
         <div className="space-y-4">
           {/* Back on its own line above the week; week + badge left-aligned
               inline with the rest of the page content. */}
-          <div className="space-y-3">
-            {/* Flat link, no horizontal padding, so "← BACK" aligns with the
-                week-range title beneath it. */}
+          <div>
+            {/* Back — original 10px size, sits above the week title with a gap. */}
             <button
               onClick={() => setSelected(null)}
-              className="inline-flex items-center gap-1 py-1 text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+              className="inline-flex items-center gap-1 text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
             >
               ← Back
             </button>
-            <div>
-              <p className="font-semibold">{fmtWeekRange(selected.week_start)}</p>
-              <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
+            {/* Week title + status flag on the left; Add Manual Entry (draft
+                only) on the top-right, aligned with the status flag. */}
+            <div className="flex justify-between items-center mt-5">
+              <div>
+                <p className="font-semibold">{fmtWeekRange(selected.week_start)}</p>
+                <span className={badgeCls} style={statusStyle(selected.status)}>{selected.status}</span>
+              </div>
+              {selected.status === 'draft' && (
+                <button
+                  onClick={() => { setShowManualForm(true); setErr('') }}
+                  className="text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+                >
+                  Add Manual Entry
+                </button>
+              )}
             </div>
           </div>
 
@@ -862,13 +873,12 @@ export default function MyTimesheets() {
             </div>
           </div>
 
-          {/* Actions row — Delete Timesheet (left) and Add Manual Entry (right,
-              draft only) sit on the same line at the bottom of the page. */}
-          <div className="flex justify-between items-center">
-            {/* Permanent delete — uses the SECURITY DEFINER RPC so it can disable
-                the recalc trigger atomically (otherwise sync_timesheet_on_entry_change
-                re-INSERTs the timesheet via ON CONFLICT while entries are deleted,
-                leaving an orphan row that re-appears in the list). */}
+          {/* Delete Timesheet — right-aligned, directly below the totals card.
+              Same button + position for every timesheet status. Uses the
+              SECURITY DEFINER RPC so it can disable the recalc trigger atomically
+              (otherwise sync_timesheet_on_entry_change re-INSERTs the timesheet
+              via ON CONFLICT while entries are deleted, leaving an orphan row). */}
+          <div className="flex justify-end">
             <button
               onClick={async () => {
                 if (!profile) return
@@ -882,29 +892,19 @@ export default function MyTimesheets() {
             >
               Delete Timesheet
             </button>
-            {selected.status === 'draft' && (
-              <button
-                onClick={() => { setShowManualForm(true); setErr('') }}
-                className="text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
-              >
-                + Add Manual Entry
-              </button>
-            )}
           </div>
 
-          {/* Submit / Undo / Reopen — below the Delete + Add Manual Entry row. */}
+          {/* Primary action — Submit (draft) / Undo (submitted) / Reopen
+              (rejected). Centered, well below the Delete link. Same look and
+              position for every status. */}
           {selected.status === 'draft' && entries.length > 0 && (() => {
-            // Submit For Approval is always available on a draft — the previous
-            // "Clock-Out Of All Entries First" prompt has been removed per spec.
-            // Open entries are still implicitly fine to submit because the API
-            // tolerates them (admin sees them flagged on review).
             const needClockOut = entries.some(e => !e.clock_out)
             return (
               <button
                 onClick={submitTimesheet}
                 disabled={submitting}
                 style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-                className="inline-flex items-center justify-center w-full h-12 mt-8 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
+                className="inline-flex items-center justify-center w-full h-12 mt-12 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
                 title={needClockOut ? 'One or more entries are still active — clock out before review for accurate hours.' : undefined}
               >
                 {submitting ? 'Submitting…' : 'Submit For Approval'}
@@ -918,7 +918,8 @@ export default function MyTimesheets() {
                 setSelected(prev => prev ? { ...prev, status: 'draft' } : prev)
                 loadTimesheets()
               }}
-              className={`${btnPrimary} w-full h-12`}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+              className="inline-flex items-center justify-center w-full h-12 mt-12 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
             >
               Reopen for editing
             </button>
@@ -943,7 +944,7 @@ export default function MyTimesheets() {
                 loadTimesheets()
               }}
               style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-              className={`${btnPrimary} w-full h-12`}
+              className="inline-flex items-center justify-center w-full h-12 mt-12 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
             >
               Undo Submission
             </button>
