@@ -878,14 +878,14 @@ export default function MyTimesheets() {
                 setSelected(null)
                 loadTimesheets()
               }}
-              className="text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+              className="text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
             >
               Delete Timesheet
             </button>
             {selected.status === 'draft' && (
               <button
                 onClick={() => { setShowManualForm(true); setErr('') }}
-                className="text-sm font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
+                className="text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80"
               >
                 + Add Manual Entry
               </button>
@@ -904,7 +904,7 @@ export default function MyTimesheets() {
                 onClick={submitTimesheet}
                 disabled={submitting}
                 style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
-                className="inline-flex items-center justify-center w-full h-12 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
+                className="inline-flex items-center justify-center w-full h-12 mt-8 text-sm font-semibold font-forma uppercase underline tracking-[0.02em] active:scale-95 transition-all disabled:opacity-60"
                 title={needClockOut ? 'One or more entries are still active — clock out before review for accurate hours.' : undefined}
               >
                 {submitting ? 'Submitting…' : 'Submit For Approval'}
