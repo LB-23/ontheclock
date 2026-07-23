@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, weeklyAccrualsUntil, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, weeklyAccrualsUntil, isWeekendDate, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
@@ -96,6 +96,11 @@ export default function LeaveManagement() {
     e.preventDefault()
     if (!addForm.employee_id) { setAddErr('Pick a user.'); return }
     if (!addForm.start_date || !addForm.end_date) { setAddErr('Pick start and end dates.'); return }
+    // Sat/Sun are non-working days — leave can't start or end on a weekend.
+    if (isWeekendDate(addForm.start_date) || isWeekendDate(addForm.end_date)) {
+      setAddErr('Leave cannot start or end on a Saturday or Sunday — please pick a weekday.')
+      return
+    }
 
     // Admin "Away" flag: when the selected user is an admin, this is just a
     // calendar marker over a date range — no leave type, no times, no
@@ -687,16 +692,24 @@ export default function LeaveManagement() {
                     const timeRange = l.start_time && l.end_time
                       ? `${fmtClock(l.start_time)} – ${fmtClock(l.end_time)}`
                       : ''
+                    // Sat/Sun are non-working days: leave spanning a weekend is
+                    // greyed out (no leave-type colour, no times) and shows only
+                    // the employee's name — no hours are deducted for these days.
+                    const isWeekend = getDay(day) === 0 || getDay(day) === 6
                     return (
                       <div
                         key={l.id}
                         onDoubleClick={() => openEdit(l)}
-                        className="text-micro leading-tight rounded px-0.5 mt-0.5 text-ink cursor-pointer"
-                        style={{ backgroundColor: leaveTypeColour(l.leave_type) }}
-                        title={`${fullName} — ${typeLabel}${timeRange ? ` (${timeRange})` : ''} (double-click to edit)`}
+                        className={`text-micro leading-tight rounded px-0.5 mt-0.5 cursor-pointer ${isWeekend ? '' : 'text-ink'}`}
+                        style={isWeekend
+                          ? { backgroundColor: '#d2d2d2', color: '#a6a6a6' }
+                          : { backgroundColor: leaveTypeColour(l.leave_type) }}
+                        title={isWeekend
+                          ? `${fullName} — weekend (not deducted)`
+                          : `${fullName} — ${typeLabel}${timeRange ? ` (${timeRange})` : ''} (double-click to edit)`}
                       >
                         <div className="truncate">{display}</div>
-                        {timeRange && <div className="truncate opacity-80">{timeRange}</div>}
+                        {!isWeekend && timeRange && <div className="truncate opacity-80">{timeRange}</div>}
                       </div>
                     )
                   })}

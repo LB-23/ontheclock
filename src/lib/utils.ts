@@ -203,6 +203,15 @@ export async function exportXLSX(rows: Record<string, unknown>[], filename: stri
   URL.revokeObjectURL(url)
 }
 
+/** True when a 'YYYY-MM-DD' string falls on a Saturday or Sunday. Sat/Sun are
+ *  non-working days at LBG — leave cannot start or end on one, and they are
+ *  never deducted from a leave balance. */
+export function isWeekendDate(d: string): boolean {
+  if (!d) return false
+  const dow = new Date(`${d}T00:00:00`).getDay()
+  return dow === 0 || dow === 6
+}
+
 /** Count weekly leave-accrual events between today and a target date. The
  *  accrue-weekly cron runs every Thursday (`30 14 * * 4`), so this counts the
  *  Thursdays strictly after today and before `targetDate`. Used to project a

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, isWeekendDate, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -110,6 +110,11 @@ export default function LeaveAndTIL() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!profile || !form.start_date || !form.end_date) return
+    // Sat/Sun are non-working days — leave can't start or end on a weekend.
+    if (isWeekendDate(form.start_date) || isWeekendDate(form.end_date)) {
+      setErr('Leave cannot start or end on a Saturday or Sunday — please pick a weekday.')
+      return
+    }
     if (totalHours <= 0) { setErr('Times need to span at least a partial day.'); return }
     setLoading(true)
     setErr('')
