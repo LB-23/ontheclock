@@ -212,23 +212,37 @@ export function isWeekendDate(d: string): boolean {
   return dow === 0 || dow === 6
 }
 
-/** Count weekly leave-accrual events between today and a target date. The
- *  accrue-weekly cron runs every Thursday (`30 14 * * 4`), so this counts the
- *  Thursdays strictly after today and before `targetDate`. Used to project a
- *  leave balance forward to the date an employee has requested off, e.g. a
- *  request starting 24/07 from 01/07 crosses 4 Thursdays (02, 09, 16, 23 Jul). */
-export function weeklyAccrualsUntil(targetDate: string): number {
+/** Accrual credited between tomorrow and `targetDate`, expressed in multiples
+ *  of the stored per-FORTNIGHT rate. Leave accrues fortnightly on a Thursday:
+ *    30 Jul 2026 — a single week only (0.5), bridging the weekly→fortnightly change
+ *    06 Aug 2026 — skipped
+ *    13 Aug 2026 and every 2nd Thursday after — a full fortnight (1.0)
+ *  Used to project a leave balance forward to the dates an employee has
+ *  requested off. */
+export const ACCRUAL_CHANGEOVER = '2026-07-30'   // one-week credit
+export const ACCRUAL_ANCHOR     = '2026-08-13'   // first full fortnight
+
+export function accrualPeriodsUntil(targetDate: string): number {
   if (!targetDate) return 0
-  const target = new Date(`${targetDate}T00:00:00`)
+  const target     = new Date(`${targetDate}T00:00:00`)
+  const changeover = new Date(`${ACCRUAL_CHANGEOVER}T00:00:00`)
+  const anchor     = new Date(`${ACCRUAL_ANCHOR}T00:00:00`)
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   d.setDate(d.getDate() + 1)   // start counting from tomorrow
-  let count = 0
+  let units = 0
   while (d < target) {
-    if (d.getDay() === 4) count++   // 4 = Thursday
+    if (d.getDay() === 4) {     // 4 = Thursday
+      if (d.getTime() === changeover.getTime()) {
+        units += 0.5
+      } else if (d.getTime() >= anchor.getTime()) {
+        const weeks = Math.round((d.getTime() - anchor.getTime()) / (7 * 86_400_000))
+        if (weeks % 2 === 0) units += 1
+      }
+    }
     d.setDate(d.getDate() + 1)
   }
-  return count
+  return units
 }
 
 /** Split hours decimal into integer hours and rounded minutes */

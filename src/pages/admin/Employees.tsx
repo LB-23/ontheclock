@@ -22,16 +22,17 @@ type FormState = {
   clock_out_reminder: string
 }
 
-/** Per-week leave accrual rates by required-hours category.
+/** Per-FORTNIGHT leave accrual rates by required-hours category.
  *  Derived from the LBG entitlement: 0.076923 hr annual + 0.038461 hr personal
- *  per hour worked. Multiplying by the weekly target and rounding to 2 decimals
- *  gives the per-week amount the cron auto-credits each Thursday. Stored at 2dp
- *  so the field reads cleanly in both the form and the admin profile view —
- *  the admin can still override either cell with a precise figure if needed. */
+ *  per hour worked — i.e. weekly_hours × 4/52 (annual) and × 2/52 (personal),
+ *  DOUBLED for the fortnightly cycle and kept at 4dp so the rate doesn't lose
+ *  accuracy over a year. Credited every 2nd Thursday (see accrue_weekly_leave_
+ *  balances): 30 Jul 2026 paid a single week, 6 Aug was skipped, and full
+ *  fortnights run from 13 Aug 2026. Admin can still override either cell. */
 const ACCRUAL_TABLE: Record<WeeklyHours, { annual: number; personal: number }> = {
-  38: { annual: 2.92, personal: 1.46 }, // 38 × 0.076923 ≈ 2.92 · 38 × 0.038461 ≈ 1.46
-  40: { annual: 3.08, personal: 1.54 }, // 40 × 0.076923 ≈ 3.08 · 40 × 0.038461 ≈ 1.54
-  42: { annual: 3.23, personal: 1.62 }, // 42 × 0.076923 ≈ 3.23 · 42 × 0.038461 ≈ 1.62
+  38: { annual: 5.8462, personal: 2.9231 }, // 2 × (38 × 4/52) · 2 × (38 × 2/52)
+  40: { annual: 6.1538, personal: 3.0769 }, // 2 × (40 × 4/52) · 2 × (40 × 2/52)
+  42: { annual: 6.4615, personal: 3.2308 }, // 2 × (42 × 4/52) · 2 × (42 × 2/52)
 }
 
 const BLANK: FormState = {
@@ -211,8 +212,8 @@ export default function Employees() {
               <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink ">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink ">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink ">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
-              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/W – Annual</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(2)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/W – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(2)}</dd></div>
+              <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/F – Annual</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(4)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/F – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(4)}</dd></div>
             </>
           )}
           {viewing.app_role !== 'admin' && (
@@ -313,22 +314,22 @@ export default function Employees() {
                 <div><label className={labelCls}>TIL (hours)</label><input type="number" step="0.5" value={form.accrued_til_hours} onChange={e => set('accrued_til_hours', parseFloat(e.target.value) || 0)} className={inputCls} /></div>
               </div>
 
-              {/* Weekly accrual rates — added to the running balance every Friday */}
+              {/* Fortnightly accrual rates — credited every 2nd Thursday */}
               <div className="border-t border-page pt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Accrued Leave P/W (auto-added every Thursday)</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Accrued Leave P/F (auto-added every 2nd Thursday)</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Annual P/W (hours)</label>
+                    <label className={labelCls}>Annual P/F (hours)</label>
                     {/* Auto-populated from Required Hours but fully editable —
                         backspacing the field clean falls through to 0 via the
                         `|| 0` guard, matching the spec. */}
-                    <input type="number" step="0.01" min="0" value={form.annual_accrual_per_week}
+                    <input type="number" step="0.0001" min="0" value={form.annual_accrual_per_week}
                            onChange={e => set('annual_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Personal/Sick P/W (hours)</label>
-                    <input type="number" step="0.01" min="0" value={form.personal_accrual_per_week}
+                    <label className={labelCls}>Personal/Sick P/F (hours)</label>
+                    <input type="number" step="0.0001" min="0" value={form.personal_accrual_per_week}
                            onChange={e => set('personal_accrual_per_week', parseFloat(e.target.value) || 0)}
                            className={inputCls} />
                   </div>

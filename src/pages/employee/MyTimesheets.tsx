@@ -62,6 +62,9 @@ export default function MyTimesheets() {
     clock_in: '07:00',
     clock_out: '15:00',
     job_address_id: '',
+    // '' = ordinary worked time; otherwise a leave entry_type. Leave logged here
+    // is deducted from the balance when the timesheet is submitted.
+    entry_type: '' as '' | 'annual_leave' | 'personal_leave' | 'time_in_lieu',
   })
 
   useEffect(() => {
@@ -480,20 +483,24 @@ export default function MyTimesheets() {
     }
     const hrs = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 3_600_000 * 100) / 100
 
+    // Leave logged here carries the leave entry_type + label; it is deducted
+    // from the balance when the timesheet is submitted (not at entry time).
+    const isLeave = manual.entry_type !== ''
     const { error: insErr } = await supabase.from('time_entries').insert({
       employee_id:    profile.id,
       clock_in:       startIso,
       clock_out:      endIso,
-      job_address_id: manual.job_address_id || null,
+      job_address_id: isLeave ? null : (manual.job_address_id || null),
       total_hours:    hrs,
       status:         'completed',
       week_start:     selected.week_start,
-      notes:          'Added manually',
+      entry_type:     isLeave ? manual.entry_type : 'regular',
+      notes:          isLeave ? leaveLabel(manual.entry_type as TimeEntry['entry_type']) : 'Added manually',
     })
     setManualSaving(false)
     if (insErr) { setErr(insErr.message); return }
     setShowManualForm(false)
-    setManual({ date: '', clock_in: '07:00', clock_out: '15:00', job_address_id: '' })
+    setManual({ date: '', clock_in: '07:00', clock_out: '15:00', job_address_id: '', entry_type: '' })
     await reloadEntries()
   }
 
@@ -599,6 +606,12 @@ export default function MyTimesheets() {
       .eq('employee_id', profile!.id)
       .eq('week_start', selected.week_start)
       .in('status', ['completed', 'edited'])
+
+    // Any leave the employee logged manually on this draft is deducted from
+    // their balance now that the timesheet is submitted.
+    await supabase.rpc('apply_manual_leave_deduction', {
+      emp: profile!.id, ws: selected.week_start,
+    })
 
     setSelected(prev => prev ? { ...prev, status: 'submitted' } : prev)
     setTimesheets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'submitted' } : t))
@@ -736,14 +749,34 @@ export default function MyTimesheets() {
           </div>
         </div>
         <div>
-          <label className={labelCls}>Job Site</label>
-          <select value={manual.job_address_id}
-                  onChange={e => setManual(m => ({ ...m, job_address_id: e.target.value }))}
+          <label className={labelCls}>Entry Type</label>
+          <select value={manual.entry_type}
+                  onChange={e => setManual(m => ({ ...m, entry_type: e.target.value as typeof m.entry_type }))}
                   className={inputCls}>
-            <option value="">— None —</option>
-            {jobAddresses.map(j => <option key={j.id} value={j.id}>{j.address}</option>)}
+            <option value="">Worked Time</option>
+            <option value="annual_leave">Annual Leave</option>
+            <option value="personal_leave">Personal/Sick Leave</option>
+            <option value="time_in_lieu">TIL</option>
           </select>
         </div>
+        {/* Job site only applies to worked time — leave has no site. */}
+        {manual.entry_type === '' ? (
+          <div>
+            <label className={labelCls}>Job Site</label>
+            <select value={manual.job_address_id}
+                    onChange={e => setManual(m => ({ ...m, job_address_id: e.target.value }))}
+                    className={inputCls}>
+              <option value="">— None —</option>
+              {jobAddresses.map(j => <option key={j.id} value={j.id}>{j.address}</option>)}
+            </select>
+          </div>
+        ) : (
+          <p className="text-tag text-muted">
+            These hours will be deducted from your {manual.entry_type === 'annual_leave' ? 'annual leave'
+              : manual.entry_type === 'personal_leave' ? 'personal/sick leave' : 'TIL'} balance
+            when you submit this timesheet for approval.
+          </p>
+        )}
         {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
         <div className="flex gap-3 pt-2">
           <button
@@ -915,6 +948,10 @@ export default function MyTimesheets() {
             <button
               onClick={async () => {
                 await supabase.from('timesheets').update({ status: 'draft' }).eq('id', selected.id)
+                // Rejected -> draft: credit back any manually-logged leave.
+                if (profile) await supabase.rpc('reverse_manual_leave_deduction', {
+                  emp: profile.id, ws: selected.week_start,
+                })
                 setSelected(prev => prev ? { ...prev, status: 'draft' } : prev)
                 loadTimesheets()
               }}
@@ -939,6 +976,10 @@ export default function MyTimesheets() {
                 await supabase.from('time_entries').update({ status: 'completed' })
                   .eq('employee_id', profile.id).eq('week_start', selected.week_start)
                   .eq('status', 'submitted')
+                // Credit back any manually-logged leave deducted on submission.
+                await supabase.rpc('reverse_manual_leave_deduction', {
+                  emp: profile.id, ws: selected.week_start,
+                })
                 setSelected(prev => prev ? { ...prev, status: 'draft' } : prev)
                 setTimesheets(prev => prev.map(t => t.id === selected.id ? { ...t, status: 'draft' } : t))
                 loadTimesheets()

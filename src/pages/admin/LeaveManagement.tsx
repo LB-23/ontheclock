@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, weeklyAccrualsUntil, isWeekendDate, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, computeLeaveHours, accrualPeriodsUntil, isWeekendDate, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
@@ -377,16 +377,16 @@ export default function LeaveManagement() {
               : t === 'time_in_lieu' ? Number(prof?.accrued_til_hours      ?? 0)
               : null
             const currentBal = balanceFor(r.leave_type)
-            // Project the balance forward to the requested dates: add the weekly
-            // accrual for each accrual event (Thursday) between now and the leave
-            // start. Only annual + personal accrue weekly; TIL/unpaid keep the
+            // Project the balance forward to the requested dates: add the
+            // per-FORTNIGHT accrual for each accrual event between now and the
+            // leave start. Only annual + personal accrue; TIL/unpaid keep the
             // current figure. Display-only — does NOT change the stored balance.
             const accrualRate = r.leave_type === 'annual'   ? Number(prof?.annual_accrual_per_week   ?? 0)
                               : r.leave_type === 'personal' ? Number(prof?.personal_accrual_per_week ?? 0)
                               : 0
             const avail = currentBal === null
               ? null
-              : currentBal + accrualRate * weeklyAccrualsUntil(r.start_date)
+              : currentBal + accrualRate * accrualPeriodsUntil(r.start_date)
             const reqHrs = Number(r.total_hours ?? 0)
             const wouldOverdraw = avail !== null && reqHrs > avail
             return (
@@ -399,7 +399,7 @@ export default function LeaveManagement() {
                       {leaveLabels[r.leave_type]} · {fmtDate(r.start_date)}{r.start_time ? ` ${fmtClock(r.start_time)}` : ''} – {fmtDate(r.end_date)}{r.end_time ? ` ${fmtClock(r.end_time)}` : ''} ({fmtHours(reqHrs)})
                     </p>
                     {/* Projected-balance line — the balance the employee will
-                        have AT the requested dates (current + weekly accruals to
+                        have AT the requested dates (current + fortnightly accruals to
                         then), not today's balance. Red when it would overdraw. */}
                     <p className="text-xs mt-1" style={{ color: wouldOverdraw ? '#9C0F0F' : '#666666' }}>
                       {avail === null
