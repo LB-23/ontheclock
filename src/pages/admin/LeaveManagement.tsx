@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType, type Profile } from '../../lib/supabase'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, accrualPeriodsUntil, isWeekendDate, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, fmtBalance, computeLeaveHours, accrualPeriodsUntil, isWeekendDate, editLinkCls, btnPrimary, btnDanger, btnSecondary, inputCls, labelCls } from '../../lib/utils'
 import { format, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, getDay } from 'date-fns'
 import { holidayFor } from '../../lib/holidays'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 const leaveLabels: Record<string, string> = {
-  annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid',
+  annual: 'Annual', personal: 'Personal/Sick', time_in_lieu: 'TIL', unpaid: 'Unpaid Leave',
 }
 
 /** Calendar entries are coloured by leave TYPE (not employee) so the kind of
@@ -15,8 +15,8 @@ const leaveLabels: Record<string, string> = {
 const LEAVE_TYPE_COLOURS: Record<string, string> = {
   annual:       '#D7B8F4', // soft lavender
   personal:     '#FFBFEB', // soft pink
-  time_in_lieu: '#FFF89F', // yellow (matches former unpaid)
-  unpaid:       '#FFF89F', // soft cream
+  time_in_lieu: '#FFF89F', // yellow
+  unpaid:       '#fedcb6', // warm peach — Unpaid Leave
   away:         '#a7eff1', // admin "Away" flag — calendar-only, no deduction
 }
 const LEAVE_TYPE_LABELS: Record<string, string> = {
@@ -404,7 +404,7 @@ export default function LeaveManagement() {
                     <p className="text-xs mt-1" style={{ color: wouldOverdraw ? '#9C0F0F' : '#666666' }}>
                       {avail === null
                         ? 'Unpaid leave — no balance deduction'
-                        : <>Available Balance = <span className="font-semibold">{fmtHours(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
+                        : <>Available Balance = <span className="font-semibold">{fmtBalance(avail)}</span>{wouldOverdraw ? ' — request exceeds balance' : ''}</>}
                     </p>
                     {r.reason && <p className="text-xs text-muted italic mt-0.5">"{r.reason}"</p>}
                   </div>
@@ -526,9 +526,9 @@ export default function LeaveManagement() {
                       {/* `normal-case` pairs with font-clock to render the
                           lowercase "h"/"m" suffix from fmtHours (font-clock
                           uppercases by default). */}
-                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(a)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(p)}</td>
-                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtHours(t)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtBalance(a)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtBalance(p)}</td>
+                      <td className="px-4 py-3 text-right text-ink font-clock normal-case">{fmtBalance(t)}</td>
                     </tr>
                   )
                 })}
@@ -555,7 +555,7 @@ export default function LeaveManagement() {
               <select value={editForm.leave_type}
                       onChange={e => setEditForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                       className={inputCls}>
-                {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
+                {Object.entries(leaveLabels).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
@@ -727,7 +727,7 @@ export default function LeaveManagement() {
                   style={{ backgroundColor: '#B4B3B3', color: '#595858' }}>
               P/H — VIC Public Holiday
             </span>
-            {(['annual', 'personal', 'time_in_lieu', 'away'] as const).map(t => (
+            {(['annual', 'personal', 'time_in_lieu', 'unpaid', 'away'] as const).map(t => (
               <span key={t} className="text-tag rounded-none px-2 py-0.5 text-ink"
                     style={{ backgroundColor: leaveTypeColour(t) }}>
                 {LEAVE_TYPE_LABELS[t]}
@@ -773,7 +773,7 @@ export default function LeaveManagement() {
                       onChange={e => setAddForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                       disabled={addSelectedIsAdmin}
                       className={inputCls}>
-                {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
+                {Object.entries(leaveLabels).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>

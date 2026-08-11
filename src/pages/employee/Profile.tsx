@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, btnSecondary, inputCls, labelCls, fmtHours, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
+import { btnPrimary, btnSecondary, inputCls, labelCls, fmtBalance, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
 import { pushSupported, enablePushForCurrentUser, disablePushForCurrentUser, getCurrentSubscription } from '../../lib/push'
 
 /** Render a 'HH:MM:SS' reminder time as 12-hour with am/pm (e.g. '7:25 am') */
@@ -224,9 +224,9 @@ export default function EmployeeProfile() {
         <div className="bg-surface rounded-2xl border border-page shadow-sm p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Leave Balances</p>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted">Annual Leave</span><span className="font-semibold text-ink">{fmtHours(profile.annual_leave_balance)}</span></div>
-            <div className="flex justify-between"><span className="text-muted">Personal/Sick Leave</span><span className="font-semibold text-ink">{fmtHours(profile.personal_leave_balance)}</span></div>
-            <div className="flex justify-between"><span className="text-muted">Time in Lieu</span><span className="font-semibold text-ink">{fmtHours(profile.accrued_til_hours)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Annual Leave</span><span className="font-semibold text-ink">{fmtBalance(profile.annual_leave_balance)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Personal/Sick Leave</span><span className="font-semibold text-ink">{fmtBalance(profile.personal_leave_balance)}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Time in Lieu</span><span className="font-semibold text-ink">{fmtBalance(profile.accrued_til_hours)}</span></div>
           </div>
         </div>
       )}

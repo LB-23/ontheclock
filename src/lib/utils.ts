@@ -263,6 +263,12 @@ export function getGPS(): Promise<{ lat: number; lng: number } | null> {
   })
 }
 
+/** Leave BALANCES are shown as a decimal number of hours to 4 dp
+ *  (e.g. 90.6005 = 90 hours). Durations elsewhere still use fmtHours "Xh Ym". */
+export function fmtBalance(h: number | null | undefined): string {
+  return Number(h ?? 0).toFixed(4)
+}
+
 /** Format hours as "Xh Ym" — never zero-padded (e.g. '1h 5m', '38h 41m') */
 export function fmtHours(h: number): string {
   const totalMin = Math.round(Number(h ?? 0) * 60)

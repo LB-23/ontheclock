@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type LeaveRequest, type LeaveType } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtDate, fmtClock, fmtHours, computeLeaveHours, isWeekendDate, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
+import { fmtDate, fmtClock, fmtHours, fmtBalance, computeLeaveHours, isWeekendDate, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 
@@ -308,9 +308,9 @@ export default function LeaveAndTIL() {
         <div className="grid grid-cols-3 gap-3">
           {[
             // May 2026 design-system tile palette — same sky ramp as admin Dashboard
-            { label: 'Annual Leave',        value: fmtHours(profile.annual_leave_balance),   bg: '#a3dff5' },
-            { label: 'Personal/Sick Leave', value: fmtHours(profile.personal_leave_balance), bg: '#47bfeb' },
-            { label: 'Time In Lieu',        value: fmtHours(profile.accrued_til_hours),      bg: '#1787b9' },
+            { label: 'Annual Leave',        value: fmtBalance(profile.annual_leave_balance),   bg: '#a3dff5' },
+            { label: 'Personal/Sick Leave', value: fmtBalance(profile.personal_leave_balance), bg: '#47bfeb' },
+            { label: 'Time In Lieu',        value: fmtBalance(profile.accrued_til_hours),      bg: '#1787b9' },
           ].map(b => (
             <div key={b.label} style={{ backgroundColor: b.bg, color: '#000000' }}
                  className="p-3 sm:p-4 overflow-hidden">
@@ -344,7 +344,7 @@ export default function LeaveAndTIL() {
             <select value={form.leave_type}
                     onChange={e => setForm(f => ({ ...f, leave_type: e.target.value as LeaveType }))}
                     className={inputCls}>
-              {Object.entries(leaveLabels).filter(([k]) => k !== 'unpaid').map(([k, v]) => (
+              {Object.entries(leaveLabels).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>

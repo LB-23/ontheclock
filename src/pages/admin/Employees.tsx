@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { format } from 'date-fns'
 import { supabase, type Profile, type WeeklyHours, type AppRole } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtHours, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
+import { btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, fmtBalance, timesheetSubmissionStatus, onTimeFlagCls } from '../../lib/utils'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import Skeleton from '../../components/Skeleton'
 
@@ -22,17 +23,17 @@ type FormState = {
   clock_out_reminder: string
 }
 
-/** Per-FORTNIGHT leave accrual rates by required-hours category.
- *  Derived from the LBG entitlement: 0.076923 hr annual + 0.038461 hr personal
- *  per hour worked — i.e. weekly_hours × 4/52 (annual) and × 2/52 (personal),
- *  DOUBLED for the fortnightly cycle and kept at 4dp so the rate doesn't lose
- *  accuracy over a year. Credited every 2nd Thursday (see accrue_weekly_leave_
- *  balances): 30 Jul 2026 paid a single week, 6 Aug was skipped, and full
- *  fortnights run from 13 Aug 2026. Admin can still override either cell. */
+/** Per-FORTNIGHT leave accrual rates by required-hours category (LBG rules).
+ *  Annual   accrues 0.0769 hr per required hour worked.
+ *  Personal accrues 0.0385 hr per required hour worked.
+ *  Kept at 4dp so the rate doesn't lose accuracy over a year. Credited every
+ *  2nd Thursday, pro-rated down for any unpaid leave in the period (see
+ *  accrue_weekly_leave_balances): 30 Jul 2026 paid a single week, 6 Aug was
+ *  skipped, full fortnights run from 13 Aug 2026. Admin can override either. */
 const ACCRUAL_TABLE: Record<WeeklyHours, { annual: number; personal: number }> = {
-  38: { annual: 5.8462, personal: 2.9231 }, // 2 × (38 × 4/52) · 2 × (38 × 2/52)
-  40: { annual: 6.1538, personal: 3.0769 }, // 2 × (40 × 4/52) · 2 × (40 × 2/52)
-  42: { annual: 6.4615, personal: 3.2308 }, // 2 × (42 × 4/52) · 2 × (42 × 2/52)
+  38: { annual: 5.8462, personal: 2.9230 },
+  40: { annual: 6.1538, personal: 3.0769 },
+  42: { annual: 6.4615, personal: 3.2308 },
 }
 
 const BLANK: FormState = {
@@ -58,6 +59,45 @@ export default function Employees() {
   const [viewing, setViewing] = useState<Profile | null>(null)
   // On-time/late submission counts + most-recent approver for the viewed employee
   const [viewStats, setViewStats] = useState<{ onTime: number; late: number; approver: string | null }>({ onTime: 0, late: 0, approver: null })
+
+  // Admin-only notes about the viewed employee (never shown to the employee).
+  type EmpNote = { id: string; note: string; created_at: string; author?: { full_name: string } | null }
+  const [notes, setNotes] = useState<EmpNote[]>([])
+  const [newNote, setNewNote] = useState('')
+  const [noteBusy, setNoteBusy] = useState(false)
+
+  const loadNotes = (empId: string) =>
+    supabase.from('employee_notes')
+      .select('id, note, created_at, author:profiles!employee_notes_author_id_fkey(full_name)')
+      .eq('employee_id', empId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setNotes((data as unknown as EmpNote[]) ?? []))
+
+  useEffect(() => {
+    setNewNote('')
+    if (!viewing) { setNotes([]); return }
+    loadNotes(viewing.id)
+  }, [viewing])
+
+  const addNote = async () => {
+    if (!viewing || !newNote.trim()) return
+    setNoteBusy(true)
+    const { error } = await supabase.from('employee_notes').insert({
+      employee_id: viewing.id, author_id: me?.id ?? null, note: newNote.trim(),
+    })
+    setNoteBusy(false)
+    if (error) { alert(`Could not add note: ${error.message}`); return }
+    setNewNote('')
+    loadNotes(viewing.id)
+  }
+
+  const deleteNote = async (id: string) => {
+    if (!viewing) return
+    if (!confirm('Delete this note?')) return
+    const { error } = await supabase.from('employee_notes').delete().eq('id', id)
+    if (error) { alert(`Could not delete note: ${error.message}`); return }
+    loadNotes(viewing.id)
+  }
 
   useEffect(() => {
     if (!viewing) { setViewStats({ onTime: 0, late: 0, approver: null }); return }
@@ -209,9 +249,9 @@ export default function Employees() {
           {viewing.app_role !== 'admin' && (
             <>
               <div className="flex justify-between"><dt className="text-muted">Required Hours P/W</dt><dd className="text-ink">{viewing.weekly_hours_category}h</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink ">{fmtHours(viewing.annual_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink ">{fmtHours(viewing.personal_leave_balance ?? 0)}</dd></div>
-              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink ">{fmtHours(viewing.accrued_til_hours ?? 0)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Annual Leave</dt><dd className="text-ink ">{fmtBalance(viewing.annual_leave_balance)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Personal/Sick</dt><dd className="text-ink ">{fmtBalance(viewing.personal_leave_balance)}</dd></div>
+              <div className="flex justify-between"><dt className="text-muted">Time In Lieu</dt><dd className="text-ink ">{fmtBalance(viewing.accrued_til_hours)}</dd></div>
               <div className="flex justify-between border-t border-page pt-2 mt-2"><dt className="text-muted">Accrued Leave P/F – Annual</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.annual_accrual_per_week ?? 0).toFixed(4)}</dd></div>
               <div className="flex justify-between"><dt className="text-muted">Accrued Leave P/F – Personal/Sick</dt><dd className="text-ink font-clock  normal-case">{Number(viewing.personal_accrual_per_week ?? 0).toFixed(4)}</dd></div>
             </>
@@ -225,6 +265,42 @@ export default function Employees() {
         </dl>
           )
         })()}
+
+        {/* Admin-only notes — never visible to the employee. Each note is
+            stamped with the date + the admin who wrote it. */}
+        <div className="border-t border-page pt-3 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Admin Notes <span className="normal-case font-normal">(admin-only)</span></p>
+          <div className="flex gap-2">
+            <input
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addNote() } }}
+              placeholder="Add a note…"
+              className={inputCls}
+            />
+            <button onClick={addNote} disabled={noteBusy || !newNote.trim()} className={`${btnPrimary} h-11 shrink-0 px-4`}>
+              {noteBusy ? '…' : 'Add'}
+            </button>
+          </div>
+          {notes.length === 0 ? (
+            <p className="text-tag text-muted">No notes yet.</p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {notes.map(n => (
+                <div key={n.id} className="bg-page rounded-lg px-3 py-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <p className="text-sm text-ink whitespace-pre-wrap break-words flex-1">{n.note}</p>
+                    <button onClick={() => deleteNote(n.id)} className="text-tag text-red-500 underline shrink-0">Delete</button>
+                  </div>
+                  <p className="text-tag text-muted mt-1">
+                    {format(new Date(n.created_at), 'd MMM yyyy, h:mm aaa')}{n.author?.full_name ? ` · ${n.author.full_name}` : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-3 pt-2">
           <button
             onClick={() => { const v = viewing; setViewing(null); openEdit(v) }}
