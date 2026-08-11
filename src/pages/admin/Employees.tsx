@@ -269,7 +269,7 @@ export default function Employees() {
         {/* Admin-only notes — never visible to the employee. Each note is
             stamped with the date + the admin who wrote it. */}
         <div className="border-t border-page pt-3 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Admin Notes <span className="normal-case font-normal">(admin-only)</span></p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Admin Notes</p>
           <div className="flex gap-2">
             <input
               value={newNote}
