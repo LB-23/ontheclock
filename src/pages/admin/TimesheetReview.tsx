@@ -311,6 +311,22 @@ export default function TimesheetReview() {
           {selected.status === 'approved' && (
             <p className="text-xs text-center text-green-600">✓ Approved</p>
           )}
+          {/* Undo a rejection — returns the timesheet to the Submitted view for
+              re-review. Entries were left as 'submitted' on rejection, so only
+              the timesheet status needs flipping back. */}
+          {selected.status === 'rejected' && (
+            <button
+              onClick={async () => {
+                await supabase.from('timesheets').update({ status: 'submitted' }).eq('id', selected.id)
+                setSelected(null)
+                load()
+              }}
+              style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+              className={`${btnPrimary} w-full h-12`}
+            >
+              Undo Rejection
+            </button>
+          )}
 
           {/* Admin can permanently delete a timesheet at any status */}
           <button
