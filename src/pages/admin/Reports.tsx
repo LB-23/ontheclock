@@ -12,16 +12,10 @@ type WeeklyVariant = 'simple' | 'detailed'
 type EmployeeSort = 'employee' | 'date' | 'site' | 'stage'
 type Row = Record<string, unknown>
 
-/** Render a Row[] as a branded PDF — Familjen Grotesk body, AM/PM-ish times. */
-async function reportRowsToPdf(title: string, rows: Row[], filename: string, groupBy?: string) {
-  if (rows.length === 0) return
-  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
-  let bodyFont = 'helvetica'
-  // Self-hosted Cerebri Sans Pro TTFs live under /public/fonts/. Cerebri is
-  // the brand numerals face — it also reads cleanly for table text, and
-  // ships as TTF (jsPDF doesn't accept OTF, which is why we don't try Calps
-  // Sans here). Same-origin fetch — no CDN, no CORS, works offline once the
-  // SW has cached the assets.
+/** Embed the self-hosted Cerebri Sans Pro TTFs into a jsPDF doc and return the
+ *  font name to use (falls back to Helvetica if the fetch fails). Same-origin
+ *  fetch — no CDN, works offline once the SW has cached the assets. */
+async function loadPdfFont(pdf: jsPDF): Promise<string> {
   try {
     const [reg, bold] = await Promise.all([
       fetch('/fonts/CerebriSansPro-Regular.ttf').then(r => r.ok ? r.arrayBuffer() : null),
@@ -38,9 +32,89 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
       pdf.addFont('CerebriSansPro-Regular.ttf', 'Cerebri', 'normal')
       pdf.addFileToVFS('CerebriSansPro-SemiBold.ttf', b64(bold))
       pdf.addFont('CerebriSansPro-SemiBold.ttf', 'Cerebri', 'bold')
-      bodyFont = 'Cerebri'
+      return 'Cerebri'
     }
   } catch { /* fall back to Helvetica */ }
+  return 'helvetica'
+}
+
+/** Weekly-Detailed PDF — mirrors the approved Excel template: a bold report
+ *  title, grey header band, per-employee grey "WEEK TOTAL" rows with summed
+ *  hours, and LEAVE TAKEN cells filled with the admin-calendar leave colour. */
+async function weeklyDetailedRowsToPdf(rows: Row[], weekStart: string, filename: string) {
+  if (rows.length === 0) return
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
+  const bodyFont = await loadPdfFont(pdf)
+
+  const weekLabel = format(parseISO(weekStart), 'd MMM yyyy').toUpperCase()
+  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
+  pdf.text(`TIMESHEET REPORT - WEEK STARTING ${weekLabel}`, 40, 50)
+
+  const headers = ['EMPLOYEE', 'DATE', 'DAY', 'SITE', 'STAGE', 'START TIME', 'END TIME', 'TOTAL HOURS', 'LEAVE TAKEN']
+  const parseHM = (s: unknown): number => {
+    const m = /(\d+)\s*h\s*(\d+)\s*m/.exec(String(s ?? ''))
+    return m ? (+m[1] * 60 + +m[2]) : 0
+  }
+  const fmtHM = (mins: number) => `${Math.floor(mins / 60)}h ${mins % 60}m`
+  // Leave-type colour (RGB) by the LEAVE TAKEN label — matches the calendar.
+  const leaveColour = (label: string): [number, number, number] | null => {
+    if (label.startsWith('Annual Leave'))   return [215, 184, 244] // #D7B8F4
+    if (label.startsWith('Personal'))        return [255, 191, 235] // #FFBFEB
+    if (label.startsWith('TIL'))             return [255, 248, 159] // #FFF89F
+    if (label.startsWith('Unpaid'))          return [254, 220, 182] // #fedcb6
+    return null
+  }
+
+  // Group rows by employee; append a grey WEEK TOTAL row after each group.
+  const body: string[][] = []
+  const totalRows = new Set<number>()
+  let i = 0
+  while (i < rows.length) {
+    const emp = rows[i].Employee
+    let groupMin = 0
+    while (i < rows.length && rows[i].Employee === emp) {
+      const r = rows[i]
+      body.push([
+        String(r.Employee ?? ''), String(r.Date ?? ''), String(r.Day ?? ''), String(r.Site ?? ''),
+        String(r.Stage ?? ''), String(r['Start Time'] ?? ''), String(r['End Time'] ?? ''),
+        String(r['Total Hours'] ?? ''), String(r['Leave Taken'] ?? ''),
+      ])
+      groupMin += parseHM(r['Total Hours'])
+      i++
+    }
+    totalRows.add(body.length)
+    body.push(['', '', '', '', '', '', 'WEEK TOTAL', fmtHM(groupMin), ''])
+  }
+
+  autoTable(pdf, {
+    startY: 70,
+    head: [headers],
+    body,
+    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240, 240, 240], textColor: [0, 0, 0] },
+    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
+    didParseCell: data => {
+      if (data.section !== 'body') return
+      if (totalRows.has(data.row.index)) {
+        // Grey + bold the "WEEK TOTAL" label and the summed-hours cell (as in Excel).
+        if (data.column.index === 6 || data.column.index === 7) {
+          data.cell.styles.fillColor = [173, 173, 173]
+          data.cell.styles.fontStyle = 'bold'
+        }
+      } else if (data.column.index === 8) {
+        const col = leaveColour(String(data.cell.raw ?? ''))
+        if (col) data.cell.styles.fillColor = col
+      }
+    },
+  })
+
+  pdf.save(filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
+}
+
+/** Render a Row[] as a branded PDF — generic table used by non-weekly-detailed reports. */
+async function reportRowsToPdf(title: string, rows: Row[], filename: string, groupBy?: string) {
+  if (rows.length === 0) return
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
+  const bodyFont = await loadPdfFont(pdf)
 
   pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
   pdf.text(title, 40, 50)
@@ -537,7 +611,9 @@ export default function Reports() {
                               ? exportWeeklyDetailedXLSX(rows, filterWeek, `ontheclock-weekly_detailed-report.xlsx`)
                               : exportXLSX(rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.xlsx`)}
                             className="block w-full px-4 py-2 text-left text-sm hover:bg-page">Excel (.xlsx)</button>
-                    <button onClick={() => reportRowsToPdf(`${tab === 'weekly' ? 'Weekly ' + weeklyVariant : tab === 'employee' ? 'By Employee' : 'By Job Site'} report`, rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.pdf`, tab === 'employee' ? 'Employee' : tab === 'weekly' && weeklyVariant === 'detailed' ? 'Employee' : undefined)}
+                    <button onClick={() => (tab === 'weekly' && weeklyVariant === 'detailed')
+                              ? weeklyDetailedRowsToPdf(rows, filterWeek, `ontheclock-weekly_detailed-report.pdf`)
+                              : reportRowsToPdf(`${tab === 'weekly' ? 'Weekly ' + weeklyVariant : tab === 'employee' ? 'By Employee' : 'By Job Site'} report`, rows, `ontheclock-${tab === 'weekly' ? 'weekly_' + weeklyVariant : tab}-report.pdf`, tab === 'employee' ? 'Employee' : undefined)}
                             className="block w-full px-4 py-2 text-left text-sm hover:bg-page">PDF (.pdf)</button>
                   </div>
                 </details>
@@ -607,7 +683,9 @@ export default function Reports() {
               <button onClick={() => openSaved.report_type === 'weekly_detailed'
                         ? exportWeeklyDetailedXLSX(openSaved.data, openSaved.date_from ?? '', `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)
                         : exportXLSX(openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`)} className={textLinkCls}>↓ Excel</button>
-              <button onClick={() => reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'weekly_detailed' || openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={textLinkCls}>↓ PDF</button>
+              <button onClick={() => openSaved.report_type === 'weekly_detailed'
+                        ? weeklyDetailedRowsToPdf(openSaved.data, openSaved.date_from ?? '', `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`)
+                        : reportRowsToPdf(openSaved.name, openSaved.data, `${openSaved.name.replace(/[^a-z0-9]+/gi, '_')}.pdf`, openSaved.report_type === 'employee' ? 'Employee' : undefined)} className={textLinkCls}>↓ PDF</button>
               <button onClick={() => deleteSaved(openSaved)} className={btnDanger}>Delete</button>
             </div>
           </div>
