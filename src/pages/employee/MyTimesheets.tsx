@@ -4,7 +4,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase, type TimeEntry, type Timesheet, type JobAddress } from '../../lib/supabase'
 import { useProfile } from '../../hooks/useProfile'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, splitHM, getWeekStart, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
 import AdminNoteBanner from '../../components/AdminNoteBanner'
 import Skeleton from '../../components/Skeleton'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
@@ -56,6 +56,33 @@ export default function MyTimesheets() {
   // Manual entry form
   const [showManualForm, setShowManualForm] = useState(false)
   useEscapeKey(showManualForm,  () => setShowManualForm(false))
+
+  // Create a brand-new (manual) timesheet for a chosen week.
+  const [showNewTs, setShowNewTs] = useState(false)
+  const [newTsWeek, setNewTsWeek] = useState('')
+  const [newTsBusy, setNewTsBusy] = useState(false)
+  useEscapeKey(showNewTs, () => { setShowNewTs(false); setErr('') })
+
+  const createTimesheet = async () => {
+    if (!profile || !newTsWeek) { setErr('Pick a week first.'); return }
+    const ws = getWeekStart(new Date(`${newTsWeek}T00:00:00`))   // Fri of that pay week
+    setNewTsBusy(true); setErr('')
+    // Re-open the week's timesheet if one already exists rather than duplicating.
+    const { data: existing } = await supabase.from('timesheets').select('*')
+      .eq('employee_id', profile.id).eq('week_start', ws).maybeSingle()
+    let ts = existing as Timesheet | null
+    if (!ts) {
+      const { data, error } = await supabase.from('timesheets')
+        .insert({ employee_id: profile.id, week_start: ws, status: 'draft' })
+        .select('*').single()
+      if (error) { setNewTsBusy(false); setErr(error.message); return }
+      ts = data as Timesheet
+    }
+    setNewTsBusy(false)
+    setShowNewTs(false); setNewTsWeek('')
+    loadTimesheets()
+    if (ts) loadEntries(ts)   // open it so entries can be added
+  }
   const [manualSaving, setManualSaving] = useState(false)
   const [manual, setManual] = useState({
     date: '',
@@ -998,6 +1025,13 @@ export default function MyTimesheets() {
       ) : (
         <>
           <button
+            onClick={() => { setNewTsWeek(''); setShowNewTs(true); setErr('') }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb', fontSize: '12px' }}
+            className={`${btnPrimary} w-full h-11`}
+          >
+            + New Timesheet
+          </button>
+          <button
             onClick={() => {
               // Per spec: open with the date pickers BLANK so the user picks a
               // deliberate range every time rather than re-exporting whatever
@@ -1035,6 +1069,30 @@ export default function MyTimesheets() {
             ))}
           </div>
         </>
+      )}
+
+      {showNewTs && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6">
+          <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">New Timesheet</h2>
+              <button onClick={() => { setShowNewTs(false); setErr('') }} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-xs text-muted">Pick any day in the week — the timesheet is created for that Friday–Thursday pay week. If one already exists for that week it just opens.</p>
+            <div>
+              <label className={labelCls}>Week</label>
+              <input type="date" value={newTsWeek} onChange={e => setNewTsWeek(e.target.value)} className={inputCls} />
+              {newTsWeek && <p className="text-xs text-muted mt-1">Pay week: {fmtWeekRange(getWeekStart(new Date(`${newTsWeek}T00:00:00`)))}</p>}
+            </div>
+            {err && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => { setShowNewTs(false); setErr('') }} style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+              <button onClick={createTimesheet} disabled={newTsBusy || !newTsWeek} style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }} className={`${btnPrimary} flex-1 h-11`}>
+                {newTsBusy ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showExport && (

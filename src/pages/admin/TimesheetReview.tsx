@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase, type Timesheet, type TimeEntry, type Profile } from '../../lib/supabase'
-import { fmtWeekRange, fmtDate, fmtTime, fmtHours, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
+import { supabase, type Timesheet, type TimeEntry, type Profile, type JobAddress } from '../../lib/supabase'
+import { fmtWeekRange, fmtDate, fmtTime, fmtHours, getWeekStart, btnPrimary, btnSecondary, btnDanger, inputCls, labelCls, editLinkCls, editedTagCls } from '../../lib/utils'
 import { format } from 'date-fns'
 import Skeleton from '../../components/Skeleton'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
@@ -38,6 +38,35 @@ export default function TimesheetReview() {
   const [editBusy, setEditBusy] = useState(false)
   const [editErr,  setEditErr]  = useState('')
   useEscapeKey(!!editingEntry, () => { setEditingEntry(null); setEditErr('') })
+
+  // Create a brand-new (manual) timesheet for an employee + week.
+  const [showNewTs, setShowNewTs] = useState(false)
+  const [newTsEmp, setNewTsEmp] = useState('')
+  const [newTsWeek, setNewTsWeek] = useState('')
+  const [newTsBusy, setNewTsBusy] = useState(false)
+  const [newTsErr, setNewTsErr] = useState('')
+  useEscapeKey(showNewTs, () => setShowNewTs(false))
+
+  const createTimesheet = async () => {
+    if (!newTsEmp) { setNewTsErr('Pick an employee.'); return }
+    if (!newTsWeek) { setNewTsErr('Pick a week.'); return }
+    const ws = getWeekStart(new Date(`${newTsWeek}T00:00:00`))   // Fri of that pay week
+    setNewTsBusy(true); setNewTsErr('')
+    const { data: existing } = await supabase.from('timesheets').select('*, profiles!timesheets_employee_id_fkey(full_name)')
+      .eq('employee_id', newTsEmp).eq('week_start', ws).maybeSingle()
+    let ts = existing as Timesheet | null
+    if (!ts) {
+      const { data, error } = await supabase.from('timesheets')
+        .insert({ employee_id: newTsEmp, week_start: ws, status: 'draft' })
+        .select('*, profiles!timesheets_employee_id_fkey(full_name)').single()
+      if (error) { setNewTsBusy(false); setNewTsErr(error.message); return }
+      ts = data as Timesheet
+    }
+    setNewTsBusy(false)
+    setShowNewTs(false); setNewTsEmp(''); setNewTsWeek('')
+    load()
+    if (ts) openTimesheet(ts)   // open it for entry editing
+  }
 
   const openEntryEdit = (e: TimeEntry) => {
     setEditingEntry(e)
@@ -118,7 +147,40 @@ export default function TimesheetReview() {
     // Only show employees (admins don't have timesheets / shouldn't clutter the filter)
     supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name')
       .then(({ data }) => setEmployees((data as Profile[]) ?? []))
+    supabase.from('job_addresses').select('*').eq('is_active', true).order('address')
+      .then(({ data }) => setJobAddresses((data as JobAddress[]) ?? []))
   }, [])
+
+  // Admin adds a manual entry to the open timesheet (e.g. one they created).
+  const [jobAddresses, setJobAddresses] = useState<JobAddress[]>([])
+  const [showAdminManual, setShowAdminManual] = useState(false)
+  const [adminManual, setAdminManual] = useState({ date: '', clock_in: '07:00', clock_out: '15:00', job_address_id: '' })
+  const [adminManualBusy, setAdminManualBusy] = useState(false)
+  const [adminManualErr, setAdminManualErr] = useState('')
+  useEscapeKey(showAdminManual, () => setShowAdminManual(false))
+
+  const submitAdminManual = async () => {
+    if (!selected) return
+    if (!adminManual.date || !adminManual.clock_in || !adminManual.clock_out) { setAdminManualErr('Date and times are required.'); return }
+    const startIso = new Date(`${adminManual.date}T${adminManual.clock_in}:00`).toISOString()
+    const endIso   = new Date(`${adminManual.date}T${adminManual.clock_out}:00`).toISOString()
+    if (new Date(endIso) <= new Date(startIso)) { setAdminManualErr('Clock-out must be after clock-in.'); return }
+    setAdminManualBusy(true); setAdminManualErr('')
+    // total_hours is re-derived by the recompute trigger; timesheet totals by the sync trigger.
+    const { error } = await supabase.from('time_entries').insert({
+      employee_id: selected.employee_id,
+      clock_in: startIso, clock_out: endIso,
+      job_address_id: adminManual.job_address_id || null,
+      total_hours: Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 3_600_000 * 100) / 100,
+      status: 'completed', week_start: selected.week_start, entry_type: 'regular',
+      notes: 'Added manually (admin)',
+    })
+    setAdminManualBusy(false)
+    if (error) { setAdminManualErr(error.message); return }
+    setShowAdminManual(false)
+    setAdminManual({ date: '', clock_in: '07:00', clock_out: '15:00', job_address_id: '' })
+    openTimesheet(selected)  // refresh entries + totals
+  }
 
   useEffect(() => { load() }, [filterStatus, filterEmp])
 
@@ -194,9 +256,19 @@ export default function TimesheetReview() {
         <div className="space-y-4">
           <div className="space-y-3">
             <button onClick={() => setSelected(null)} className={btnSecondary}>← Back</button>
-            <div>
-              <p className="font-semibold">{(selected.profiles as Profile)?.full_name}</p>
-              <p className="text-sm text-muted">{fmtWeekRange(selected.week_start)} · <span className="capitalize">{selected.status}</span></p>
+            <div className="flex justify-between items-start gap-3">
+              <div>
+                <p className="font-semibold">{(selected.profiles as Profile)?.full_name}</p>
+                <p className="text-sm text-muted">{fmtWeekRange(selected.week_start)} · <span className="capitalize">{selected.status}</span></p>
+              </div>
+              {(selected.status === 'draft' || selected.status === 'submitted') && (
+                <button
+                  onClick={() => { setAdminManual({ date: selected.week_start, clock_in: '07:00', clock_out: '15:00', job_address_id: '' }); setAdminManualErr(''); setShowAdminManual(true) }}
+                  className="text-[10px] font-semibold font-forma uppercase underline text-[#0352fb] hover:opacity-80 shrink-0"
+                >
+                  Add Manual Entry
+                </button>
+              )}
             </div>
           </div>
 
@@ -242,11 +314,11 @@ export default function TimesheetReview() {
                             Edited
                           </button>
                         )}
-                        {/* Admin can edit clock_in/out on a submitted timesheet
-                            BEFORE approval. System entries (leave shadows,
-                            public holidays) are sourced from leave_requests, so
-                            editing them here would desync — disable. */}
-                        {selected.status === 'submitted' && !isSystem && (
+                        {/* Admin can edit clock_in/out on a draft or submitted
+                            timesheet BEFORE approval. System entries (leave
+                            shadows, public holidays) are sourced from
+                            leave_requests, so editing them here would desync. */}
+                        {(selected.status === 'submitted' || selected.status === 'draft') && !isSystem && (
                           <button onClick={() => openEntryEdit(e)} className={editLinkCls}>
                             Edit
                           </button>
@@ -286,7 +358,9 @@ export default function TimesheetReview() {
             <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="Feedback for employee…" />
           </div>
 
-          {(selected.status === 'submitted') && (
+          {/* Approve/Reject on submitted, or on a draft the admin created
+              manually (admin authors it and finalises it directly). */}
+          {(selected.status === 'submitted' || selected.status === 'draft') && (
             <div className="flex gap-3">
               {/* Gallery action style: underlined #0352fb link buttons on grey */}
               <button
@@ -306,7 +380,7 @@ export default function TimesheetReview() {
             </div>
           )}
           {selected.status === 'draft' && (
-            <p className="text-xs text-center text-muted">Draft — employee hasn't submitted yet</p>
+            <p className="text-xs text-center text-muted">Draft — add entries above, then Approve to finalise (or the employee can submit it).</p>
           )}
           {selected.status === 'approved' && (
             <p className="text-xs text-center text-green-600">✓ Approved</p>
@@ -392,6 +466,13 @@ export default function TimesheetReview() {
         </div>
       ) : (
         <>
+          <button
+            onClick={() => { setNewTsEmp(''); setNewTsWeek(''); setNewTsErr(''); setShowNewTs(true) }}
+            style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+            className={btnPrimary}
+          >
+            + New Timesheet
+          </button>
           <div className="flex gap-3 flex-wrap">
             {/* Drafts dropped per spec — admin only ever needs to triage
                 timesheets that the employee has already submitted. */}
@@ -439,6 +520,76 @@ export default function TimesheetReview() {
             ))}
           </div>
         </>
+      )}
+
+      {/* New Timesheet — create a draft for an employee + week (opens on create). */}
+      {showNewTs && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6" onClick={() => setShowNewTs(false)}>
+          <div className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-lg">New Timesheet</h2>
+              <button type="button" onClick={() => setShowNewTs(false)} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-xs text-muted">Creates a draft timesheet for the chosen employee and Friday–Thursday pay week. If one already exists it just opens.</p>
+            <div>
+              <label className={labelCls}>Employee</label>
+              <select value={newTsEmp} onChange={e => setNewTsEmp(e.target.value)} className={inputCls}>
+                <option value="">— Pick an employee —</option>
+                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Week</label>
+              <input type="date" value={newTsWeek} onChange={e => setNewTsWeek(e.target.value)} className={inputCls} />
+              {newTsWeek && <p className="text-xs text-muted mt-1">Pay week: {fmtWeekRange(getWeekStart(new Date(`${newTsWeek}T00:00:00`)))}</p>}
+            </div>
+            {newTsErr && <p className="text-sm text-red-600 bg-red-50 px-3 py-2">{newTsErr}</p>}
+            <div className="flex gap-3 pt-2">
+              <button onClick={createTimesheet} disabled={newTsBusy} className={`${btnPrimary} flex-1 h-11`}>{newTsBusy ? 'Creating…' : 'Create'}</button>
+              <button onClick={() => setShowNewTs(false)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Manual Entry — admin adds a worked entry to the open timesheet. */}
+      {showAdminManual && selected && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 px-4 py-6" onClick={() => setShowAdminManual(false)}>
+          <div className="bg-surface w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-lg" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-lg">Add Manual Entry</h2>
+              <button type="button" onClick={() => setShowAdminManual(false)} className="text-muted hover:text-ink">✕</button>
+            </div>
+            <p className="text-tag italic" style={{ color: '#FF2828' }}>Flagged "Added manually (admin)" on the timesheet.</p>
+            <div>
+              <label className={labelCls}>Date</label>
+              <input type="date" value={adminManual.date} min={selected.week_start}
+                     onChange={e => setAdminManual(m => ({ ...m, date: e.target.value }))} className={inputCls} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Start Time</label>
+                <input type="time" value={adminManual.clock_in} onChange={e => setAdminManual(m => ({ ...m, clock_in: e.target.value }))} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>End Time</label>
+                <input type="time" value={adminManual.clock_out} onChange={e => setAdminManual(m => ({ ...m, clock_out: e.target.value }))} className={inputCls} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Job Site</label>
+              <select value={adminManual.job_address_id} onChange={e => setAdminManual(m => ({ ...m, job_address_id: e.target.value }))} className={inputCls}>
+                <option value="">— None —</option>
+                {jobAddresses.map(j => <option key={j.id} value={j.id}>{j.address}</option>)}
+              </select>
+            </div>
+            {adminManualErr && <p className="text-sm text-red-600 bg-red-50 px-3 py-2">{adminManualErr}</p>}
+            <div className="flex gap-3 pt-2">
+              <button onClick={submitAdminManual} disabled={adminManualBusy} className={`${btnPrimary} flex-1 h-11`}>{adminManualBusy ? 'Saving…' : 'Add Entry'}</button>
+              <button onClick={() => setShowAdminManual(false)} className={`${btnSecondary} flex-1 h-11`}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
