@@ -1,5 +1,5 @@
 // Bump CACHE version when shipping new builds - forces refresh of cached shell
-const CACHE = 'ontheclock-v42'
+const CACHE = 'ontheclock-v43'
 const SHELL = [
   '/', '/index.html', '/lb-outlined.svg', '/lb-outlined.png', '/apple-touch-icon.png',
   // Brand typography - self-hosted, precached so first paint after install has

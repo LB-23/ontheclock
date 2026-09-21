@@ -474,10 +474,12 @@ export default function TimesheetReview() {
             + New Timesheet
           </button>
           <div className="flex gap-3 flex-wrap">
-            {/* Drafts dropped per spec — admin only ever needs to triage
-                timesheets that the employee has already submitted. */}
+            {/* Status filter incl. Draft, so admins can see in-progress /
+                manually-created drafts. "All Statuses" still excludes drafts to
+                avoid surfacing auto-created future-week shells. */}
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={`${inputCls} w-auto`}>
               <option value="">All Statuses</option>
+              <option value="draft">Draft</option>
               <option value="submitted">Submitted</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
