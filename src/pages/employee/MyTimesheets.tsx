@@ -67,6 +67,10 @@ export default function MyTimesheets() {
     if (!profile || !newTsWeek) { setErr('Pick a week first.'); return }
     const ws = getWeekStart(new Date(`${newTsWeek}T00:00:00`))   // Fri of that pay week
     setNewTsBusy(true); setErr('')
+    // Ensure any approved leave for this week is populated as shadow entries
+    // (idempotent) so a previous week's leave auto-appears just like a future
+    // week's does. Runs before load so the entries are present when opened.
+    await supabase.rpc('populate_leave_for_week', { emp: profile.id, ws })
     // Re-open the week's timesheet if one already exists rather than duplicating.
     const { data: existing } = await supabase.from('timesheets').select('*')
       .eq('employee_id', profile.id).eq('week_start', ws).maybeSingle()

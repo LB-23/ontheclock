@@ -52,6 +52,9 @@ export default function TimesheetReview() {
     if (!newTsWeek) { setNewTsErr('Pick a week.'); return }
     const ws = getWeekStart(new Date(`${newTsWeek}T00:00:00`))   // Fri of that pay week
     setNewTsBusy(true); setNewTsErr('')
+    // Ensure any approved leave for this week is populated (idempotent) so a
+    // previous week's leave auto-appears just like a future week's does.
+    await supabase.rpc('populate_leave_for_week', { emp: newTsEmp, ws })
     const { data: existing } = await supabase.from('timesheets').select('*, profiles!timesheets_employee_id_fkey(full_name)')
       .eq('employee_id', newTsEmp).eq('week_start', ws).maybeSingle()
     let ts = existing as Timesheet | null
