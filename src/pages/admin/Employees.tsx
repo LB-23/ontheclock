@@ -45,6 +45,40 @@ const BLANK: FormState = {
   clock_in_reminder: '', clock_out_reminder: '',
 }
 
+/** Human-readable summary of what changed between the stored profile and the
+ *  edited form, for the auto audit note. Leave/TIL balances render as
+ *  "before → after" at 4dp; strings quote their values. Returns '' when
+ *  nothing changed. Password is deliberately never logged. */
+function profileChangeSummary(before: Profile, f: FormState, isAdmin: boolean): string {
+  const changes: string[] = []
+  const str = (label: string, oldV: string, newV: string) => {
+    if ((oldV ?? '') !== (newV ?? '')) changes.push(`${label}: "${oldV || '—'}" → "${newV || '—'}"`)
+  }
+  const bal = (label: string, oldV: unknown, newV: unknown) => {
+    if (fmtBalance(oldV as number) !== fmtBalance(newV as number)) {
+      changes.push(`${label}: ${fmtBalance(oldV as number)} → ${fmtBalance(newV as number)}`)
+    }
+  }
+  str('Name',   before.full_name ?? '', f.full_name)
+  str('Email',  before.email ?? '', f.email)
+  str('Mobile', before.mobile_number ?? '', f.mobile_number)
+  str('Job Role', before.job_role ?? '', f.job_role)
+  str('App Role', before.app_role ?? '', f.app_role)
+  str('Clock-in reminder',  (before.clock_in_reminder  ?? '').slice(0, 5), f.clock_in_reminder)
+  str('Clock-out reminder', (before.clock_out_reminder ?? '').slice(0, 5), f.clock_out_reminder)
+  if (!isAdmin) {
+    if (Number(before.weekly_hours_category ?? 0) !== Number(f.weekly_hours_category)) {
+      changes.push(`Required Hours: ${before.weekly_hours_category ?? '—'}h → ${f.weekly_hours_category}h`)
+    }
+    bal('Annual Leave balance',       before.annual_leave_balance,     f.annual_leave_balance)
+    bal('Personal/Sick balance',      before.personal_leave_balance,   f.personal_leave_balance)
+    bal('Time In Lieu balance',       before.accrued_til_hours,        f.accrued_til_hours)
+    bal('Annual accrual P/F',         before.annual_accrual_per_week,  f.annual_accrual_per_week)
+    bal('Personal/Sick accrual P/F',  before.personal_accrual_per_week, f.personal_accrual_per_week)
+  }
+  return changes.join(' · ')
+}
+
 export default function Employees() {
   const { profile: me } = useProfile()
   const [employees, setEmployees] = useState<Profile[]>([])
@@ -204,6 +238,15 @@ export default function Employees() {
           target_id: editing.id, new_email: form.email,
         })
         if (emErr) { setError(emErr.message); setSaving(false); return }
+      }
+
+      // Auto audit note: record what changed (incl. leave/TIL balances as
+      // before → after), attributed to the admin who made the change.
+      const summary = profileChangeSummary(editing, form, isAdmin)
+      if (summary) {
+        await supabase.from('employee_notes').insert({
+          employee_id: editing.id, author_id: me?.id ?? null, note: summary,
+        })
       }
     }
     setSaving(false)
