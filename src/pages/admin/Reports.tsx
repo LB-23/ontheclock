@@ -12,14 +12,16 @@ type WeeklyVariant = 'simple' | 'detailed'
 type EmployeeSort = 'employee' | 'date' | 'site' | 'stage'
 type Row = Record<string, unknown>
 
-/** Embed the self-hosted Cerebri Sans Pro TTFs into a jsPDF doc and return the
- *  font name to use (falls back to Helvetica if the fetch fails). Same-origin
- *  fetch — no CDN, works offline once the SW has cached the assets. */
+/** Embed the self-hosted Carlito TTFs into a jsPDF doc and return the font name
+ *  to use. Carlito is the metric-compatible, open-licensed equivalent of
+ *  Calibri (Microsoft's Calibri is proprietary and can't be redistributed
+ *  inside a generated PDF); it renders essentially identically to Calibri.
+ *  Same-origin fetch — no CDN; falls back to Helvetica if the fetch fails. */
 async function loadPdfFont(pdf: jsPDF): Promise<string> {
   try {
     const [reg, bold] = await Promise.all([
-      fetch('/fonts/CerebriSansPro-Regular.ttf').then(r => r.ok ? r.arrayBuffer() : null),
-      fetch('/fonts/CerebriSansPro-SemiBold.ttf').then(r => r.ok ? r.arrayBuffer() : null),
+      fetch('/fonts/Carlito-Regular.ttf').then(r => r.ok ? r.arrayBuffer() : null),
+      fetch('/fonts/Carlito-Bold.ttf').then(r => r.ok ? r.arrayBuffer() : null),
     ])
     if (reg && bold) {
       const b64 = (buf: ArrayBuffer) => {
@@ -28,11 +30,11 @@ async function loadPdfFont(pdf: jsPDF): Promise<string> {
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
         return btoa(bin)
       }
-      pdf.addFileToVFS('CerebriSansPro-Regular.ttf', b64(reg))
-      pdf.addFont('CerebriSansPro-Regular.ttf', 'Cerebri', 'normal')
-      pdf.addFileToVFS('CerebriSansPro-SemiBold.ttf', b64(bold))
-      pdf.addFont('CerebriSansPro-SemiBold.ttf', 'Cerebri', 'bold')
-      return 'Cerebri'
+      pdf.addFileToVFS('Carlito-Regular.ttf', b64(reg))
+      pdf.addFont('Carlito-Regular.ttf', 'Carlito', 'normal')
+      pdf.addFileToVFS('Carlito-Bold.ttf', b64(bold))
+      pdf.addFont('Carlito-Bold.ttf', 'Carlito', 'bold')
+      return 'Carlito'
     }
   } catch { /* fall back to Helvetica */ }
   return 'helvetica'
@@ -47,7 +49,7 @@ async function weeklyDetailedRowsToPdf(rows: Row[], weekStart: string, filename:
   const bodyFont = await loadPdfFont(pdf)
 
   const weekLabel = format(parseISO(weekStart), 'd MMM yyyy').toUpperCase()
-  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
+  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(11); pdf.setTextColor(0, 0, 0)
   pdf.text(`TIMESHEET REPORT - WEEK STARTING ${weekLabel}`, 40, 50)
 
   const headers = ['EMPLOYEE', 'DATE', 'DAY', 'SITE', 'STAGE', 'START TIME', 'END TIME', 'TOTAL HOURS', 'LEAVE TAKEN']
@@ -86,12 +88,19 @@ async function weeklyDetailedRowsToPdf(rows: Row[], weekStart: string, filename:
     body.push(['', '', '', '', '', '', 'WEEK TOTAL', fmtHM(groupMin), ''])
   }
 
+  // Column widths (pt) proportional to the approved Excel layout, so columns
+  // are spread out with room for the long Site / Leave Taken values.
+  const colW = [92, 66, 44, 157, 60, 62, 60, 68, 151]
+  const columnStyles: Record<number, { cellWidth: number }> =
+    Object.fromEntries(colW.map((w, idx) => [idx, { cellWidth: w }]))
+
   autoTable(pdf, {
     startY: 70,
     head: [headers],
     body,
-    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240, 240, 240], textColor: [0, 0, 0] },
-    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
+    columnStyles,
+    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 8, cellPadding: { top: 4, right: 6, bottom: 4, left: 6 }, lineColor: [220, 220, 220], textColor: [0, 0, 0], overflow: 'linebreak' },
+    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 8, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
     didParseCell: data => {
       if (data.section !== 'body') return
       if (totalRows.has(data.row.index)) {
@@ -116,7 +125,7 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
   const pdf = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'landscape' })
   const bodyFont = await loadPdfFont(pdf)
 
-  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(13); pdf.setTextColor(0, 0, 0)
+  pdf.setFont(bodyFont, 'bold'); pdf.setFontSize(11); pdf.setTextColor(0, 0, 0)
   pdf.text(title, 40, 50)
 
   const headers = Object.keys(rows[0]).map(h => h.toUpperCase())
@@ -137,8 +146,8 @@ async function reportRowsToPdf(title: string, rows: Row[], filename: string, gro
     startY: 70,
     head: [headers],
     body,
-    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 9, cellPadding: 5, lineColor: [240, 240, 240], textColor: [0, 0, 0] },
-    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 9, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
+    styles: { font: bodyFont, fontStyle: 'normal', fontSize: 8, cellPadding: { top: 4, right: 6, bottom: 4, left: 6 }, lineColor: [220, 220, 220], textColor: [0, 0, 0], overflow: 'linebreak' },
+    headStyles: { font: bodyFont, fontStyle: 'bold', fontSize: 8, fillColor: [173, 173, 173], textColor: [0, 0, 0], halign: 'left' },
     willDrawCell: data => {
       if (data.section === 'body' && groupBoundaries.has(data.row.index)) {
         // Draw a thick top border on the first row of each new group
