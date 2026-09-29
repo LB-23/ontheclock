@@ -9,6 +9,22 @@ import { inputCls, labelCls } from '../lib/utils'
 const btnLogin =
   'w-full h-10 inline-flex items-center justify-center bg-page border border-[#3A3A3A] text-muted font-forma font-semibold text-[10px] uppercase tracking-[0.04em] hover:bg-[#E0E0E0] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky disabled:opacity-50 disabled:cursor-not-allowed'
 
+/* Supabase returns a 5xx/504 with an empty body when the auth server can't
+ * reach the database in time; auth-js then stringifies that body, so users saw
+ * a bare "{}". Translate server/network failures into something readable and
+ * make it clear the password itself wasn't rejected. */
+function loginErrorMessage(err: { message?: string; status?: number; name?: string }): string {
+  const msg = (err.message ?? '').trim()
+  const status = err.status ?? 0
+  if (/invalid login credentials/i.test(msg)) return 'Incorrect email or password.'
+  if (/email not confirmed/i.test(msg)) return 'This account has not been confirmed yet. Please contact your administrator.'
+  const serverSide =
+    status >= 500 || status === 0 || err.name === 'AuthRetryableFetchError' ||
+    msg === '' || msg === '{}' || /fetch|network|timeout/i.test(msg)
+  if (serverSide) return 'The server is busy and could not sign you in. Your password was not rejected — please wait a minute and try again.'
+  return msg
+}
+
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
@@ -23,7 +39,7 @@ export default function Login() {
     setLoading(true)
     const { error } = await signIn(email, password)
     setLoading(false)
-    if (error) { setError(error.message); return }
+    if (error) { setError(loginErrorMessage(error)); return }
     navigate('/')
   }
 
