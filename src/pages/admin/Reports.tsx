@@ -281,7 +281,7 @@ export default function Reports() {
 
   useEffect(() => {
     // Filter to employees only — admin accounts shouldn't clutter the report-builder picker
-    supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name').then(({ data }) => setEmployees((data as Profile[]) ?? []))
+    supabase.from('profiles').select('id, full_name, is_active').eq('app_role', 'employee').order('full_name').then(({ data }) => setEmployees((data as Profile[]) ?? []))
     supabase.from('job_addresses').select('id, address').eq('is_active', true).order('address').then(({ data }) => setJobs(data ?? []))
     loadSaved()
   }, [])
@@ -560,7 +560,7 @@ export default function Reports() {
               <label className={labelCls}>Filter Employee</label>
               <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={inputCls}>
                 <option value="">All employees</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}{e.is_active ? '' : ' (Past)'}</option>)}
               </select>
             </div>
             <div className="min-w-0">

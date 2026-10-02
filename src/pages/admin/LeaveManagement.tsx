@@ -243,10 +243,11 @@ export default function LeaveManagement() {
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name, annual_leave_balance, personal_leave_balance, accrued_til_hours, annual_accrual_per_week, personal_accrual_per_week)').eq('status', 'pending').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').eq('status', 'approved').order('start_date'),
       supabase.from('leave_requests').select('*, profiles!leave_requests_employee_id_fkey(full_name)').order('created_at', { ascending: false }),
-      // Balances tab — employees only
+      // Balances tab — active employees only (past employees no longer accrue)
       supabase.from('profiles')
         .select('id, full_name, app_role, annual_leave_balance, personal_leave_balance, accrued_til_hours, weekly_hours_category')
         .eq('app_role', 'employee')
+        .eq('is_active', true)
         .order('full_name'),
       // Add-leave dropdown — every active user (admins + employees)
       supabase.from('profiles')

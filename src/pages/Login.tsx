@@ -17,6 +17,7 @@ function loginErrorMessage(err: { message?: string; status?: number; name?: stri
   const msg = (err.message ?? '').trim()
   const status = err.status ?? 0
   if (/invalid login credentials/i.test(msg)) return 'Incorrect email or password.'
+  if (/banned/i.test(msg)) return 'Your access to OnTheClock has been removed. Please contact your administrator.'
   if (/email not confirmed/i.test(msg)) return 'This account has not been confirmed yet. Please contact your administrator.'
   const serverSide =
     status >= 500 || status === 0 || err.name === 'AuthRetryableFetchError' ||

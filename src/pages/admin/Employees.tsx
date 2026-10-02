@@ -159,8 +159,43 @@ export default function Employees() {
     // admin_list_employees RPC joins auth.users.email so the admin always
     // sees and preserves the existing email when editing a profile.
     const { data: profs } = await supabase.rpc('admin_list_employees')
-    setEmployees((profs as Profile[]) ?? [])
+    const list = (profs as Profile[]) ?? []
+    setEmployees(list)
     setLoading(false)
+    return list
+  }
+
+  // Account access (admin-only): reset password, mark inactive / reactivate.
+  const [newPassword, setNewPassword] = useState('')
+  const [accessBusy, setAccessBusy] = useState(false)
+  useEffect(() => { setNewPassword('') }, [viewing?.id])
+
+  const changePassword = async () => {
+    if (!viewing) return
+    if (newPassword.length < 6) { alert('Password must be at least 6 characters.'); return }
+    if (!confirm(`Change the password for ${viewing.full_name}?\n\nThey will be signed out of all devices and must log in with the new password.`)) return
+    setAccessBusy(true)
+    const { error } = await supabase.rpc('admin_set_employee_password', { target_id: viewing.id, new_password: newPassword })
+    setAccessBusy(false)
+    if (error) { alert(`Could not change password: ${error.message}`); return }
+    setNewPassword('')
+    loadNotes(viewing.id)
+    alert(`Password updated for ${viewing.full_name}.`)
+  }
+
+  const setActive = async (active: boolean) => {
+    if (!viewing) return
+    const msg = active
+      ? `Reactivate ${viewing.full_name}?\n\nTheir login access is restored and leave accruals, weekly timesheet drafts and reminders resume.`
+      : `Mark ${viewing.full_name} as Inactive / Past Employee?\n\n• Their login access is removed and they are signed out of all devices\n• Leave accruals, weekly timesheet drafts and reminders stop\n• All their timesheets, leave and history are kept\n\nYou can reactivate them at any time.`
+    if (!confirm(msg)) return
+    setAccessBusy(true)
+    const { error } = await supabase.rpc('admin_set_employee_active', { target_id: viewing.id, active })
+    setAccessBusy(false)
+    if (error) { alert(`Could not update status: ${error.message}`); return }
+    const list = await load()
+    setViewing(list.find(p => p.id === viewing.id) ?? null)
+    loadNotes(viewing.id)
   }
 
   useEffect(() => { load() }, [])
@@ -284,6 +319,12 @@ export default function Employees() {
           const pushColor = enabled ? '#1C9FDA' : '#666666'
           return (
         <dl className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted">Status</dt>
+            <dd className={`font-semibold ${viewing.is_active ? 'text-sky' : 'text-red-600'}`}>
+              {viewing.is_active ? 'Active' : 'Inactive / Past Employee'}
+            </dd>
+          </div>
           <div className="flex justify-between"><dt className="text-muted">Email</dt><dd className="text-ink">{viewing.email ?? '—'}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Mobile</dt><dd className="text-ink">{viewing.mobile_number || '—'}</dd></div>
           <div className="flex justify-between"><dt className="text-muted">Job Role</dt><dd className="text-ink">{viewing.job_role || '—'}</dd></div>
@@ -308,6 +349,61 @@ export default function Employees() {
         </dl>
           )
         })()}
+
+        {/* Account access — password reset + inactive / past employee. Status
+            changes keep every record; see admin_set_employee_active. */}
+        <div className="border-t border-page pt-3 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Account Access</p>
+          {viewing.is_active ? (
+            <>
+              <div>
+                <label className={labelCls}>Change Password</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); changePassword() } }}
+                    placeholder="New password (min 6 characters)"
+                    autoComplete="new-password"
+                    className={inputCls}
+                  />
+                  <button
+                    onClick={changePassword}
+                    disabled={accessBusy || newPassword.length < 6}
+                    style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+                    className={`${btnPrimary} h-11 shrink-0 px-4`}
+                  >
+                    {accessBusy ? '…' : 'Update'}
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => setActive(false)}
+                disabled={accessBusy || viewing.id === me?.id}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+                className={`${btnDanger} w-full h-11`}
+              >
+                Mark as Inactive / Past Employee
+              </button>
+              {viewing.id === me?.id && <p className="text-tag text-muted">You cannot deactivate your own account.</p>}
+            </>
+          ) : (
+            <>
+              <p className="text-tag text-muted">
+                Login access removed. Leave accruals, timesheet drafts and reminders are stopped. All records are kept.
+              </p>
+              <button
+                onClick={() => setActive(true)}
+                disabled={accessBusy}
+                style={{ backgroundColor: '#e8e8e8', color: '#0352fb' }}
+                className={`${btnPrimary} w-full h-11`}
+              >
+                Reactivate Employee
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Admin-only notes — never visible to the employee. Each note is
             stamped with the date + the admin who wrote it. */}
@@ -503,8 +599,9 @@ export default function Employees() {
 
       {/* Hide the team list while a profile dialog is open */}
       {!viewing && (() => {
-        const admins    = employees.filter(e => e.app_role === 'admin')
-        const employed  = employees.filter(e => e.app_role === 'employee')
+        const admins    = employees.filter(e => e.is_active && e.app_role === 'admin')
+        const employed  = employees.filter(e => e.is_active && e.app_role === 'employee')
+        const inactive  = employees.filter(e => !e.is_active)
 
         const renderList = (list: Profile[], emptyLabel: string) => (
           <div className="bg-surface rounded-2xl border border-page shadow-sm divide-y divide-page">
@@ -544,6 +641,14 @@ export default function Employees() {
               </h2>
               {renderList(employed, 'No employees yet')}
             </div>
+            {inactive.length > 0 && (
+              <div className="opacity-60">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+                  Inactive / Past Employees ({inactive.length})
+                </h2>
+                {renderList(inactive, '')}
+              </div>
+            )}
           </div>
         )
       })()}

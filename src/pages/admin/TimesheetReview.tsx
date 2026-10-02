@@ -148,7 +148,7 @@ export default function TimesheetReview() {
 
   useEffect(() => {
     // Only show employees (admins don't have timesheets / shouldn't clutter the filter)
-    supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name')
+    supabase.from('profiles').select('id, full_name, is_active').eq('app_role', 'employee').order('full_name')
       .then(({ data }) => setEmployees((data as Profile[]) ?? []))
     supabase.from('job_addresses').select('*').eq('is_active', true).order('address')
       .then(({ data }) => setJobAddresses((data as JobAddress[]) ?? []))
@@ -489,7 +489,7 @@ export default function TimesheetReview() {
             </select>
             <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={`${inputCls} w-auto`}>
               <option value="">All Employees</option>
-              {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+              {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}{e.is_active ? '' : ' (Past)'}</option>)}
             </select>
           </div>
 
@@ -540,7 +540,7 @@ export default function TimesheetReview() {
               <label className={labelCls}>Employee</label>
               <select value={newTsEmp} onChange={e => setNewTsEmp(e.target.value)} className={inputCls}>
                 <option value="">— Pick an employee —</option>
-                {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                {employees.filter(e => e.is_active).map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
               </select>
             </div>
             <div>

@@ -55,7 +55,7 @@ export default function AuditReport() {
 
   useEffect(() => {
     // Filter to employees only — admin accounts shouldn't appear in the audit dropdown
-    supabase.from('profiles').select('id, full_name').eq('app_role', 'employee').order('full_name')
+    supabase.from('profiles').select('id, full_name, is_active').eq('app_role', 'employee').order('full_name')
       .then(({ data }) => setEmployees((data as Profile[]) ?? []))
   }, [])
 
@@ -140,7 +140,7 @@ export default function AuditReport() {
           <label className={labelCls}>Employee</label>
           <select value={filterEmp} onChange={e => setFilterEmp(e.target.value)} className={inputCls}>
             <option value="">All</option>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+            {employees.map(e => <option key={e.id} value={e.id}>{e.full_name}{e.is_active ? '' : ' (Past)'}</option>)}
           </select>
         </div>
         <div>

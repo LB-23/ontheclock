@@ -16,6 +16,9 @@ export function useProfile() {
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
+        // Inactive / past employee: their login is already blocked server-side,
+        // but a still-valid session token would linger for up to an hour. End it.
+        if (data && data.is_active === false) { supabase.auth.signOut(); return }
         setProfile(data ? { ...data, email: user.email } : null)
         setLoading(false)
       })
@@ -24,6 +27,7 @@ export function useProfile() {
   const refresh = async () => {
     if (!user) return
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (data && data.is_active === false) { supabase.auth.signOut(); return }
     setProfile(data ? { ...data, email: user.email } : null)
   }
 
